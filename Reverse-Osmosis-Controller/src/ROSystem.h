@@ -33,6 +33,8 @@ public:
 
     String getStateString();
 
+    int enable(String setEnable);
+
     int cloudRequestState(String newState);
     
     
@@ -43,6 +45,7 @@ private:
     Relay &flush;
     SystemLog &logger;
     bool flushedToday;
+    bool enabled;
     unsigned long totalPumpTime;
     unsigned long totalPumpRuns;
     unsigned long nextPumpTime;

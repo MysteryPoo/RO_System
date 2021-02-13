@@ -7,7 +7,8 @@
 #define FLUSH_TIMER_MS 300000
 #define PUMP_INLET_DELAY_MS 5000
 #define PUMP_FREQUENCY_MS 500000
-#define REFILL_DISTANCE_CM 100
+#define FILL_START_DISTANCE_CM 80
+#define FILL_STOP_DISTANCE_CM 20
 #define PUMP_RUN_MIN_TO_FLUSH 2
 #define WARNING_DELAY 60000
 
@@ -18,6 +19,7 @@ ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger) :
     flush(flush),
     logger(logger),
     flushedToday(false),
+    enabled(true),
     totalPumpTime(0),
     totalPumpRuns(0),
     nextPumpTime(millis()),
@@ -32,6 +34,7 @@ void ROSystem::cloudSetup()
     Particle.variable("Pump-Runs", this->totalPumpRuns);
     Particle.variable("Pump-Time", this->totalPumpTime);
     Particle.function("requestState", &ROSystem::cloudRequestState, this);
+    Particle.function("setEnable", &ROSystem::enable, this);
 }
 
 void ROSystem::update(bool tankFull, unsigned short distance)
@@ -47,8 +50,12 @@ void ROSystem::update(bool tankFull, unsigned short distance)
     switch(this->state)
     {
         case ROSystem::IDLE:
+            if(!this->enabled)
+            {
+                break;
+            }
             // Check if the tank is considered not-full and it has plenty of room to fill some
-            if(!tankFull && distance > REFILL_DISTANCE_CM)
+            if(!tankFull && distance > FILL_START_DISTANCE_CM)
             {
                 // Only flush if we've ran the pump a few times
                 if(flushedToday || this->totalPumpRuns < PUMP_RUN_MIN_TO_FLUSH)
@@ -64,7 +71,7 @@ void ROSystem::update(bool tankFull, unsigned short distance)
             break;
         case ROSystem::FLUSH:
             // End flushing routine after designated time
-            if(curMillis > this->flushDelay)
+            if(tankFull || curMillis > this->flushDelay)
             {
                 this->flushedToday = true;
                 this->requestState(ROSystem::State::IDLE);
@@ -73,7 +80,7 @@ void ROSystem::update(bool tankFull, unsigned short distance)
             break;
         case ROSystem::FILL:
             // Cutoff fill routine once full
-            if(tankFull)
+            if(tankFull || distance < FILL_STOP_DISTANCE_CM)
             {
                 this->requestState(ROSystem::State::IDLE);
                 lastAttempt = curMillis;
@@ -214,4 +221,21 @@ String ROSystem::getStateString()
             stateString = "INVALID";
     }
     return stateString;
+}
+
+int ROSystem::enable(String setEnabled)
+{
+    if(setEnabled.toUpperCase() == "TRUE")
+    {
+        this->enabled = true;
+    }
+    else if(setEnabled.toUpperCase() == "FALSE")
+    {
+        this->enabled = false;
+    }
+    else
+    {
+        return -1;
+    }
+    return 0;
 }
