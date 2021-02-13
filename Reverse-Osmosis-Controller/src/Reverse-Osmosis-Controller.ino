@@ -113,24 +113,24 @@ void loop()
     int distance = us.getDistance();
     
     // Use distance to top of tank as initial full check
-    bool ultraSonicDetectsFull = false;
+    /*bool ultraSonicDetectsFull = false;
     if(distance < FULL_DISTANCE_CM)
     {
         ultraSonicDetectsFull = true;
     }
-    
+    */
     // Use float switch as a backup full check
     bool floatSwitchDetectsFull = fs.isStable() && fs.isActive();
     
-    bool tankFull = ultraSonicDetectsFull || floatSwitchDetectsFull;
+    bool tankFull = /*ultraSonicDetectsFull || */floatSwitchDetectsFull;
     ro.update(tankFull, distance);
     // If float reads full but US reads not full, report critical error
-    if(ultraSonicDetectsFull ^ floatSwitchDetectsFull)
+    /*if(ultraSonicDetectsFull ^ floatSwitchDetectsFull)
     {
         String USFull = ultraSonicDetectsFull ? "full" : "not full";
         String FloatFull = floatSwitchDetectsFull ? "full" : "not full"; 
         syslog.error("Ultra Sonic and Float Switch disagree. US: [" + USFull + "]; Float: [" + FloatFull + "]");
-    }
+    }*/
 }
 
 int sysRestart(String data)
