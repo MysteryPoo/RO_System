@@ -12,6 +12,8 @@
 #define PUMP_RUN_MIN_TO_FLUSH 2
 #define WARNING_DELAY 60000
 
+// TODO Make fill distances cloud configurable
+
 ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger) :
     state(ROSystem::IDLE),
     pump(pump),

@@ -74,7 +74,7 @@ bool testIsFull = false;
 void simulateFull()
 {
     fs.setStatus(testIsFull);
-    us.setDistance(testIsFull ? 30 : 300);
+    us.setDistance(testIsFull ? 10 : 300);
 
     testIsFull = !testIsFull;
 }
