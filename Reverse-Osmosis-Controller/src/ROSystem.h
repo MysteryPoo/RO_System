@@ -58,7 +58,8 @@ private:
     unsigned short fillStartDistance; // Centimeters
     unsigned short fillStopDistance; // Centimeters
     
-    void requestState(ROSystem::State state);
+    void requestState(ROSystem::State state, const char* requestReason);
+    void requestState(ROSystem::State state, String requestReason);
     bool activatePump();
     bool deactivatePump();
     

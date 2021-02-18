@@ -3,6 +3,7 @@
 #include "application.h"
 #include "relay.h"
 #include "system-log.h"
+#include "json.h"
 
 #define FLUSH_TIMER_MS 300000
 #define PUMP_INLET_DELAY_MS 5000
@@ -55,21 +56,17 @@ void ROSystem::update(bool tankFull, unsigned short distance)
     switch(this->state)
     {
         case ROSystem::IDLE:
-            if(!this->enabled)
-            {
-                break;
-            }
             // Check if the tank is considered not-full and it has plenty of room to fill some
             if(!tankFull && distance > this->fillStartDistance)
             {
                 // Only flush if we've ran the pump a few times
                 if(flushedToday || this->totalPumpRuns < PUMP_RUN_MIN_TO_FLUSH)
                 {
-                    this->requestState(ROSystem::State::FILL);
+                    this->requestState(ROSystem::State::FILL, "Tank is not full.");
                 }
                 else
                 {
-                    this->requestState(ROSystem::State::FLUSH);
+                    this->requestState(ROSystem::State::FLUSH, "Conditions met.");
                 }
                 lastAttempt = curMillis;
             }
@@ -79,15 +76,15 @@ void ROSystem::update(bool tankFull, unsigned short distance)
             if(tankFull || curMillis > this->flushDelay)
             {
                 this->flushedToday = true;
-                this->requestState(ROSystem::State::IDLE);
+                this->requestState(ROSystem::State::IDLE, "Flush complete.");
                 lastAttempt = curMillis;
             }
             break;
         case ROSystem::FILL:
             // Cutoff fill routine once full
-            if(tankFull || distance < this->fillStopDistance)
+            if(!this->enabled || tankFull || distance < this->fillStopDistance)
             {
-                this->requestState(ROSystem::State::IDLE);
+                this->requestState(ROSystem::State::IDLE, this->enabled ? "Tank is full." : "System has been disabled.");
                 lastAttempt = curMillis;
             }
             break;
@@ -96,33 +93,103 @@ void ROSystem::update(bool tankFull, unsigned short distance)
     }
 }
 
-void ROSystem::requestState(ROSystem::State state)
+void ROSystem::requestState(ROSystem::State state, const char* requestReason)
 {
+    String reason = String(requestReason);
+    this->requestState(state, reason);
+}
+
+void ROSystem::requestState(ROSystem::State state, String requestReason)
+{
+    String error;
+    String message;
     switch(state)
     {
         case ROSystem::IDLE:
+            error = "";
             flush.set(Relay::State::OFF);
             if(deactivatePump())
             {
                 this->state = ROSystem::State::IDLE;
             }
-            logger.pushMessage("system/state-request", "{\"event\":\"state-request\",\"state\":\"IDLE\", \"success\":" + String(this->state == ROSystem::State::IDLE ? "true" : "false") + "}");
+            else
+            {
+                error = "Failed to deactivate the pump.";
+            }
+            message = JHelp::begin();
+            message += JHelp::field("event", "state-request");
+            message += JHelp::next();
+            message += JHelp::field("state", "IDLE");
+            message += JHelp::next();
+            message += JHelp::field("success", this->state == ROSystem::State::IDLE ? true : false);
+            message += JHelp::next();
+            message += JHelp::field("requestReason", requestReason);
+            message += JHelp::next();
+            message += JHelp::field("failureReason", error);
+            message += JHelp::end();
+            logger.pushMessage("system/state-request", message);
             break;
         case ROSystem::FLUSH:
-            if(activatePump())
+            error = "";
+            if(this->enabled)
             {
-                flush.set(Relay::State::ON);
-                this->flushDelay = millis() + FLUSH_TIMER_MS;
-                this->state = ROSystem::State::FLUSH;
+                if(activatePump())
+                {
+                    flush.set(Relay::State::ON);
+                    this->flushDelay = millis() + FLUSH_TIMER_MS;
+                    this->state = ROSystem::State::FLUSH;
+                }
+                else
+                {
+                    error = "Failed to activate the pump.";
+                }
             }
-            logger.pushMessage("system/state-request", "{\"event\":\"state-request\",\"state\":\"FLUSH\", \"success\":" + String(this->state == ROSystem::State::FLUSH ? "true" : "false") + "}");
+            else
+            {
+                error = "System is currently disabled.";
+            }
+            message = JHelp::begin();
+            message += JHelp::field("event", "state-request");
+            message += JHelp::next();
+            message += JHelp::field("state", "FLUSH");
+            message += JHelp::next();
+            message += JHelp::field("success", this->state == ROSystem::State::FLUSH ? true : false);
+            message += JHelp::next();
+            message += JHelp::field("requestReason", requestReason);
+            message += JHelp::next();
+            message += JHelp::field("failureReason", error);
+            message += JHelp::end();
+            logger.pushMessage("system/state-request", message);
             break;
         case ROSystem::FILL:
-            if(activatePump())
+            error = "";
+            if(this->enabled)
             {
-                this->state = ROSystem::State::FILL;
+                if(activatePump())
+                {
+                    this->state = ROSystem::State::FILL;
+                }
+                else
+                {
+                    error = "Failed to activate the pump.";
+                }
             }
-            logger.pushMessage("system/state-request", "{\"event\":\"state-request\",\"state\":\"FILL\", \"success\":" + String(this->state == ROSystem::State::FILL ? "true" : "false") + "}");
+            else
+            {
+                error = "System is currently disabled.";
+            }
+            message = JHelp::begin();
+            message += JHelp::field("event", "state-request");
+            message += JHelp::next();
+            message += JHelp::field("state", "FILL");
+            message += JHelp::next();
+            message += JHelp::field("success", this->state == ROSystem::State::FILL ? true : false);
+            message += JHelp::next();
+            message += JHelp::field("requestReason", requestReason);
+            message += JHelp::next();
+            message += JHelp::field("failureReason", error);
+            message += JHelp::end();
+            logger.pushMessage("system/state-request", message);
             break;
         default:
             logger.error("ROSystem was requested to enter an invalid state!");
@@ -188,21 +255,22 @@ bool ROSystem::deactivatePump()
 
 void ROSystem::shutdown()
 {
-    this->requestState(ROSystem::State::IDLE);
+    this->requestState(ROSystem::State::IDLE, "Shutdown requested.");
 }
 
 int ROSystem::cloudRequestState(String newState)
 {
-    if(newState == "fill")
+    const String reasonCloud = "DEBUG Cloud Requested.";
+    if(newState.toLowerCase() == "fill")
     {
-        this->requestState(ROSystem::State::FILL);
+        this->requestState(ROSystem::State::FILL, reasonCloud);
     }
-    if(newState == "flush")
+    if(newState.toLowerCase() == "flush")
     {
-        this->requestState(ROSystem::State::FLUSH);
-    }if(newState == "idle")
+        this->requestState(ROSystem::State::FLUSH, reasonCloud);
+    }if(newState.toLowerCase() == "idle")
     {
-        this->requestState(ROSystem::State::IDLE);
+        this->requestState(ROSystem::State::IDLE, reasonCloud);
     }
 
     return 0;
@@ -260,8 +328,8 @@ int ROSystem::setFillDistances(String csvFill)
 		}
 		else
 		{
-			this->fillStartDistance = fillStart.toInt();
-			this->fillStopDistance = fillStop.toInt();
+			this->fillStartDistance = fillStart;
+			this->fillStopDistance = fillStop;
 			return 0;
 		}
     }
