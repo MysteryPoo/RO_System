@@ -135,11 +135,16 @@ void loop()
 
 int sysRestart(String data)
 {
-    syslog.pushMessage("system/restart", "{\"event\":\"restart\",\"reason\":\"" + data + "\"}");
+    String message = JHelp::begin();
+    message += JHelp::field("event", "restart");
+    message += JHelp::next();
+    message += JHelp::field("reason", data);
+    message += JHelp::end();
+    ro.shutdown();
+    syslog.pushMessage("system/restart", message);
     syslog.enabled = false;
     restartSystem.start();
     timeToRestart = Time.now() + SECONDS_PER_DAY;
-    ro.shutdown();
     return 0;
 }
 
@@ -160,7 +165,7 @@ void testTick()
     String json = JHelp::begin();
     json += JHelp::field("event", "tick");
     json += JHelp::next();
-    json += JHelp::field("messageQueueSize", String(syslog.messageQueueSize()));
+    json += JHelp::field("messageQueueSize", syslog.messageQueueSize());
     json += JHelp::next();
     json += JHelp::field("floatSwitch", fs.isActive());
     json += JHelp::next();
