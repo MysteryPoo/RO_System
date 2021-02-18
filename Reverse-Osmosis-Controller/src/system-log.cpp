@@ -1,5 +1,6 @@
 
 #include "system-log.h"
+#include "json.h"
 
 #define BURST_DELAY 2500
 #define BURST_LIMIT 10
@@ -45,20 +46,32 @@ void SystemLog::publishLog()
 
 void SystemLog::trace(String message)
 {
-    pushMessage("TRACE", "{\"message\":\"" + message + "\"}");
+    String data = JHelp::begin();
+    data += JHelp::field("message", message);
+    data += JHelp::end();
+    pushMessage("TRACE", data);
 }
 
 void SystemLog::information(String message)
 {
-    pushMessage("INFO", "{\"message\":\"" + message + "\"}");
+    String data = JHelp::begin();
+    data += JHelp::field("message", message);
+    data += JHelp::end();
+    pushMessage("INFO", data);
 }
 
 void SystemLog::warning(String message)
 {
-    pushMessage("WARN", "{\"message\":\"" + message + "\"}");
+    String data = JHelp::begin();
+    data += JHelp::field("message", message);
+    data += JHelp::end();
+    pushMessage("WARN", data);
 }
 
 void SystemLog::error(String message)
 {
-    pushMessage("ERROR", "{\"message\":\"" + message + "\"}");
+    String data = JHelp::begin();
+    data += JHelp::field("message", message);
+    data += JHelp::end();
+    pushMessage("ERROR", data);
 }
