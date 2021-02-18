@@ -6,6 +6,11 @@ class JHelp
         return "\"" + value + "\"";
     }
 
+    static String value(const char* val)
+    {
+        return value(String(val));
+    }
+
     static String value(int value)
     {
         return String(value);
@@ -18,7 +23,7 @@ class JHelp
 
     static String value(bool value)
     {
-        return String(value);
+        return String(value ? "true" : "false");
     }
     
 public:
