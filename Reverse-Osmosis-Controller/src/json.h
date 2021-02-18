@@ -1,8 +1,6 @@
 
 class JHelp
 {
-public:
-
     static String value(String value)
     {
         return "\"" + value + "\"";
@@ -22,7 +20,8 @@ public:
     {
         return String(value);
     }
-
+    
+public:
     template <class T>
     static String field(String key, T val)
     {
