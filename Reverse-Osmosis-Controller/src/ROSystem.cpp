@@ -21,12 +21,14 @@ ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger) :
     flush(flush),
     logger(logger),
     flushedToday(false),
-    enabled(true),
     totalPumpTime(0),
     totalPumpRuns(0),
     nextPumpTime(millis()),
     flushDelay(0),
-    pumpRunTime(0)
+    pumpRunTime(0),
+    enabled(true),
+    fillStartDistance(80),
+    fillStopDistance(20)
 {
     
 }
@@ -37,6 +39,7 @@ void ROSystem::cloudSetup()
     Particle.variable("Pump-Time", this->totalPumpTime);
     Particle.function("requestState", &ROSystem::cloudRequestState, this);
     Particle.function("setEnable", &ROSystem::enable, this);
+    Particle.function("setFillDistances", &ROSystem::setFillDistances, this);
 }
 
 void ROSystem::update(bool tankFull, unsigned short distance)
@@ -57,7 +60,7 @@ void ROSystem::update(bool tankFull, unsigned short distance)
                 break;
             }
             // Check if the tank is considered not-full and it has plenty of room to fill some
-            if(!tankFull && distance > FILL_START_DISTANCE_CM)
+            if(!tankFull && distance > this->fillStartDistance)
             {
                 // Only flush if we've ran the pump a few times
                 if(flushedToday || this->totalPumpRuns < PUMP_RUN_MIN_TO_FLUSH)
@@ -82,7 +85,7 @@ void ROSystem::update(bool tankFull, unsigned short distance)
             break;
         case ROSystem::FILL:
             // Cutoff fill routine once full
-            if(tankFull || distance < FILL_STOP_DISTANCE_CM)
+            if(tankFull || distance < this->fillStopDistance)
             {
                 this->requestState(ROSystem::State::IDLE);
                 lastAttempt = curMillis;
@@ -240,4 +243,28 @@ int ROSystem::enable(String setEnabled)
         return -1;
     }
     return 0;
+}
+
+int ROSystem::setFillDistances(String csvFill)
+{
+    int indexOfComma = csvFill.indexOf(',');
+    if(indexOfComma != -1)
+    {
+        String fillStartString = csvFill.substring(0, indexOfComma);
+        String fillStopString = csvFill.substring(indexOfComma + 1);
+		int fillStart = fillStartString.toInt();
+		int fillStop = fillStopString.toInt();
+		if (fillStart == 0 || fillStop == 0)
+		{
+			return -1;
+		}
+		else
+		{
+			this->fillStartDistance = fillStart.toInt();
+			this->fillStopDistance = fillStop.toInt();
+			return 0;
+		}
+    }
+
+    return -1;
 }

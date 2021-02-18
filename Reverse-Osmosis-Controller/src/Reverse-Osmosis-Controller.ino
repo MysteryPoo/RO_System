@@ -165,6 +165,8 @@ void testTick()
     json += JHelp::field("floatSwitch", fs.isActive());
     json += JHelp::next();
     json += JHelp::field("ultra-sonic", us.getDistance());
+    json += JHelp::next();
+    json += JHelp::field("enabled", ro.getEnabled());
     json += JHelp::end();
     syslog.pushMessage("system/tick", json);
 }

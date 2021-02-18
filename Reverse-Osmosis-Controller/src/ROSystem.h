@@ -34,6 +34,8 @@ public:
     String getStateString();
 
     int enable(String setEnable);
+    int setFillDistances(String csvFill);
+    bool getEnabled() { return this->enabled; }
 
     int cloudRequestState(String newState);
     
@@ -45,12 +47,16 @@ private:
     Relay &flush;
     SystemLog &logger;
     bool flushedToday;
-    bool enabled;
     unsigned long totalPumpTime;
     unsigned long totalPumpRuns;
     unsigned long nextPumpTime;
     unsigned long flushDelay;
     unsigned long pumpRunTime;
+
+    // Configuration
+    bool enabled;
+    unsigned short fillStartDistance; // Centimeters
+    unsigned short fillStopDistance; // Centimeters
     
     void requestState(ROSystem::State state);
     bool activatePump();
