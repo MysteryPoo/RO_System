@@ -22,7 +22,7 @@ void SystemLog::pushMessage(String component, String data)
             Message* msg = &this->messages[this->currentMessageIndex++];
             msg->component = component;
             msg->data = data;
-            msg->datetime = Particle.connected() ? Time.format() : "undefined";
+            msg->datetime = Particle.connected() ? Time.now() : 0l;
         }
     }
 }

@@ -14,6 +14,7 @@
 
 #include "application.h"
 #include <vector>
+#include "json.h"
 
 #define SYSTEMLOG_MESSAGEBUFFERSIZE 32
 
@@ -21,25 +22,30 @@ class Message
 {
 public:
     String component;
-    String datetime;
+    long datetime;
     String data;
 
     Message()
     : component("undefined")
-    , datetime("undefined")
+    , datetime(0)
     , data("\"undefined\"")
     {}
 
     String toJSON() {
-        String json;
-        json += "{";
-        json += "\"component\":";
-        json += "\"" + this->component + "\"";
-        json += ",\"datetime\":";
-        json += "\"" + this->datetime + "\"";
-        json += ",\"data\":";
-        json += this->data;
-        json += "}";
+        String json = JHelp::begin();
+        json += JHelp::field("component", this->component);
+        json += JHelp::next();
+        if(this->datetime != 0l)
+        {
+            json += JHelp::field("datetime", this->datetime);
+        }
+        else
+        {
+            json += JHelp::field("datetime", "undefined");
+        }
+        json += JHelp::next();
+        json += JHelp::field("data", this->data, true);
+        json += JHelp::end();
 
         return json;
     }
