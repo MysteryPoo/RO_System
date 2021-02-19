@@ -48,6 +48,9 @@
 #endif
 
 #define SECONDS_PER_DAY 86400
+#define TEN_MINUTES_MS 600000
+#define THIRTY_SECONDS_MS 30000
+#define ONE_HOUR_MS 3600000
 #define FULL_DISTANCE_CM 40
 
 time32_t timeToRestart;
@@ -74,13 +77,16 @@ bool testIsFull = false;
 void simulateFull()
 {
     fs.setStatus(testIsFull);
-    us.setDistance(testIsFull ? 10 : 300);
+    us.setDistance(testIsFull ? 10 : 150);
 
     testIsFull = !testIsFull;
 }
-Timer runTestTimer(1000000, simulateFull, false);
-Timer testTickTimer(30000, testTick, false);
+Timer runTestTimer(TEN_MINUTES_MS, simulateFull, false);
+Timer testTickTimer(THIRTY_SECONDS_MS, sendTick, false);
+#else
+Timer tickTimer(ONE_HOUR_MS, sendTick, false);
 #endif
+
 
 void setup()
 {
@@ -95,6 +101,8 @@ void setup()
     syslog.information("TEST MODE ENABLED");
     runTestTimer.start();
     testTickTimer.start();
+#else
+    tickTimer.start();
 #endif
 }
 
@@ -160,7 +168,7 @@ void sysRestart_Helper()
     }
 }
 
-void testTick()
+void sendTick()
 {
     String json = JHelp::begin();
     json += JHelp::field("event", "tick");
