@@ -1,10 +1,17 @@
 <template>
   <div class="small">
+    <b-form-select
+      @change="onDeviceChange($event)"
+      v-model="deviceSelected"
+      :options="deviceList">
+    </b-form-select>
+    <h1>Status: {{ status ? "Online" : "Offline" }}</h1>
     <h1>Current State: {{ currentState }}</h1>
-    <line-chart :chart-data="dataCollection"></line-chart>
-    <line-chart :chart-data="pumpData"></line-chart>
+    <b-button variant="success" v-on:click="setEnable(true);">Enable</b-button>
+    <b-button variant="danger" v-on:click="setEnable(false);">Disable</b-button>
+    <line-chart :chart-data="dataCollection" :options="waterLevelChartOptions"></line-chart>
     <div>
-      <p>{{ this.lastTick[0].data }}</p>
+      <!-- <p>{{ this.lastTick[0].data }}</p> -->
     </div>
   </div>
 </template>
@@ -19,67 +26,97 @@ export default {
   },
   data() {
     return {
+      deviceList: [],
+      deviceSelected: null,
       lastTick: {},
+      status: false,
       currentState: '',
       dataCollection: null,
       pumpData: null,
+      stateList: null,
+      waterLevelChartOptions: {
+        title: {
+          display: true,
+          text: 'Water Level',
+        },
+        scales: {
+          xAxes: [{
+            display: true,
+            scaleLabel: {
+              display: true,
+              labelString: 'Time',
+            },
+          }],
+          yAxes: [{
+            type: 'linear',
+            position: 'left',
+            display: true,
+            scaleLabel: {
+              display: true,
+              labelString: 'Gallons',
+            },
+            ticks: {
+              suggestedMin: 0,
+              suggestedMax: 250,
+            },
+          }],
+        },
+      },
     };
   },
   methods: {
-    async fetchApi() {
-      const logs = await fetch('http://192.168.1.36:4000/lastTick');
+    async fetchDeviceList() {
+      const prFetchList = await fetch(`http://${process.env.VUE_APP_API_ENDPOINT}/deviceList?secret=${process.env.VUE_APP_API_SECRET}`);
+      this.deviceList = [{ value: null, text: 'Select a device' }];
+
+      const deviceMap = await prFetchList.json();
+      Object.values(deviceMap).forEach((device) => {
+        this.deviceList.push({ value: device.id, text: device.name });
+      });
+    },
+    onDeviceChange(event) {
+      if (event) {
+        this.deviceSelected = event;
+        this.fetchStatus(event);
+        this.fetchApi(event);
+      }
+    },
+    async fetchStatus(deviceId) {
+      if (deviceId !== null) {
+        const prFetchStatus = await fetch(`http://${process.env.VUE_APP_API_ENDPOINT}/${deviceId}/status?secret=${process.env.VUE_APP_API_SECRET}`);
+        const status = await prFetchStatus.json();
+        this.status = status.online;
+      }
+    },
+    async fetchApi(deviceId) {
+      const logs = await fetch(`http://${process.env.VUE_APP_API_ENDPOINT}/${deviceId}/lastTick?secret=${process.env.VUE_APP_API_SECRET}`);
       this.lastTick = await logs.json();
       this.lastTick = this.lastTick.reverse();
-      const currentStateFetch = await fetch('http://192.168.1.36:4000/currentState');
+      const currentStateFetch = await fetch(`http://${process.env.VUE_APP_API_ENDPOINT}/${deviceId}/currentState?secret=${process.env.VUE_APP_API_SECRET}`);
       const meh = await currentStateFetch.json();
-      this.currentState = meh[0].data.state;
-      this.fillData();
-    },
-    async fetchPumpData() {
-      const pumpFetch = await fetch('http://192.168.1.36:4000/pumpState');
-      const pumpJson = await pumpFetch.json();
-      this.fillPumpData(pumpJson);
-    },
-    fillPumpData(apiResponse) {
-      const labelArray = [];
-      const pumpArray = [];
-      const apiResponseReverse = apiResponse.reverse();
-      apiResponseReverse.forEach((set) => {
-        labelArray.push(set.datetime);
-        if (set.data.value === 'ON') {
-          pumpArray.push(1);
-        } else {
-          pumpArray.push(0);
-        }
-      });
-      this.pumpData = {
-        labels: labelArray,
-        datasets: [
-          {
-            label: 'Pump',
-            backgroundColor: '#4287f5',
-            data: pumpArray,
-          },
-        ],
-      };
+      this.stateList = meh;
+      if (meh.length > 0) {
+        this.currentState = meh[0].data.state;
+        this.fillData();
+      }
     },
     fillData() {
       const labelArray = [];
       const usDataArray = [];
-      const fsDataArray = [];
+      let lastHour = null;
       this.lastTick.forEach((tick) => {
-        labelArray.push(tick.datetime);
-        usDataArray.push(tick.data['ultra-sonic']);
-        fsDataArray.push(tick.data.floatSwitch);
+        const date = new Date(tick.datetime);
+        if (lastHour === null || date.getHours() !== lastHour) {
+          console.log(date); // eslint-disable-line
+          labelArray.push(`${new Date(tick.datetime).getHours()}:00`);
+          usDataArray.push(this.convertDistanceToGallons(tick.data['ultra-sonic']));
+        }
+        lastHour = date.getHours();
       });
       this.dataCollection = {
         labels: labelArray,
         datasets: [
           {
-            label: 'Float Switch',
-            backgroundColor: '#4287f5',
-            data: fsDataArray,
-          }, {
             label: 'Ultra Sonic',
             backgroundColor: '#f87979',
             data: usDataArray,
@@ -90,16 +127,43 @@ export default {
     getRandomInt() {
       return Math.floor(Math.random() * (50 - 5 + 1)) + 5;
     },
+    convertDistanceToGallons(distance) {
+      const sensorHeight = this.inchesToCentimeters(68.75);
+      // const fullHeight = this.inchesToCentimeters(62.375);
+      const diameter = this.inchesToCentimeters(32);
+      const measuredHeight = sensorHeight - distance;
+
+      return Math.round((Math.PI * (diameter * 0.5) ** 2 * measuredHeight) / 3785);
+    },
+    inchesToCentimeters(inches) {
+      return inches * 2.54;
+    },
+    async setEnable(enable) {
+      if (this.deviceSelected !== null) {
+        await fetch(`http://${process.env.VUE_APP_API_ENDPOINT}/${this.deviceSelected}/configuration?secret=${process.env.VUE_APP_API_SECRET}`, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            enabled: enable,
+          }),
+        });
+      }
+    },
   },
   created() {
-    this.fetchApi();
+    /*  this.fetchApi();
     setInterval(() => {
       this.fetchApi();
       this.fetchPumpData();
     }, 5000);
+    */
+    this.fetchDeviceList();
   },
   mounted() {
-    this.fillData();
+    // this.fillData();
   },
 };
 </script>
