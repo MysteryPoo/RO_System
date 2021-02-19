@@ -1,0 +1,40 @@
+version: '3'
+services:
+  mongo:
+    container_name: romcon_mongo
+    image: mongo
+    restart: always
+    volumes:
+      - romcon_mongo_volume:/data/db
+  
+  backend:
+    container_name: romcon_backend
+    depends_on:
+      - mongo
+    build: .
+    image: ${DOCKER_USERNAME}/romcon-backend
+    ports: 
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+    links:
+      - mongo
+    environment: 
+      - PORT=${BACKEND_PORT}
+      - PARTICLE_USERNAME=${PARTICLE_USERNAME}
+      - PARTICLE_PASSWORD=${PARTICLE_PASSWORD}
+      - MONGODB_URI=romcon_mongo
+      - API_SECRET=${API_SECRET}
+  
+  frontend:
+    container_name: romcon_frontend
+    depends_on:
+      - backend
+    build: ./client
+    image: ${DOCKER_USERNAME}/romcon-frontend
+    ports:
+      - "${FRONTEND_PORT}:80"
+    environment: 
+      - VUE_APP_API_ENDPOINT=romcon_backend
+      - VUE_APP_API_SECRET=${API_SECRET}
+
+volumes:
+  romcon_mongo_volume:
