@@ -32,9 +32,6 @@ services:
     image: ${DOCKER_USERNAME}/romcon-frontend
     ports:
       - "${FRONTEND_PORT}:80"
-    environment: 
-      - VUE_APP_API_ENDPOINT=romcon_backend
-      - VUE_APP_API_SECRET=${API_SECRET}
 
 volumes:
   romcon_mongo_volume:

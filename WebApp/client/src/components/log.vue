@@ -66,7 +66,7 @@ export default {
   },
   methods: {
     async fetchDeviceList() {
-      const prFetchList = await fetch(`http://${process.env.VUE_APP_API_ENDPOINT}/deviceList?secret=${process.env.VUE_APP_API_SECRET}`);
+      const prFetchList = await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/deviceList?secret=${process.env.VUE_APP_API_SECRET}`);
       this.deviceList = [{ value: null, text: 'Select a device' }];
 
       const deviceMap = await prFetchList.json();
@@ -83,16 +83,16 @@ export default {
     },
     async fetchStatus(deviceId) {
       if (deviceId !== null) {
-        const prFetchStatus = await fetch(`http://${process.env.VUE_APP_API_ENDPOINT}/${deviceId}/status?secret=${process.env.VUE_APP_API_SECRET}`);
+        const prFetchStatus = await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/${deviceId}/status?secret=${process.env.VUE_APP_API_SECRET}`);
         const status = await prFetchStatus.json();
         this.status = status.online;
       }
     },
     async fetchApi(deviceId) {
-      const logs = await fetch(`http://${process.env.VUE_APP_API_ENDPOINT}/${deviceId}/lastTick?secret=${process.env.VUE_APP_API_SECRET}`);
+      const logs = await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/${deviceId}/lastTick?secret=${process.env.VUE_APP_API_SECRET}`);
       this.lastTick = await logs.json();
       this.lastTick = this.lastTick.reverse();
-      const currentStateFetch = await fetch(`http://${process.env.VUE_APP_API_ENDPOINT}/${deviceId}/currentState?secret=${process.env.VUE_APP_API_SECRET}`);
+      const currentStateFetch = await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/${deviceId}/currentState?secret=${process.env.VUE_APP_API_SECRET}`);
       const meh = await currentStateFetch.json();
       this.stateList = meh;
       if (meh.length > 0) {
@@ -140,7 +140,7 @@ export default {
     },
     async setEnable(enable) {
       if (this.deviceSelected !== null) {
-        await fetch(`http://${process.env.VUE_APP_API_ENDPOINT}/${this.deviceSelected}/configuration?secret=${process.env.VUE_APP_API_SECRET}`, {
+        await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/${this.deviceSelected}/configuration?secret=${process.env.VUE_APP_API_SECRET}`, {
           method: 'POST',
           headers: {
             Accept: 'application/json',
