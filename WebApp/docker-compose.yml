@@ -13,6 +13,7 @@ services:
       - mongo
     build: .
     image: ${DOCKER_USERNAME}/romcon-backend
+    restart: always
     ports: 
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     links:
@@ -30,6 +31,7 @@ services:
       - backend
     build: ./client
     image: ${DOCKER_USERNAME}/romcon-frontend
+    restart: always
     ports:
       - "${FRONTEND_PORT}:80"
 
