@@ -34,7 +34,10 @@ function setConfiguration(device, data) {
         {
             enabled: data.enabled,
             fillStart: data.fillStart,
-            fillStop: data.fillStop
+            fillStop: data.fillStop,
+            sonicHeight: data.sonicHeight,
+            floatHeight: data.floatHeight,
+            diameter: data.diameter
         }
     });
 }
