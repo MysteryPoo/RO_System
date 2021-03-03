@@ -34,11 +34,9 @@ export default {
   },
   methods: {
     onDeviceChange(device) {
-      if (device) {
-        this.deviceSelected = device;
-        window.localStorage.deviceId = device;
-        this.$emit('deviceSelected', device);
-      }
+      this.deviceSelected = device;
+      window.localStorage.deviceId = device;
+      this.$emit('deviceSelected', device);
     },
     getSelectedDevice() {
       return this.deviceSelected;

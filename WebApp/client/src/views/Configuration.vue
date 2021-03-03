@@ -5,6 +5,7 @@
           <b-card
             title="Running Configuration"
             style="max-width: 20rem;"
+            v-if="showCurrent"
           >
             <h3>enabled: {{ config.enabled }}</h3>
             <h3>fillStart: {{ config.fillStart }}</h3>
@@ -13,15 +14,10 @@
             <h3>floatHeight: {{ config.floatHeight }}</h3>
             <h3>diameter: {{ config.diameter }}</h3>
           </b-card>
-          <p v-if="errors.length">
-            <b>Please correct the following error(s):</b>
-            <ul>
-              <li v-for="error in errors" :key="error.id">{{ error }}</li>
-            </ul>
-          </p>
           <b-card
             title="Set Configuration"
             style="max-width: 20rem;"
+            v-if="showForm"
           >
             <b-form @submit="onSubmit" @reset="onReset">
               <b-form-group
@@ -100,7 +96,8 @@ export default {
   props: ['deviceName'],
   data() {
     return {
-      errors: [],
+      showCurrent: false,
+      showForm: false,
       deviceId: null,
       config: {
         enabled: false,
@@ -122,18 +119,28 @@ export default {
   },
   methods: {
     async onDeviceSelected(device) {
+      if (device && device !== 'null') {
+        this.showForm = true;
+      } else {
+        this.showCurrent = false;
+        this.showForm = false;
+        return;
+      }
       const config = await Api.fetchConfiguration(device);
       if (config) {
         this.deviceId = device;
         this.config = config;
         this.onReset(null);
+        this.showCurrent = true;
+      } else {
+        this.showCurrent = false;
+        this.showToast('Missing', 'No configuration found for this device.', 'warning');
       }
     },
     async onSubmit(event) {
       event.preventDefault();
-      this.errors = [];
       if (this.reqConfig.sonicHeight < this.reqConfig.floatHeight) {
-        this.errors.push('The float sensor must be placed below the sonic sensor.');
+        this.showToast('Form', 'The float sensor must be placed below the sonic sensor.', 'warning');
         return;
       }
 
@@ -149,6 +156,7 @@ export default {
       };
       console.log(await (await Api.postConfiguration(this.deviceId, postConfig)).json()); // eslint-disable-line
       this.onDeviceSelected(this.deviceId);
+      this.showToast('New Configuration', 'The new configuration has been applied.', 'success');
     },
     async onReset(event) {
       if (event !== null) {
@@ -160,6 +168,12 @@ export default {
       this.reqConfig.sonicHeight = this.config.sonicHeight;
       this.reqConfig.floatHeight = this.config.floatHeight;
       this.reqConfig.diameter = this.config.diameter;
+    },
+    showToast(title, message, variant) {
+      this.$bvToast.toast(message, {
+        title,
+        variant,
+      });
     },
     inchesToCentimeters(inches) {
       return inches * 2.54;

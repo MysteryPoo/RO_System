@@ -1,7 +1,4 @@
 async function fetchDeviceList() {
-  // const prFetchList = await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/deviceList?secret=${process.env.VUE_APP_API_SECRET}`);
-
-  // return prFetchList.json();
   return (await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/deviceList?secret=${process.env.VUE_APP_API_SECRET}`)).json();
 }
 
@@ -13,9 +10,18 @@ async function fetchStatus(deviceId) {
   return Promise.reject(Error('Device Id Required'));
 }
 
-async function fetchTick(deviceId) {
+async function fetchTick(
+  deviceId,
+  dateTo = new Date(),
+  dateFrom = new Date((new Date()).getTime() - (7 * 24 * 60 * 60 * 1000)),
+  resolution = 10,
+) {
   if (deviceId !== null) {
-    const promise = await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/${deviceId}/lastTick?secret=${process.env.VUE_APP_API_SECRET}`);
+    let uriString = `http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/${deviceId}/lastTick?secret=${process.env.VUE_APP_API_SECRET}`;
+    uriString += `&to=${dateTo.getTime()}`;
+    uriString += `&from=${dateFrom.getTime()}`;
+    uriString += `&resolution=${resolution}`;
+    const promise = await fetch(uriString);
     return promise.json();
   }
   return Promise.reject(Error('Device Id Required'));
