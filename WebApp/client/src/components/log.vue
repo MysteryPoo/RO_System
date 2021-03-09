@@ -158,7 +158,6 @@ export default {
       const minutes = Number(breakdown[1]);
       const seconds = Number(breakdown[2]);
       this.fromDate.setHours(hours, minutes, seconds);
-      console.log(this.fromDate);
     },
     async updateResolution(value) {
       this.lastTick = await Api.fetchTick(this.deviceId, undefined, this.fromDate, value);
