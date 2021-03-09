@@ -27,17 +27,30 @@ function getConfiguration(device) {
     return configuration.find({'deviceId': device});
 }
 
-function setConfiguration(device, data) {
-    return configuration.findOneAndUpdate({deviceId: device}, { $set:
-        {
-            enabled: data.enabled,
-            fillStart: data.fillStart,
-            fillStop: data.fillStop,
-            sonicHeight: data.sonicHeight,
-            floatHeight: data.floatHeight,
-            diameter: data.diameter
-        }
-    });
+async function setConfiguration(device, data) {
+    if(device) {
+        const database = client.db('test');
+        const collection = database.collection('configuration');
+        const query = {
+            deviceId: device,
+        };
+        const update = {
+            $set: {
+                deviceId: device,
+                enabled: data.enabled,
+                fillStart: data.fillStart,
+                fillStop: data.fillStop,
+                sonicHeight: data.sonicHeight,
+                floatHeight: data.floatHeight,
+                diameter: data.diameter,
+            },
+        };
+        const options = {
+            upsert: true,
+        };
+        return collection.updateOne(query, update, options);
+    }
+    return Promise.reject(Error("Invalid device selected."));
 }
 
 async function getLastTick(
