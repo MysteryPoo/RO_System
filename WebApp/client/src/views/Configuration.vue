@@ -121,6 +121,7 @@ export default {
     async onDeviceSelected(device) {
       if (device && device !== 'null') {
         this.showForm = true;
+        this.deviceId = device;
       } else {
         this.showCurrent = false;
         this.showForm = false;
