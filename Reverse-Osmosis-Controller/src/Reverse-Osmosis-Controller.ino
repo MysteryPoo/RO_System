@@ -32,7 +32,7 @@
         
 */
 
-#define TESTING 1
+#define TESTING 0
 
 #include "system-log.h"
 #include "ultra-sonic.h"
@@ -56,9 +56,9 @@
 time32_t timeToRestart;
 
 SystemLog syslog;
-Relay pump(Relay::Name::COMPONENT_PUMP, syslog, D7);
-Relay inlet(Relay::Name::COMPONENT_INLETVALVE, syslog, D6);
-Relay flush(Relay::Name::COMPONENT_FLUSHVALVE, syslog, D5);
+Relay pump(Relay::Name::COMPONENT_PUMP, syslog, D7, true);
+Relay inlet(Relay::Name::COMPONENT_INLETVALVE, syslog, D6, true);
+Relay flush(Relay::Name::COMPONENT_FLUSHVALVE, syslog, D5, true);
 
 #ifdef TESTING
 TestFloatSwitch fs(A0, syslog);
