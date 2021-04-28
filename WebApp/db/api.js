@@ -1,5 +1,5 @@
 const Joi = require('joi');
-const db = require('./connection');
+const { db, client } = require('./connection');
 
 const eventSchema = Joi.object().keys({
     component: Joi.string().required(),
@@ -9,13 +9,11 @@ const eventSchema = Joi.object().keys({
 
 const configuration = db.get('configuration');
 const deviceList = [];
-const events = db.get('events');
 
 function storeMessage(device, message) {
     const result = eventSchema.validate(message.data);
     if(result.error == null) {
         return deviceList[device].insert(message.data);
-        //return events.insert(message.data);
     } else {
         return Promise.reject(result.error);
     }
@@ -29,25 +27,73 @@ function getConfiguration(device) {
     return configuration.find({'deviceId': device});
 }
 
-function setConfiguration(device, data) {
-    return configuration.findOneAndUpdate({deviceId: device}, { $set:
-        {
-            enabled: data.enabled,
-            fillStart: data.fillStart,
-            fillStop: data.fillStop
-        }
-    });
+async function setConfiguration(device, data) {
+    if(device) {
+        const database = client.db('test');
+        const collection = database.collection('configuration');
+        const query = {
+            deviceId: device,
+        };
+        const update = {
+            $set: {
+                deviceId: device,
+                enabled: data.enabled,
+                fillStart: data.fillStart,
+                fillStop: data.fillStop,
+                sonicHeight: data.sonicHeight,
+                floatHeight: data.floatHeight,
+                diameter: data.diameter,
+            },
+        };
+        const options = {
+            upsert: true,
+        };
+        return collection.updateOne(query, update, options);
+    }
+    return Promise.reject(Error("Invalid device selected."));
 }
 
-function getLastTick(device) {
+async function getLastTick(
+    device,
+    dateTo = new Date(),
+    dateFrom = new Date((new Date()).getTime() - (7 * 24 * 60 * 60 * 1000)),
+    resolution = 10
+) {
     if(deviceList[device]) {
-        return deviceList[device].find({'component': 'system/tick'}, {sort: {datetime: -1}, limit: 500});
-    } else {
-        return [{
-            data: {
-                state: 'UNKNOWN'
+        console.log(dateTo.toLocaleString());
+        console.log(dateFrom.toLocaleString());
+        console.log(resolution);
+        const returnList = [];
+        try{
+            const database = client.db('test');
+            const collection = database.collection(device);
+            const query = {
+                component: 'system/tick',
+                datetime: {
+                    $gt: dateFrom,
+                    $lt: dateTo,
+                },
+            };
+            const options = {
+                sort: {
+                    datetime: -1,
+                },
             }
-        }];
+            const recordCount = await collection.countDocuments(query, options);
+            const interval = Math.max(1, Math.round(recordCount / resolution));
+            for(let i = 0; i < recordCount; i += interval) {
+                const cursor = collection.find(query, options).skip(i).limit(1);
+                const tickList = await cursor.toArray();
+                if(tickList.length > 0) {
+                    returnList.push(tickList[0]);
+                }
+            }
+        } catch (err) {
+            console.log(err);
+        }
+        return returnList;
+    } else {
+        return Promise.reject(Error("Device does not exist."));
     }
 }
 

@@ -1,6 +1,7 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 import Home from '../views/Home.vue';
+import Configuration from '../views/Configuration.vue';
 
 Vue.use(VueRouter);
 
@@ -19,6 +20,12 @@ const routes = [
     component() {
       return import(/* webpackChunkName: "about" */ '../views/About.vue');
     },
+  },
+  {
+    path: '/config',
+    name: 'Configuration',
+    component: Configuration,
+    props: true,
   },
 ];
 

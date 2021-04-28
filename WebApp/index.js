@@ -53,7 +53,10 @@ app.get('/deviceList', (req, res) => {
 });
 
 app.get('/:deviceId/lastTick', (req, res) => {
-    api.getLastTick(req.params.deviceId).then( (data) => {
+    const { deviceId } = req.params;
+    const { to, from, resolution } = req.query;
+    console.log(req.query);
+    api.getLastTick(deviceId, new Date(Number(to)), new Date(Number(from)), Number(resolution)).then( (data) => {
         res.json(data);
     });
 });
