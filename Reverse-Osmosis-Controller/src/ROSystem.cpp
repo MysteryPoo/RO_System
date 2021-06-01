@@ -2,6 +2,8 @@
 #include "ROSystem.h"
 #include "application.h"
 #include "relay.h"
+#include "float-switch.h"
+#include "ultra-sonic.h"
 #include "system-log.h"
 #include "json.h"
 
@@ -15,11 +17,13 @@
 
 // TODO Make fill distances cloud configurable
 
-ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger) :
+ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, FloatSwitch &floatSwitch, UltraSonic &ultraSonic, SystemLog &logger) :
     state(ROSystem::IDLE),
     pump(pump),
     inlet(inlet),
     flush(flush),
+    floatSwitch(floatSwitch),
+    ultraSonic(ultraSonic),
     logger(logger),
     flushedToday(false),
     totalPumpTime(0),
@@ -41,6 +45,11 @@ void ROSystem::cloudSetup()
     Particle.function("requestState", &ROSystem::cloudRequestState, this);
     Particle.function("setEnable", &ROSystem::enable, this);
     Particle.function("setFillDistances", &ROSystem::setFillDistances, this);
+}
+
+void ROSystem::Update()
+{
+    this->update(this->floatSwitch.isActive(), this->ultraSonic.getDistance());
 }
 
 void ROSystem::update(bool tankFull, unsigned short distance)

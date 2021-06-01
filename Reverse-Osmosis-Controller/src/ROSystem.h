@@ -11,12 +11,15 @@
 #define _ROSYSTEM_
 
 #include "ICloud.h"
+#include "IComponent.h"
 
 class Relay;
 class SystemLog;
 class String;
+class FloatSwitch;
+class UltraSonic;
 
-class ROSystem : public ICloud {
+class ROSystem : public ICloud, public IComponent {
 public:
     enum State {
         IDLE,
@@ -24,7 +27,9 @@ public:
         FILL
     };
     
-    ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger);
+    ROSystem(Relay &pump, Relay &inlet, Relay &flush, FloatSwitch &floatSwitch, UltraSonic &ultraSonic, SystemLog &logger);
+
+    virtual void Update() override;
     void update(bool tankFull, unsigned short distance);
 
     virtual void cloudSetup() override;
@@ -45,6 +50,8 @@ private:
     Relay &pump;
     Relay &inlet;
     Relay &flush;
+    FloatSwitch &floatSwitch;
+    UltraSonic &ultraSonic;
     SystemLog &logger;
     bool flushedToday;
     unsigned long totalPumpTime;
