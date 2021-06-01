@@ -10,7 +10,6 @@ public:
     TestUltraSonic(int trig, int echo, SystemLog &logger);
     ~TestUltraSonic() {};
 
-    virtual void sample() override;
     virtual int getDistance() override;
 
     virtual void cloudSetup() override;
@@ -19,6 +18,8 @@ public:
 
 private:
     int testDistance;
+
+    virtual void sample() override;
 };
 
 #endif
