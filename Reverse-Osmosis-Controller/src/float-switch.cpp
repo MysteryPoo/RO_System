@@ -15,7 +15,7 @@ FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
     logger(logger)
 {
     pinMode(pin, INPUT_PULLDOWN);
-    this->logger.pushMessage("float-switch", "{\"event\":\"configuration\",\"pin\":" + String(pin) + "}");
+    this->fireConfigurationMessage();
 }
 
 void FloatSwitch::cloudSetup()
@@ -23,9 +23,14 @@ void FloatSwitch::cloudSetup()
     Particle.variable("Float-Status", this->status);
 }
 
+void FloatSwitch::Update()
+{
+    this->sample();
+}
+
 bool FloatSwitch::isActive()
 {
-    return this->status;
+    return this->stable && this->status;
 }
 
 void FloatSwitch::sample()
@@ -52,7 +57,12 @@ void FloatSwitch::sample()
     }
 }
 
-bool FloatSwitch::isStable()
+void FloatSwitch::fireConfigurationMessage() const
 {
-    return this->stable;
+    String message = JHelp::begin();
+    message += JHelp::field("event", "configuration");
+    message += JHelp::next();
+    message += JHelp::field("pin", String(pin));
+    message += JHelp::end();
+    this->logger.pushMessage("float-switch", message);
 }

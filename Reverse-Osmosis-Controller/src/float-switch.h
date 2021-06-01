@@ -12,17 +12,18 @@
 
 #include "application.h"
 #include "ICloud.h"
+#include "IComponent.h"
+#include "IConfigurable.h"
 
 class SystemLog;
 
-class FloatSwitch : public ICloud {
+class FloatSwitch : public ICloud, public IComponent, IConfigurable {
 public:
     FloatSwitch(int pin, SystemLog &logger);
     virtual bool isActive();
-    virtual void sample();
-    virtual bool isStable();
 
     virtual void cloudSetup() override;
+    virtual void Update() override;
 private:
     int pin;
     unsigned long stableTimer;
@@ -30,6 +31,9 @@ private:
     bool status;
     unsigned long lastStable;
     bool stable;
+
+    virtual void sample();
+    virtual void fireConfigurationMessage() const override;
 
 protected:
     SystemLog &logger;
