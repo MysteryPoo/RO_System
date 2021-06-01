@@ -2,6 +2,7 @@
 #include "ultra-sonic.h"
 #include "application.h"
 #include "system-log.h"
+#include "json.h"
 
 #define US_TRIGGER_TIME 11
 #define US_INTERVAL_TIME 51
@@ -19,19 +20,17 @@ UltraSonic::UltraSonic(int trig, int echo, SystemLog &logger) :
     
     digitalWrite(trig, LOW); // Start low
 
-    String configurationMessage = "{";
-    configurationMessage += "\"event\":\"configuration\",";
-    configurationMessage += "\"trigger\":" + String(trig) + ",";
-    configurationMessage += "\"echo\":" + String(echo) + "}";
-
-    this->logger.pushMessage("ultra-sonic", configurationMessage);
-    
-    //this->logger.information("Ultra Sonic sensor configured -- TRIGGER: " + String(trig) + ", ECHO: " + String(echo));
+    this->fireConfigurationMessage();
 }
 
 void UltraSonic::cloudSetup()
 {
     Particle.variable("Ultra-Sonic-Distance", this->distance);
+}
+
+void UltraSonic::Update()
+{
+    this->sample();
 }
 
 void UltraSonic::sample()
@@ -56,4 +55,17 @@ void UltraSonic::sample()
 int UltraSonic::getDistance()
 {
     return this->distance;
+}
+
+void UltraSonic::fireConfigurationMessage() const
+{
+    String configurationMessage = JHelp::begin();
+    configurationMessage += JHelp::field("event", "configuration");
+    configurationMessage += JHelp::next();
+    configurationMessage += JHelp::field("trigger", this->triggerPin);
+    configurationMessage += JHelp::next();
+    configurationMessage += JHelp::field("echo", this->echoPin);
+    configurationMessage += JHelp::end();
+
+    this->logger.pushMessage("ultra-sonic", configurationMessage);
 }

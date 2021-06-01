@@ -12,23 +12,28 @@
 #define _ULTRA_SONIC_
 
 #include "ICloud.h"
+#include "IComponent.h"
+#include "IConfigurable.h"
 
 class SystemLog;
 
-class UltraSonic : public ICloud {
+class UltraSonic : public ICloud, public IComponent, IConfigurable {
 public:
     UltraSonic(int trig, int echo, SystemLog &logger);
     
-    virtual void sample();
     virtual int getDistance();
 
     virtual void cloudSetup() override;
+    virtual void Update() override;
     
 private:
     int triggerPin;
     int echoPin;
     int distance;
     unsigned long cooldownPeriod;
+
+    virtual void sample();
+    virtual void fireConfigurationMessage() const override;
 
 protected:
     SystemLog &logger;
