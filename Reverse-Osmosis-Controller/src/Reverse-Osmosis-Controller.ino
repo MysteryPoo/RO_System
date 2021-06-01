@@ -32,8 +32,6 @@
         
 */
 
-#define TESTING 0
-
 #include "system-log.h"
 #include "ultra-sonic.h"
 #include "relay.h"
@@ -41,6 +39,8 @@
 #include "ultra-sonic.h"
 #include "ROSystem.h"
 #include "json.h"
+
+#define TESTING 1
 
 #ifdef TESTING
 #include "test-float-switch.h"
@@ -68,7 +68,9 @@ FloatSwitch fs(A0, syslog);
 UltraSonic us(A3, A4, syslog);
 #endif
 
-ROSystem ro(pump, inlet, flush, syslog);
+ROSystem ro(pump, inlet, flush, fs, us, syslog);
+
+std::vector<IComponent*> componentsToUpdate;
 
 Timer restartSystem(10000, sysRestart_Helper, true);
 
@@ -84,7 +86,7 @@ void simulateFull()
 Timer runTestTimer(TEN_MINUTES_MS, simulateFull, false);
 Timer testTickTimer(THIRTY_SECONDS_MS, sendTick, false);
 #else
-Timer tickTimer(ONE_HOUR_MS, sendTick, false);
+Timer tickTimer(TEN_MINUTES_MS, sendTick, false);
 #endif
 
 
@@ -104,6 +106,10 @@ void setup()
 #else
     tickTimer.start();
 #endif
+
+    componentsToUpdate.push_back(&fs);
+    componentsToUpdate.push_back(&us);
+    componentsToUpdate.push_back(&ro);
 }
 
 void loop()
@@ -114,31 +120,17 @@ void loop()
     }
     
     syslog.publishLog();
-    
-    us.sample();
-    fs.sample();
-    
-    int distance = us.getDistance();
-    
-    // Use distance to top of tank as initial full check
-    /*bool ultraSonicDetectsFull = false;
-    if(distance < FULL_DISTANCE_CM)
+
+    for(IComponent* component : componentsToUpdate)
     {
-        ultraSonicDetectsFull = true;
+        component->Update();
     }
-    */
-    // Use float switch as a backup full check
-    bool floatSwitchDetectsFull = fs.isStable() && fs.isActive();
-    
-    bool tankFull = /*ultraSonicDetectsFull || */floatSwitchDetectsFull;
-    ro.update(tankFull, distance);
-    // If float reads full but US reads not full, report critical error
-    /*if(ultraSonicDetectsFull ^ floatSwitchDetectsFull)
+
+    // Notify if the float switch was triggered.
+    if(fs.isActive())
     {
-        String USFull = ultraSonicDetectsFull ? "full" : "not full";
-        String FloatFull = floatSwitchDetectsFull ? "full" : "not full"; 
-        syslog.error("Ultra Sonic and Float Switch disagree. US: [" + USFull + "]; Float: [" + FloatFull + "]");
-    }*/
+        syslog.error("Float Switch has been triggered!");
+    }
 }
 
 int sysRestart(String data)
