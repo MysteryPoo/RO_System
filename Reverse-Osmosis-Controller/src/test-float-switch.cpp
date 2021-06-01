@@ -20,11 +20,6 @@ void TestFloatSwitch::sample()
     
 }
 
-bool TestFloatSwitch::isStable()
-{
-    return true;
-}
-
 bool TestFloatSwitch::isActive()
 {
     return this->testValue;
@@ -33,5 +28,8 @@ bool TestFloatSwitch::isActive()
 void TestFloatSwitch::setStatus(bool status)
 {
     this->testValue = status;
-    this->logger.pushMessage("float-switch", "{\"status\": " + String(status ? "true" : "false") + "}");
+    String message = JHelp::begin();
+    message += JHelp::field("status", String(status ? "true" : "false"));
+    message += JHelp::end();
+    this->logger.pushMessage("float-switch", message);
 }

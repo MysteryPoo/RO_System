@@ -13,14 +13,14 @@ class TestFloatSwitch : public FloatSwitch
 
         virtual void cloudSetup() override;
 
-        virtual void sample() override;
-        virtual bool isStable() override;
         virtual bool isActive() override;
 
         void setStatus(bool status);
 
     private:
         bool testValue;
+
+        virtual void sample() override;
 
 };
 
