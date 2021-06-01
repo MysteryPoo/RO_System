@@ -14,6 +14,7 @@
 */
 
 #include "relay.h"
+#include "json.h"
 #include "system-log.h"
 
 Relay::Relay(Name name, SystemLog &logger, int pin, bool activeLow) : 
@@ -22,7 +23,16 @@ Relay::Relay(Name name, SystemLog &logger, int pin, bool activeLow) :
     activeLow(activeLow),
     logger(logger)
 {
-    this->logger.pushMessage("relay/configuration", "{\"event\":\"configuration\",\"name\":\"" + this->toString() + "\",\"pin\":" + String(pin) + ",\"activeLow\":" + (activeLow ? "true" : "false") + "}");
+    String configMsg = JHelp::begin();
+    configMsg += JHelp::field("event", "configuration");
+    configMsg += JHelp::next();
+    configMsg += JHelp::field("name", this->toString());
+    configMsg += JHelp::next();
+    configMsg += JHelp::field("pin", String(pin));
+    configMsg += JHelp::next();
+    configMsg += JHelp::field("activeLow", activeLow ? "true" : "false");
+    configMsg += JHelp::end();
+    this->logger.pushMessage("relay/configuration", configMsg);
     pinMode(pin, OUTPUT);
     
     this->set(Relay::State::OFF);
@@ -50,15 +60,22 @@ void Relay::set(Relay::State newState)
         this->logger.error("Attempting to set an unconfigured relay.[" + toString() + "]");
         return;
     }
+    String message = JHelp::begin();
+    message += JHelp::field("event", "set");
+    message += JHelp::next();
+    message += JHelp::field("name", this->toString());
+    message += JHelp::next();
     if(newState == Relay::State::ON)
     {
-        this->logger.pushMessage("relay/set", "{\"event\":\"set\",\"name\":\"" + this->toString() + "\",\"value\":\"ON\"}");
+        message += JHelp::field("value", "ON");
         digitalWrite(this->pin, this->activeLow ? LOW : HIGH);
     }
     else
     {
-        this->logger.pushMessage("relay/set", "{\"event\":\"set\",\"name\":\"" + this->toString() + "\",\"value\":\"OFF\"}");
+        message += JHelp::field("value", "OFF");
         digitalWrite(this->pin, this->activeLow ? HIGH : LOW);
     }
+    message += JHelp::end();
+    this->logger.pushMessage("relay/set", message);
     this->state = newState;
 }
