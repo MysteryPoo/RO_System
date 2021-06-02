@@ -9,13 +9,11 @@
 
 #define FLUSH_TIMER_MS 300000
 #define PUMP_INLET_DELAY_MS 5000
-#define PUMP_FREQUENCY_MS 500000
+#define PUMP_FREQUENCY_MS 500000 // Default
 #define FILL_START_DISTANCE_CM 80
 #define FILL_STOP_DISTANCE_CM 20
 #define PUMP_RUN_MIN_TO_FLUSH 2
 #define WARNING_DELAY 60000
-
-// TODO Make fill distances cloud configurable
 
 ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, FloatSwitch &floatSwitch, UltraSonic &ultraSonic, SystemLog &logger) :
     state(ROSystem::IDLE),
@@ -28,12 +26,14 @@ ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, FloatSwitch &floatSw
     flushedToday(false),
     totalPumpTime(0),
     totalPumpRuns(0),
-    nextPumpTime(millis()),
-    flushDelay(0),
+    lastPumpTime(millis() - PUMP_FREQUENCY_MS),
+    flushStartedTime(0),
+    flushDuration(FLUSH_TIMER_MS),
     pumpRunTime(0),
     enabled(true),
-    fillStartDistance(80),
-    fillStopDistance(20)
+    fillStartDistance(FILL_START_DISTANCE_CM),
+    fillStopDistance(FILL_STOP_DISTANCE_CM),
+    pumpCooldown(PUMP_FREQUENCY_MS)
 {
     
 }
@@ -42,9 +42,6 @@ void ROSystem::cloudSetup()
 {
     Particle.variable("Pump-Runs", this->totalPumpRuns);
     Particle.variable("Pump-Time", this->totalPumpTime);
-    Particle.function("requestState", &ROSystem::cloudRequestState, this);
-    Particle.function("setEnable", &ROSystem::enable, this);
-    Particle.function("setFillDistances", &ROSystem::setFillDistances, this);
 }
 
 void ROSystem::Update()
@@ -82,7 +79,7 @@ void ROSystem::update(bool tankFull, unsigned short distance)
             break;
         case ROSystem::FLUSH:
             // End flushing routine after designated time
-            if(tankFull || curMillis > this->flushDelay)
+            if(tankFull || curMillis > this->flushStartedTime + this->flushDuration)
             {
                 this->flushedToday = true;
                 this->requestState(ROSystem::State::IDLE, "Flush complete.");
@@ -112,6 +109,13 @@ void ROSystem::requestState(ROSystem::State state, String requestReason)
 {
     String error;
     String message;
+
+    char buffer[2048];
+    memset(buffer, 0, sizeof(buffer));
+
+    JSONBufferWriter jsonMessage(buffer, sizeof(buffer));
+    jsonMessage.beginObject();
+    jsonMessage.name("event").value("state-request");
     switch(state)
     {
         case ROSystem::IDLE:
@@ -125,18 +129,12 @@ void ROSystem::requestState(ROSystem::State state, String requestReason)
             {
                 error = "Failed to deactivate the pump.";
             }
-            message = JHelp::begin();
-            message += JHelp::field("event", "state-request");
-            message += JHelp::next();
-            message += JHelp::field("state", "IDLE");
-            message += JHelp::next();
-            message += JHelp::field("success", this->state == ROSystem::State::IDLE ? true : false);
-            message += JHelp::next();
-            message += JHelp::field("requestReason", requestReason);
-            message += JHelp::next();
-            message += JHelp::field("failureReason", error);
-            message += JHelp::end();
-            logger.pushMessage("system/state-request", message);
+            jsonMessage.name("state").value("IDLE");
+            jsonMessage.name("success").value(this->state == ROSystem::State::IDLE ? true : false);
+            jsonMessage.name("requestReason").value(requestReason);
+            jsonMessage.name("failureReason").value(error);
+            jsonMessage.endObject();
+            logger.pushMessage("system/state-request", String(jsonMessage.buffer()));
             break;
         case ROSystem::FLUSH:
             error = "";
@@ -145,7 +143,7 @@ void ROSystem::requestState(ROSystem::State state, String requestReason)
                 if(activatePump())
                 {
                     flush.set(Relay::State::ON);
-                    this->flushDelay = millis() + FLUSH_TIMER_MS;
+                    this->flushStartedTime = millis();
                     this->state = ROSystem::State::FLUSH;
                 }
                 else
@@ -210,26 +208,25 @@ bool ROSystem::activatePump()
     unsigned long curMillis = millis();
     static unsigned long lastWarning = curMillis;
     
-    if(curMillis > this->nextPumpTime)
+    if(this->lastPumpTime + this->pumpCooldown < curMillis)
     {
         this->inlet.set(Relay::State::ON);
         delay(PUMP_INLET_DELAY_MS);
 
-        curMillis = millis();
+        curMillis = millis(); // Not sure this is necessary
         this->pumpRunTime = curMillis;
 
         this->pump.set(Relay::State::ON);
         ++this->totalPumpRuns;
         return true;
     }
-    else if(curMillis > lastWarning + WARNING_DELAY)
-    {
-        this->logger.warning("Attempting to activate the pump too frequently.");
-        lastWarning = curMillis;
-        return false;
-    }
     else
     {
+        if(curMillis > lastWarning + WARNING_DELAY)
+        {
+            this->logger.warning("Attempting to activate the pump too frequently.");
+            lastWarning = curMillis;
+        }
         return false;
     }
 }
@@ -242,7 +239,7 @@ bool ROSystem::deactivatePump()
     if(Relay::State::ON == pump.get())
     {
         this->totalPumpTime += curMillis - this->pumpRunTime;
-        this->nextPumpTime = curMillis + PUMP_FREQUENCY_MS;
+        this->lastPumpTime = curMillis;
 
         this->pump.set(Relay::State::OFF);
         delay(PUMP_INLET_DELAY_MS);
@@ -344,4 +341,55 @@ int ROSystem::setFillDistances(String csvFill)
     }
 
     return -1;
+}
+
+int ROSystem::ConfigureFillDistances(spark::JSONValue& distances)
+{
+    int error = 0;
+    if(distances.isObject())
+    {
+        JSONObjectIterator fillDistances(distances);
+        int start = -1, stop = -1;
+        while(fillDistances.next())
+        {
+            if(fillDistances.name() == "start")
+            {
+                start = fillDistances.value().toInt();
+            }
+            if(fillDistances.name() == "stop")
+            {
+                stop = fillDistances.value().toInt();
+            }
+        }
+        if(start != -1 && stop != -1)
+        {
+            this->setFillDistances(String(start) + String(',') + String(stop));
+        }
+        else
+        {
+            error = 1;
+        }
+    }
+    else
+    {
+        error = 1;
+    }
+
+    return error;
+}
+
+void ROSystem::ConfigurePumpCooldown(int newPumpCooldown)
+{
+    if(newPumpCooldown > 0)
+    {
+        this->pumpCooldown = newPumpCooldown;
+    }
+}
+
+void ROSystem::ConfigureFlushDuration(int duration)
+{
+    if(duration > 0)
+    {
+        this->flushDuration = (unsigned int) duration;
+    }
 }

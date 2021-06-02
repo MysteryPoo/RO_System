@@ -2,7 +2,8 @@
 /*
     Main logic controller for the overall system
     
-    Requires a pump relay, inlet valve relay, and flush valve relay.
+    Accepts sensor data from Float Switch and an Ultra-Sonic distance sensor.
+    Controls a pump relay, inlet valve relay, and flush valve relay.
     
     Simple state machine to determine, based on water level inputs, whether to refill the resovoir or not.
 */
@@ -18,6 +19,10 @@ class SystemLog;
 class String;
 class FloatSwitch;
 class UltraSonic;
+namespace spark
+{
+    class JSONValue;
+}
 
 class ROSystem : public ICloud, public IComponent {
 public:
@@ -43,6 +48,10 @@ public:
     bool getEnabled() { return this->enabled; }
 
     int cloudRequestState(String newState);
+
+    int ConfigureFillDistances(spark::JSONValue& distances);
+    void ConfigurePumpCooldown(int newCooldown);
+    void ConfigureFlushDuration(int duration);
     
     
 private:
@@ -56,14 +65,16 @@ private:
     bool flushedToday;
     unsigned long totalPumpTime;
     unsigned long totalPumpRuns;
-    unsigned long nextPumpTime;
-    unsigned long flushDelay;
+    unsigned long lastPumpTime;
+    unsigned long flushStartedTime;
+    unsigned int flushDuration;
     unsigned long pumpRunTime;
 
     // Configuration
     bool enabled;
     unsigned short fillStartDistance; // Centimeters
     unsigned short fillStopDistance; // Centimeters
+    unsigned int pumpCooldown; // Time between turning off and then on again
     
     void requestState(ROSystem::State state, const char* requestReason);
     void requestState(ROSystem::State state, String requestReason);
