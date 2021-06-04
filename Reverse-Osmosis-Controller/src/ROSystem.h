@@ -43,7 +43,8 @@ public:
 
     String getStateString();
 
-    int enable(String setEnable);
+    int enable(String setEnable); // Deprecated
+    void setEnable(bool enable);
     int setFillDistances(String csvFill);
     bool getEnabled() { return this->enabled; }
 

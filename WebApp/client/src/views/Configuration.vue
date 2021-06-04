@@ -13,6 +13,8 @@
             <h3>sonicHeight: {{ config.sonicHeight }}</h3>
             <h3>floatHeight: {{ config.floatHeight }}</h3>
             <h3>diameter: {{ config.diameter }}</h3>
+            <h3>pumpCooldown: {{ config.pumpCooldown }}</h3>
+            <h3>tickRate: {{ config.tickRate }}</h3>
           </b-card>
           <b-card
             title="Set Configuration"
@@ -78,6 +80,33 @@
                   required
                 ></b-form-input>
               </b-form-group>
+              <b-form-group
+                id="input-group-pump-cooldown"
+                label="Pump Cooldown Time (minutes)"
+                label-for="input-pump-cooldown"
+                description="The amount of time that must be 
+                  waited before turning the pump back on. (Minutes)"
+              >
+                <b-form-input
+                  id="input-pump-cooldown"
+                  v-model.number="reqConfig.pumpCooldown"
+                  type="number"
+                  required
+                ></b-form-input>
+              </b-form-group>
+              <b-form-group
+                id="input-group-tick-rate"
+                label="Tick Rate (minutes)"
+                label-for="input-tick-rate"
+                description="How often to report water levels and status. (Minutes)"
+              >
+                <b-form-input
+                  id="input-tick-rate"
+                  v-model.number="reqConfig.tickRate"
+                  type="number"
+                  required
+                ></b-form-input>
+              </b-form-group>
               <b-button type="submit" variant="primary">Submit</b-button>
               <b-button type="reset" variant="danger">Reset</b-button>
             </b-form>
@@ -106,6 +135,8 @@ export default {
         sonicHeight: 0,
         floatHeight: 0,
         diameter: 0,
+        pumpCooldown: 0,
+        tickRate: 0,
       },
       reqConfig: {
         enabled: false,
@@ -114,6 +145,8 @@ export default {
         sonicHeight: 0,
         floatHeight: 0,
         diameter: 0,
+        pumpCooldown: 0,
+        tickRate: 0,
       },
     };
   },
@@ -154,6 +187,8 @@ export default {
         sonicHeight: this.reqConfig.sonicHeight,
         floatHeight: this.reqConfig.floatHeight,
         diameter: this.reqConfig.diameter,
+        pumpCooldown: this.reqConfig.pumpCooldown,
+        tickRate: this.reqConfig.tickRate,
       };
       console.log(await (await Api.postConfiguration(this.deviceId, postConfig)).json()); // eslint-disable-line
       this.onDeviceSelected(this.deviceId);
@@ -169,6 +204,8 @@ export default {
       this.reqConfig.sonicHeight = this.config.sonicHeight;
       this.reqConfig.floatHeight = this.config.floatHeight;
       this.reqConfig.diameter = this.config.diameter;
+      this.reqConfig.pumpCooldown = this.config.pumpCooldown;
+      this.reqConfig.tickRate = this.config.tickRate;
     },
     showToast(title, message, variant) {
       this.$bvToast.toast(message, {

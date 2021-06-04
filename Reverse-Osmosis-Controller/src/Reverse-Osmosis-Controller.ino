@@ -165,8 +165,7 @@ int Configuration(String config)
     {
         if(iter.name() == "enabled")
         {
-            JSONString enable = iter.value().toString();
-            ro.enable(enable.data());
+            ro.setEnable(iter.value().toBool());
         }
         if(iter.name() == "fillDistances")
         {

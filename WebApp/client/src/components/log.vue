@@ -5,6 +5,11 @@
       Status: {{ status ? "Online" : `Offline (Last Online: ${lastOnline})` }}
     </h1>
     <h1 v-if="show">Current State: {{ currentState }}</h1>
+    <line-chart
+      :chart-data="dataCollection"
+      :options="waterLevelChartOptions"
+      v-if="show"
+    ></line-chart>
     <b-container>
       <b-row>
         <b-col>
@@ -36,11 +41,6 @@
       min="10"
       max="100">
     </b-form-spinbutton>
-    <line-chart
-      :chart-data="dataCollection"
-      :options="waterLevelChartOptions"
-      v-if="show"
-    ></line-chart>
   </div>
 </template>
 

@@ -319,6 +319,11 @@ int ROSystem::enable(String setEnabled)
     return 0;
 }
 
+void ROSystem::setEnable(bool enable)
+{
+    this->enabled = enable;
+}
+
 int ROSystem::setFillDistances(String csvFill)
 {
     int indexOfComma = csvFill.indexOf(',');

@@ -43,6 +43,8 @@ async function setConfiguration(device, data) {
                 sonicHeight: data.sonicHeight,
                 floatHeight: data.floatHeight,
                 diameter: data.diameter,
+                pumpCooldown: data.pumpCooldown,
+                tickRate: data.tickRate,
             },
         };
         const options = {

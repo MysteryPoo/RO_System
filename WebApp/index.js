@@ -116,16 +116,7 @@ particle.login({ username: particleAPISession.username, password: particleAPISes
                         console.log(JSON.stringify(data));
                         console.log(`Device {${particleAPISession.deviceList[data.coreid].name}} registered as {${data.data}}`);
                         particleAPISession.deviceList[data.coreid].online = data.data === "online" ? true : false;
-                        if (particleAPISession.deviceList[data.coreid].online) {
-                            api.getConfiguration(data.coreid).then( (config) => {
-                                if (config.length > 0) {
-                                    console.log(JSON.stringify(config));
-                                    const configuration = config[0];
-                                    sendEnableConfig(data.coreid, configuration);
-                                    sendFillLevelConfig(data.coreid, configuration);
-                                }
-                            });
-                        }
+                        sendConfiguration(data.coreid);
                     });
                 });
                 particle.getEventStream({ deviceId: device.id, name: "romcon", auth: particleAPISession.token }).then(function (stream) {
@@ -160,7 +151,10 @@ particle.login({ username: particleAPISession.username, password: particleAPISes
 const sendEnableConfig = function (deviceId, config) {
     if (config.enabled) {
         if (particleAPISession.deviceList[deviceId].online) {
-            particle.callFunction({ deviceId: deviceId, name: 'setEnable', argument: config.enabled ? 'true' : 'false', auth: particleAPISession.token }).then(
+            const configData = {
+                enabled: config.enabled
+            };
+            particle.callFunction({ deviceId: deviceId, name: 'configuration', argument: JSON.stringify(configData), auth: particleAPISession.token }).then(
                 function (data) {
                     console.log(JSON.stringify(data));
                 },
@@ -175,7 +169,13 @@ const sendEnableConfig = function (deviceId, config) {
 const sendFillLevelConfig = function (deviceId, config) {
     if (config.fillStart && config.fillStop) {
         if (particleAPISession.deviceList[deviceId].online) {
-            particle.callFunction({ deviceId: deviceId, name: 'setFillDistances', argument: `${config.fillStart},${config.fillStop}`, auth: particleAPISession.token }).then(
+            const configData = {
+                fillDistances: {
+                    start: config.fillStart,
+                    stop: config.fillStop
+                }
+            };
+            particle.callFunction({ deviceId: deviceId, name: 'configuration', argument: JSON.stringify(configData), auth: particleAPISession.token }).then(
                 function (data) {
                     console.log(JSON.stringify(data));
                 },
@@ -185,5 +185,17 @@ const sendFillLevelConfig = function (deviceId, config) {
                 }
             );
         }
+    }
+};
+const sendConfiguration = function (deviceId) {
+    if (particleAPISession.deviceList[deviceId].online) {
+        api.getConfiguration(deviceId).then( (config) => {
+            if (config.length > 0) {
+                console.log(JSON.stringify(config));
+                const configuration = config[0];
+                sendEnableConfig(deviceId, configuration);
+                sendFillLevelConfig(deviceId, configuration);
+            }
+        });
     }
 };
