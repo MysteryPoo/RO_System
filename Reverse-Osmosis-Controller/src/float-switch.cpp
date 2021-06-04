@@ -65,14 +65,14 @@ void FloatSwitch::sample()
 void FloatSwitch::fireConfigurationMessage() const
 {
 #ifndef TESTING
-    String pinString(this->pin);
+    int pinValue = this->pin;
 #else
-    String pinString("Simulated");
+    String pinValue("Simulated");
 #endif
     JSONBufferWriter writer = SystemLog::createBuffer(256);
     writer.beginObject();
     writer.name("event").value("configuration");
-    writer.name("pin").value(pinString);
+    writer.name("pin").value(pinValue);
     writer.endObject();
     this->logger.pushMessage("float-switch", writer.buffer());
 }

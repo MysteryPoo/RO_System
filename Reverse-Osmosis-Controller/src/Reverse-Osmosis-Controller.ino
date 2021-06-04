@@ -149,6 +149,9 @@ int Configuration(String config)
     {
         return 1;
     }
+
+    syslog.pushMessage("system/configuration", config);
+
     JSONObjectIterator iter(configuration);
     while(iter.next())
     {

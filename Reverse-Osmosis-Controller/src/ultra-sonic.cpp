@@ -1,4 +1,5 @@
 
+#include "global-defines.h"
 #include "ultra-sonic.h"
 #include "application.h"
 #include "system-log.h"
@@ -61,12 +62,19 @@ int UltraSonic::getDistance()
 
 void UltraSonic::fireConfigurationMessage() const
 {
+#ifdef TESTING
+    String triggerValue("Simulated");
+    String echoValue("Simulated");
+#else
+    int triggerValue = this->triggerPin;
+    int echoValue = this->echoPin;
+#endif
     JSONBufferWriter writer = SystemLog::createBuffer(256);
 
     writer.beginObject();
     writer.name("event").value("configuration");
-    writer.name("trigger").value(this->triggerPin);
-    writer.name("echo").value(this->echoPin);
+    writer.name("trigger").value(triggerValue);
+    writer.name("echo").value(echoValue);
     writer.endObject();
 
     this->logger.pushMessage("ultra-sonic", writer.buffer());
