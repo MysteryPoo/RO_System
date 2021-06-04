@@ -14,7 +14,9 @@ FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
     stable(false),
     logger(logger)
 {
+#ifndef TESTING
     pinMode(pin, INPUT_PULLDOWN);
+#endif
     this->fireConfigurationMessage();
 }
 
@@ -35,6 +37,7 @@ bool FloatSwitch::isActive()
 
 void FloatSwitch::sample()
 {
+#ifndef TESTING
     unsigned long curMillis = millis();
     this->status = digitalRead(this->pin) == HIGH ? true : false;
     // Check if the current status reading is the same as last time.
@@ -55,14 +58,34 @@ void FloatSwitch::sample()
         this->stable = true;
         this->lastStable = curMillis;
     }
+#endif
+    this->stable = true;
 }
 
 void FloatSwitch::fireConfigurationMessage() const
 {
-    String message = JHelp::begin();
-    message += JHelp::field("event", "configuration");
-    message += JHelp::next();
-    message += JHelp::field("pin", String(pin));
-    message += JHelp::end();
-    this->logger.pushMessage("float-switch", message);
+#ifndef TESTING
+    String pinString(this->pin);
+#else
+    String pinString("Simulated");
+#endif
+    JSONBufferWriter writer = SystemLog::createBuffer(256);
+    writer.beginObject();
+    writer.name("event").value("configuration");
+    writer.name("pin").value(pinString);
+    writer.endObject();
+    this->logger.pushMessage("float-switch", writer.buffer());
 }
+
+#ifdef TESTING
+void FloatSwitch::setStatus(bool status)
+{
+    this->status = status;
+
+    JSONBufferWriter writer = SystemLog::createBuffer(256);
+    writer.beginObject();
+    writer.name("status").value(status);
+    writer.endObject();
+    this->logger.pushMessage("float-switch", writer.buffer());
+}
+#endif

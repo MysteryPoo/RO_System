@@ -1,6 +1,5 @@
 
 #include "system-log.h"
-#include "json.h"
 
 #define BURST_DELAY 2500
 #define BURST_LIMIT 10
@@ -22,9 +21,15 @@ void SystemLog::pushMessage(String component, String data)
             Message* msg = &this->messages[this->currentMessageIndex++];
             msg->component = component;
             msg->data = data;
-            msg->datetime = Particle.connected() ? Time.now() : 0l;
+            msg->datetime = Particle.connected() ? Time.now() : 0;
         }
     }
+}
+
+void SystemLog::pushMessage(String component, char* data)
+{
+    this->pushMessage(component, String(data));
+    delete[] data;
 }
         
 void SystemLog::publishLog()
@@ -40,38 +45,43 @@ void SystemLog::publishLog()
         Message* msg = &this->messages[--currentMessageIndex];
         
         Particle.publish("romcon/" + msg->component, msg->toJSON(), 60, PRIVATE);
+        
         this->lastBurst = curMillis;
     }
 }
 
+void SystemLog::simpleMessage(String label, String message)
+{
+    JSONBufferWriter writer = this->createBuffer(256);
+    writer.beginObject();
+    writer.name("message").value(message);
+    writer.endObject();
+    pushMessage(label, writer.buffer());
+}
+
 void SystemLog::trace(String message)
 {
-    String data = JHelp::begin();
-    data += JHelp::field("message", message);
-    data += JHelp::end();
-    pushMessage("TRACE", data);
+    simpleMessage("TRACE", message);
 }
 
 void SystemLog::information(String message)
 {
-    String data = JHelp::begin();
-    data += JHelp::field("message", message);
-    data += JHelp::end();
-    pushMessage("INFO", data);
+    simpleMessage("INFO", message);
 }
 
 void SystemLog::warning(String message)
 {
-    String data = JHelp::begin();
-    data += JHelp::field("message", message);
-    data += JHelp::end();
-    pushMessage("WARN", data);
+    simpleMessage("WARN", message);
 }
 
 void SystemLog::error(String message)
 {
-    String data = JHelp::begin();
-    data += JHelp::field("message", message);
-    data += JHelp::end();
-    pushMessage("ERROR", data);
+    simpleMessage("ERROR", message);
+}
+
+JSONBufferWriter SystemLog::createBuffer(int size)
+{
+    char* buffer = new char[size];
+    memset(buffer, 0, size * sizeof(char));
+    return JSONBufferWriter(buffer, size * sizeof(char));
 }

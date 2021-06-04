@@ -5,7 +5,6 @@
 #include "float-switch.h"
 #include "ultra-sonic.h"
 #include "system-log.h"
-#include "json.h"
 
 #define FLUSH_TIMER_MS 300000
 #define PUMP_INLET_DELAY_MS 5000
@@ -110,10 +109,7 @@ void ROSystem::requestState(ROSystem::State state, String requestReason)
     String error;
     String message;
 
-    char buffer[2048];
-    memset(buffer, 0, sizeof(buffer));
-
-    JSONBufferWriter jsonMessage(buffer, sizeof(buffer));
+    JSONBufferWriter jsonMessage = SystemLog::createBuffer(2048);
     jsonMessage.beginObject();
     jsonMessage.name("event").value("state-request");
     switch(state)
@@ -130,11 +126,7 @@ void ROSystem::requestState(ROSystem::State state, String requestReason)
                 error = "Failed to deactivate the pump.";
             }
             jsonMessage.name("state").value("IDLE");
-            jsonMessage.name("success").value(this->state == ROSystem::State::IDLE ? true : false);
-            jsonMessage.name("requestReason").value(requestReason);
-            jsonMessage.name("failureReason").value(error);
-            jsonMessage.endObject();
-            logger.pushMessage("system/state-request", String(jsonMessage.buffer()));
+            jsonMessage.name("success").value(this->state == ROSystem::State::IDLE);
             break;
         case ROSystem::FLUSH:
             error = "";
@@ -155,18 +147,8 @@ void ROSystem::requestState(ROSystem::State state, String requestReason)
             {
                 error = "System is currently disabled.";
             }
-            message = JHelp::begin();
-            message += JHelp::field("event", "state-request");
-            message += JHelp::next();
-            message += JHelp::field("state", "FLUSH");
-            message += JHelp::next();
-            message += JHelp::field("success", this->state == ROSystem::State::FLUSH ? true : false);
-            message += JHelp::next();
-            message += JHelp::field("requestReason", requestReason);
-            message += JHelp::next();
-            message += JHelp::field("failureReason", error);
-            message += JHelp::end();
-            logger.pushMessage("system/state-request", message);
+            jsonMessage.name("state").value("FLUSH");
+            jsonMessage.name("success").value(this->state == ROSystem::State::FLUSH);
             break;
         case ROSystem::FILL:
             error = "";
@@ -185,22 +167,18 @@ void ROSystem::requestState(ROSystem::State state, String requestReason)
             {
                 error = "System is currently disabled.";
             }
-            message = JHelp::begin();
-            message += JHelp::field("event", "state-request");
-            message += JHelp::next();
-            message += JHelp::field("state", "FILL");
-            message += JHelp::next();
-            message += JHelp::field("success", this->state == ROSystem::State::FILL ? true : false);
-            message += JHelp::next();
-            message += JHelp::field("requestReason", requestReason);
-            message += JHelp::next();
-            message += JHelp::field("failureReason", error);
-            message += JHelp::end();
-            logger.pushMessage("system/state-request", message);
+            jsonMessage.name("state").value("FILL");
+            jsonMessage.name("success").value(this->state == ROSystem::State::FILL);
             break;
         default:
             logger.error("ROSystem was requested to enter an invalid state!");
+            jsonMessage.name("state").value(this->getStateString());
+            jsonMessage.name("success").value(false);
     }
+    jsonMessage.name("requestReason").value(requestReason);
+    jsonMessage.name("failureReason").value(error);
+    jsonMessage.endObject();
+    logger.pushMessage("system/state-request", jsonMessage.buffer());
 }
 
 bool ROSystem::activatePump()

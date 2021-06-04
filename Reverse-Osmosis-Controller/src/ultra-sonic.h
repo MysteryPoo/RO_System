@@ -11,6 +11,7 @@
 #ifndef _ULTRA_SONIC_
 #define _ULTRA_SONIC_
 
+#include "global-defines.h"
 #include "ICloud.h"
 #include "IComponent.h"
 #include "IConfigurable.h"
@@ -25,6 +26,10 @@ public:
 
     virtual void cloudSetup() override;
     virtual void Update() override;
+
+#ifdef TESTING
+    void setDistance(int distance);
+#endif
     
 private:
     int triggerPin;

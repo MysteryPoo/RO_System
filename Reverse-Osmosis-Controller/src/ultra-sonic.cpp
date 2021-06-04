@@ -2,7 +2,6 @@
 #include "ultra-sonic.h"
 #include "application.h"
 #include "system-log.h"
-#include "json.h"
 
 #define US_TRIGGER_TIME 11
 #define US_INTERVAL_TIME 51
@@ -15,11 +14,12 @@ UltraSonic::UltraSonic(int trig, int echo, SystemLog &logger) :
     cooldownPeriod(0),
     logger(logger)
 {
+#ifndef TESTING
     pinMode(trig, OUTPUT);
     pinMode(echo, INPUT_PULLDOWN);
     
     digitalWrite(trig, LOW); // Start low
-
+#endif
     this->fireConfigurationMessage();
 }
 
@@ -35,6 +35,7 @@ void UltraSonic::Update()
 
 void UltraSonic::sample()
 {
+#ifndef TESTING
 	unsigned long curMillis = millis();
     if(curMillis < this->cooldownPeriod) return; // Early bail out, we're still on cooldown
     
@@ -50,6 +51,7 @@ void UltraSonic::sample()
     }
     
     this->cooldownPeriod = curMillis + US_INTERVAL_TIME;
+#endif
 }
 
 int UltraSonic::getDistance()
@@ -59,13 +61,26 @@ int UltraSonic::getDistance()
 
 void UltraSonic::fireConfigurationMessage() const
 {
-    String configurationMessage = JHelp::begin();
-    configurationMessage += JHelp::field("event", "configuration");
-    configurationMessage += JHelp::next();
-    configurationMessage += JHelp::field("trigger", this->triggerPin);
-    configurationMessage += JHelp::next();
-    configurationMessage += JHelp::field("echo", this->echoPin);
-    configurationMessage += JHelp::end();
+    JSONBufferWriter writer = SystemLog::createBuffer(256);
 
-    this->logger.pushMessage("ultra-sonic", configurationMessage);
+    writer.beginObject();
+    writer.name("event").value("configuration");
+    writer.name("trigger").value(this->triggerPin);
+    writer.name("echo").value(this->echoPin);
+    writer.endObject();
+
+    this->logger.pushMessage("ultra-sonic", writer.buffer());
 }
+
+#ifdef TESTING
+void UltraSonic::setDistance(int distance)
+{
+    this->distance = distance;
+
+    JSONBufferWriter writer = SystemLog::createBuffer(64);
+    writer.beginObject();
+    writer.name("distance").value(distance);
+    writer.endObject();
+    this->logger.pushMessage("ultra-sonic", writer.buffer());
+}
+#endif

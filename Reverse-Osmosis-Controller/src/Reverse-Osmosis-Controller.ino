@@ -32,20 +32,14 @@
         
 */
 
+#include "global-defines.h"
 #include "system-log.h"
 #include "ultra-sonic.h"
 #include "relay.h"
 #include "float-switch.h"
 #include "ultra-sonic.h"
 #include "ROSystem.h"
-#include "json.h"
-
-#define TESTING 1
-
-#ifdef TESTING
-#include "test-float-switch.h"
-#include "test-ultra-sonic.h"
-#endif
+#include <vector>
 
 #define SECONDS_PER_DAY 86400
 #define TEN_MINUTES_MS 600000
@@ -61,13 +55,8 @@ Relay pump(Relay::Name::COMPONENT_PUMP, syslog, D7, true);
 Relay inlet(Relay::Name::COMPONENT_INLETVALVE, syslog, D6, true);
 Relay flush(Relay::Name::COMPONENT_FLUSHVALVE, syslog, D5, true);
 
-#ifdef TESTING
-TestFloatSwitch fs(A0, syslog);
-TestUltraSonic us(A3, A4, syslog);
-#else
-FloatSwitch fs(A0, syslog);
 UltraSonic us(A3, A4, syslog);
-#endif
+FloatSwitch fs(A0, syslog);
 
 ROSystem ro(pump, inlet, flush, fs, us, syslog);
 
@@ -222,10 +211,7 @@ void sysRestart_Helper()
 
 void sendTick()
 {
-    char *buffer = new char[2048];
-    memset(buffer, 0, 2048 * sizeof(char));
-
-    JSONBufferWriter message(buffer, 2048 * sizeof(char));
+    JSONBufferWriter message = SystemLog::createBuffer(2048);
     message.beginObject();
     message.name("event").value("tick");
     message.name("messageQueueSize").value(syslog.messageQueueSize());
@@ -234,7 +220,5 @@ void sendTick()
     message.name("enabled").value(ro.getEnabled());
     message.endObject();
 
-    syslog.pushMessage("system/tick", String(message.buffer()));
-
-    delete[] buffer;
+    syslog.pushMessage("system/tick", message.buffer());
 }

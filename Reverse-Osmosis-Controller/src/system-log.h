@@ -13,43 +13,9 @@
 #define _SYSTEM_LOG_
 
 #include "application.h"
-#include <vector>
-#include "json.h"
+#include "message.h"
 
 #define SYSTEMLOG_MESSAGEBUFFERSIZE 32
-
-class Message
-{
-public:
-    String component;
-    long datetime;
-    String data;
-
-    Message()
-    : component("undefined")
-    , datetime(0)
-    , data("\"undefined\"")
-    {}
-
-    String toJSON() {
-        String json = JHelp::begin();
-        json += JHelp::field("component", this->component);
-        json += JHelp::next();
-        if(this->datetime != 0l)
-        {
-            json += JHelp::field("datetime", this->datetime);
-        }
-        else
-        {
-            json += JHelp::field("datetime", "undefined");
-        }
-        json += JHelp::next();
-        json += JHelp::field("data", this->data, true);
-        json += JHelp::end();
-
-        return json;
-    }
-};
 
 class SystemLog
 {
@@ -61,8 +27,10 @@ public:
     void warning(String message);
     void error(String message);
     void pushMessage(String component, String data);
+    void pushMessage(String component, char* data);
     boolean isEmpty() { return currentMessageIndex == 0; }
     int messageQueueSize() { return currentMessageIndex; }
+    static JSONBufferWriter createBuffer(int size);
 
     boolean enabled;
     
@@ -72,6 +40,7 @@ private:
     unsigned long lastBurst;
     
     boolean isFull() { return currentMessageIndex == SYSTEMLOG_MESSAGEBUFFERSIZE; }
+    void simpleMessage(String label, String message);
 
 };
 

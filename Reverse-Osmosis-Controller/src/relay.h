@@ -16,36 +16,40 @@
 #ifndef _RELAY_
 #define _RELAY_
 
+#include "global-defines.h"
 #include "application.h"
+#include "IConfigurable.h"
 
 class SystemLog;
 
-class Relay
+class Relay : IConfigurable
 {
-    public:
-        enum Name
-        {
-            COMPONENT_PUMP,
-            COMPONENT_INLETVALVE,
-            COMPONENT_FLUSHVALVE
-        };
-        enum State
-        {
-            ON,
-            OFF
-        };
-        String toString();
-    private:
-        Name name;
-        int pin;
-        bool activeLow;
-        SystemLog &logger;
-        State state;
+public:
+    enum Name
+    {
+        COMPONENT_PUMP,
+        COMPONENT_INLETVALVE,
+        COMPONENT_FLUSHVALVE
+    };
+    enum State
+    {
+        ON,
+        OFF
+    };
+    Relay(Name name, SystemLog &logger, int pin, bool activeLow = false);
+    void set(const Relay::State state);
+    const Relay::State get() const {return this->state;}
+
+private:
+    Name name;
+    int pin;
+    bool activeLow;
+    SystemLog &logger;
+    State state;
+
+    const String toString() const;
+    virtual void fireConfigurationMessage() const override;
         
-    public:
-        Relay(Name name, SystemLog &logger, int pin, bool activeLow = false);
-        void set(Relay::State state);
-        Relay::State get() {return this->state;}
         
 };
 

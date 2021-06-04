@@ -14,7 +14,6 @@
 */
 
 #include "relay.h"
-#include "json.h"
 #include "system-log.h"
 
 Relay::Relay(Name name, SystemLog &logger, int pin, bool activeLow) : 
@@ -23,22 +22,13 @@ Relay::Relay(Name name, SystemLog &logger, int pin, bool activeLow) :
     activeLow(activeLow),
     logger(logger)
 {
-    String configMsg = JHelp::begin();
-    configMsg += JHelp::field("event", "configuration");
-    configMsg += JHelp::next();
-    configMsg += JHelp::field("name", this->toString());
-    configMsg += JHelp::next();
-    configMsg += JHelp::field("pin", String(pin));
-    configMsg += JHelp::next();
-    configMsg += JHelp::field("activeLow", activeLow ? "true" : "false");
-    configMsg += JHelp::end();
-    this->logger.pushMessage("relay/configuration", configMsg);
     pinMode(pin, OUTPUT);
-    
     this->set(Relay::State::OFF);
+
+    fireConfigurationMessage();
 }
 
-String Relay::toString()
+const String Relay::toString() const
 {
     switch(this->name)
     {
@@ -53,29 +43,40 @@ String Relay::toString()
     }
 }
 
-void Relay::set(Relay::State newState)
+void Relay::set(const Relay::State newState)
 {
     if(this->pin < 0) // Bail out early if not configured
     {
         this->logger.error("Attempting to set an unconfigured relay.[" + toString() + "]");
         return;
     }
-    String message = JHelp::begin();
-    message += JHelp::field("event", "set");
-    message += JHelp::next();
-    message += JHelp::field("name", this->toString());
-    message += JHelp::next();
+    JSONBufferWriter writer = SystemLog::createBuffer(128);
+    writer.beginObject();
+    writer.name("event").value("set");
+    writer.name("name").value(this->toString());
     if(newState == Relay::State::ON)
     {
-        message += JHelp::field("value", "ON");
+        writer.name("value").value("ON");
         digitalWrite(this->pin, this->activeLow ? LOW : HIGH);
     }
     else
     {
-        message += JHelp::field("value", "OFF");
+        writer.name("value").value("OFF");
         digitalWrite(this->pin, this->activeLow ? HIGH : LOW);
     }
-    message += JHelp::end();
-    this->logger.pushMessage("relay/set", message);
+    writer.endObject();
+    this->logger.pushMessage("relay/set", writer.buffer());
     this->state = newState;
+}
+
+void Relay::fireConfigurationMessage() const
+{
+    JSONBufferWriter writer = SystemLog::createBuffer(128);
+    writer.beginObject();
+    writer.name("event").value("configuration");
+    writer.name("name").value(this->toString());
+    writer.name("pin").value(this->pin);
+    writer.name("activeLow").value(activeLow);
+    writer.endObject();
+    this->logger.pushMessage("relay/configuration", writer.buffer());
 }
