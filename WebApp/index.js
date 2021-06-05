@@ -87,6 +87,7 @@ app.get('/:deviceId/configuration', (req, res) => {
 
 app.post('/:deviceId/configuration', (req, res) => {
     api.setConfiguration(req.params.deviceId, req.body);
+    sendConfiguration(req.params.deviceId, req.body);
     sendEnableConfig(req.params.deviceId, req.body);
     sendFillLevelConfig(req.params.deviceId, req.body);
     res.send(req.body);
@@ -187,14 +188,26 @@ const sendFillLevelConfig = function (deviceId, config) {
         }
     }
 };
-const sendConfiguration = function (deviceId) {
+const sendConfiguration = function (deviceId, config = null) {
     if (particleAPISession.deviceList[deviceId].online) {
         api.getConfiguration(deviceId).then( (config) => {
             if (config.length > 0) {
                 console.log(JSON.stringify(config));
                 const configuration = config[0];
-                sendEnableConfig(deviceId, configuration);
-                sendFillLevelConfig(deviceId, configuration);
+                if (config) {
+                    for(key, value in config) {
+                        configuration[key] = value;
+                    }
+                }
+                particle.callFunction({ deviceId: deviceId, name: 'configuration', argument: JSON.stringify(configuration), auth: particleAPISession.token }).then(
+                    function (data) {
+                        console.log(JSON.stringify(data));
+                    },
+                    function (error) {
+                        console.log(error);
+                        sendConfiguration(deviceId, configuration);
+                    }
+                );
             }
         });
     }
