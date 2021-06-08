@@ -8,13 +8,13 @@
             v-if="showCurrent"
           >
             <h3>enabled: {{ config.enabled }}</h3>
-            <h3>fillStart: {{ config.fillStart }}</h3>
-            <h3>fillStop: {{ config.fillStop }}</h3>
-            <h3>sonicHeight: {{ config.sonicHeight }}</h3>
-            <h3>floatHeight: {{ config.floatHeight }}</h3>
-            <h3>diameter: {{ config.diameter }}</h3>
-            <h3>pumpCooldown: {{ config.pumpCooldown }}</h3>
-            <h3>tickRate: {{ config.tickRate }}</h3>
+            <h3>fillStart: {{ config.fillDistances.start }} (cm)</h3>
+            <h3>fillStop: {{ config.fillDistances.stop }} (cm)</h3>
+            <h3>sonicHeight: {{ config.sonicHeight }} (in)</h3>
+            <h3>floatHeight: {{ config.floatHeight }} (in)</h3>
+            <h3>diameter: {{ config.diameter }} (in)</h3>
+            <h3>pumpCooldown: {{ config.pumpCooldown }} (ms)</h3>
+            <h3>tickRate: {{ config.tickRate }} (ms)</h3>
           </b-card>
           <b-card
             title="Set Configuration"
@@ -84,7 +84,7 @@
                 id="input-group-pump-cooldown"
                 label="Pump Cooldown Time (minutes)"
                 label-for="input-pump-cooldown"
-                description="The amount of time that must be 
+                description="The amount of time that must be
                   waited before turning the pump back on. (Minutes)"
               >
                 <b-form-input
@@ -130,8 +130,10 @@ export default {
       deviceId: null,
       config: {
         enabled: false,
-        fillStart: 0,
-        fillStop: 0,
+        fillDistances: {
+          start: 0,
+          stop: 0,
+        },
         sonicHeight: 0,
         floatHeight: 0,
         diameter: 0,
@@ -140,8 +142,10 @@ export default {
       },
       reqConfig: {
         enabled: false,
-        fillStart: 0,
-        fillStop: 0,
+        fillDistances: {
+          start: 0,
+          stop: 0,
+        },
         sonicHeight: 0,
         floatHeight: 0,
         diameter: 0,
@@ -182,13 +186,15 @@ export default {
       const calculatedFillStart = calculatedFillStop + this.inchesToCentimeters(12);
       const postConfig = {
         enabled: this.reqConfig.enabled === 'Enabled',
-        fillStart: Math.round(calculatedFillStart),
-        fillStop: Math.round(calculatedFillStop),
+        fillDistances: {
+          start: Math.round(calculatedFillStart),
+          stop: Math.round(calculatedFillStop),
+        },
         sonicHeight: this.reqConfig.sonicHeight,
         floatHeight: this.reqConfig.floatHeight,
         diameter: this.reqConfig.diameter,
-        pumpCooldown: this.reqConfig.pumpCooldown,
-        tickRate: this.reqConfig.tickRate,
+        pumpCooldown: this.reqConfig.pumpCooldown * 60 * 1000,
+        tickRate: this.reqConfig.tickRate * 60 * 1000,
       };
       console.log(await (await Api.postConfiguration(this.deviceId, postConfig)).json()); // eslint-disable-line
       this.onDeviceSelected(this.deviceId);
@@ -199,13 +205,15 @@ export default {
         event.preventDefault();
       }
       this.reqConfig.enabled = this.config.enabled ? 'Enabled' : 'Disabled';
-      this.reqConfig.fillStart = this.config.fillStart;
-      this.reqConfig.fillStop = this.config.fillStop;
+      this.reqConfig.fillDistances = {
+        start: this.config.fillDistances.start,
+        stop: this.config.fillDistances.stop,
+      };
       this.reqConfig.sonicHeight = this.config.sonicHeight;
       this.reqConfig.floatHeight = this.config.floatHeight;
       this.reqConfig.diameter = this.config.diameter;
-      this.reqConfig.pumpCooldown = this.config.pumpCooldown;
-      this.reqConfig.tickRate = this.config.tickRate;
+      this.reqConfig.pumpCooldown = this.config.pumpCooldown / 60 / 1000;
+      this.reqConfig.tickRate = this.config.tickRate / 60 / 1000;
     },
     showToast(title, message, variant) {
       this.$bvToast.toast(message, {

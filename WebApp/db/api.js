@@ -38,8 +38,10 @@ async function setConfiguration(device, data) {
             $set: {
                 deviceId: device,
                 enabled: data.enabled,
-                fillStart: data.fillStart,
-                fillStop: data.fillStop,
+                fillDistances: {
+                    start: data.fillDistances.start,
+                    stop: data.fillDistances.stop,
+                },
                 sonicHeight: data.sonicHeight,
                 floatHeight: data.floatHeight,
                 diameter: data.diameter,
