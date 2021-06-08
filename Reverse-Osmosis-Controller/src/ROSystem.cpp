@@ -25,7 +25,7 @@ ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, FloatSwitch &floatSw
     flushedToday(false),
     totalPumpTime(0),
     totalPumpRuns(0),
-    lastPumpTime(millis() - PUMP_FREQUENCY_MS),
+    lastPumpTime(0),
     flushStartedTime(0),
     flushDuration(FLUSH_TIMER_MS),
     pumpRunTime(0),
