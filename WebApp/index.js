@@ -88,8 +88,6 @@ app.get('/:deviceId/configuration', (req, res) => {
 app.post('/:deviceId/configuration', (req, res) => {
     api.setConfiguration(req.params.deviceId, req.body);
     sendConfiguration(req.params.deviceId, req.body);
-    sendEnableConfig(req.params.deviceId, req.body);
-    sendFillLevelConfig(req.params.deviceId, req.body);
     res.send(req.body);
 });
  
@@ -109,6 +107,9 @@ particle.login({ username: particleAPISession.username, password: particleAPISes
                 console.log(`Found device: ${device.name}`);
                 particleAPISession.deviceList[device.id] = device;
                 api.addDevice(device.id);
+                if(device.online) {
+                    sendConfiguration(device.id);
+                }
             }
             devices.body.forEach( (device) => {
                 particle.getEventStream({ deviceId: device.id, name: "spark/status", auth: particleAPISession.token }).then(function (stream) {
@@ -116,8 +117,10 @@ particle.login({ username: particleAPISession.username, password: particleAPISes
                     stream.on('event', function (data) {
                         console.log(JSON.stringify(data));
                         console.log(`Device {${particleAPISession.deviceList[data.coreid].name}} registered as {${data.data}}`);
-                        particleAPISession.deviceList[data.coreid].online = data.data === "online" ? true : false;
-                        sendConfiguration(data.coreid);
+                        particleAPISession.deviceList[data.coreid].online = data.data === "online";
+                        if(particleAPISession.deviceList[data.coreid].online) {
+                            sendConfiguration(data.coreid);
+                        }
                     });
                 });
                 particle.getEventStream({ deviceId: device.id, name: "romcon", auth: particleAPISession.token }).then(function (stream) {
@@ -133,8 +136,7 @@ particle.login({ username: particleAPISession.username, password: particleAPISes
                         }
                         console.log(JSON.stringify(dataParsed));
                         api.storeMessage(dataParsed.coreid, dataParsed);
-                        statusCheck(device, particleAPISession.deviceList[device.coreid].online, true);
-                        particleAPISession.deviceList[device.coreid].online = true;
+                        particleAPISession.deviceList[device.id].online = true;
                     });
                 });
             });
@@ -155,15 +157,7 @@ const sendEnableConfig = function (deviceId, config) {
             const configData = {
                 enabled: config.enabled
             };
-            particle.callFunction({ deviceId: deviceId, name: 'configuration', argument: JSON.stringify(configData), auth: particleAPISession.token }).then(
-                function (data) {
-                    console.log(JSON.stringify(data));
-                },
-                function (error) {
-                    console.log(error);
-                    sendEnableConfig(deviceId, config);
-                }
-            );
+            sendConfiguration(deviceId, configData);
         }
     }
 };
@@ -176,27 +170,19 @@ const sendFillLevelConfig = function (deviceId, config) {
                     stop: config.fillStop
                 }
             };
-            particle.callFunction({ deviceId: deviceId, name: 'configuration', argument: JSON.stringify(configData), auth: particleAPISession.token }).then(
-                function (data) {
-                    console.log(JSON.stringify(data));
-                },
-                function (error) {
-                    console.log(error);
-                    sendFillLevelConfig(deviceId, config);
-                }
-            );
+            sendConfiguration(deviceId, configData);
         }
     }
 };
-const sendConfiguration = function (deviceId, config = null) {
+const sendConfiguration = function (deviceId, newConfig = null) {
     if (particleAPISession.deviceList[deviceId].online) {
         api.getConfiguration(deviceId).then( (config) => {
             if (config.length > 0) {
                 console.log(JSON.stringify(config));
                 const configuration = config[0];
-                if (config) {
-                    for(key, value in config) {
-                        configuration[key] = value;
+                if (newConfig) {
+                    for(key in newConfig) {
+                        configuration[key] = newConfig[key];
                     }
                 }
                 particle.callFunction({ deviceId: deviceId, name: 'configuration', argument: JSON.stringify(configuration), auth: particleAPISession.token }).then(
