@@ -6,7 +6,7 @@
 
 #define US_TRIGGER_TIME 11
 #define US_INTERVAL_TIME 51
-#define CM_PER_MICROSECOND 0.0343
+#define CM_PER_MICROSECOND 0.0343f
 
 UltraSonic::UltraSonic(int trig, int echo, SystemLog &logger) :
     triggerPin(trig),
