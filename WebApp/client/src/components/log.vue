@@ -4,13 +4,13 @@
     <h1 v-if="show">
       Status: {{ status ? "Online" : `Offline (Last Online: ${lastOnline})` }}
     </h1>
-    <h1 v-if="show">Current State: {{ currentState }}</h1>
+    <h1 v-if="show">Current State: {{ status ? currentState : "Offline" }}</h1>
     <line-chart
-      :chart-data="dataCollection"
+      :chartData="dataCollection"
       :options="waterLevelChartOptions"
       v-if="show"
     ></line-chart>
-    <b-container>
+    <b-container v-if="show">
       <b-row>
         <b-col>
           <label for="fromDate">Choose a date</label>
@@ -33,14 +33,16 @@
         </b-col>
       </b-row>
     </b-container>
-    <label for="resolution">Resolution</label>
-    <b-form-spinbutton
-      id="resolution"
-      @change="updateResolution"
-      v-model="resolution"
-      min="10"
-      max="100">
-    </b-form-spinbutton>
+    <b-container v-if="show">
+      <label for="resolution">Resolution</label>
+      <b-form-spinbutton
+        id="resolution"
+        @change="updateResolution"
+        v-model="resolution"
+        min="10"
+        max="100">
+      </b-form-spinbutton>
+    </b-container>
   </div>
 </template>
 
@@ -97,6 +99,7 @@ export default {
         },
       },
       deviceConfig: null,
+      refreshInterval: null,
     };
   },
   methods: {
@@ -105,7 +108,7 @@ export default {
         this.deviceId = deviceId;
         this.show = true;
         this.deviceConfig = await Api.fetchConfiguration(deviceId);
-        this.status = await Api.fetchStatus(deviceId);
+        this.status = (await Api.fetchStatus(deviceId)).online;
         this.lastTick = await Api.fetchTick(deviceId);
         this.lastTick = this.lastTick.reverse();
         if (this.lastTick.length > 0) {
@@ -123,6 +126,9 @@ export default {
         }
       } else {
         this.show = false;
+      }
+      if (!this.refreshInterval) {
+        this.refreshInterval = setInterval(() => this.fetchApi(this.deviceId), 5000);
       }
     },
     fillData() {
