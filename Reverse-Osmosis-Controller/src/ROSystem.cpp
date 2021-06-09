@@ -53,14 +53,13 @@ void ROSystem::update(bool tankFull, unsigned short distance)
     unsigned long curMillis = millis();
     static unsigned long lastAttempt = curMillis;
 
-    if(curMillis < lastAttempt + WARNING_DELAY)
-    {
-        return;
-    }
-    
     switch(this->state)
     {
         case ROSystem::IDLE:
+            if(curMillis < lastAttempt + WARNING_DELAY)
+            {
+                return; // Bail out early if we're checking inside Idle too often.
+            }
             // Check if the tank is considered not-full and it has plenty of room to fill some
             if(!tankFull && distance > this->fillStartDistance)
             {
@@ -78,10 +77,10 @@ void ROSystem::update(bool tankFull, unsigned short distance)
             break;
         case ROSystem::FLUSH:
             // End flushing routine after designated time
-            if(tankFull || curMillis > this->flushStartedTime + this->flushDuration)
+            if(!this->enabled || tankFull || curMillis > this->flushStartedTime + this->flushDuration)
             {
                 this->flushedToday = true;
-                this->requestState(ROSystem::State::IDLE, "Flush complete.");
+                this->requestState(ROSystem::State::IDLE, this->enabled ? "Flush complete." : "System has been disabled.");
                 lastAttempt = curMillis;
             }
             break;
