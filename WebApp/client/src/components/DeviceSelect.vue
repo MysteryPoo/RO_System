@@ -38,9 +38,6 @@ export default {
       window.localStorage.deviceId = device;
       this.$emit('deviceSelected', device);
     },
-    getSelectedDevice() {
-      return this.deviceSelected;
-    },
   },
 };
 </script>
