@@ -13,7 +13,7 @@ async function fetchStatus(deviceId) {
 async function fetchTick(
   deviceId,
   dateTo = new Date(),
-  dateFrom = new Date((new Date()).getTime() - (7 * 24 * 60 * 60 * 1000)),
+  dateFrom = new Date((dateTo).getTime() - (7 * 24 * 60 * 60 * 1000)),
   resolution = 10,
 ) {
   if (deviceId !== null) {
