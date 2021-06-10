@@ -95,7 +95,7 @@ async function getLastTick(
         } catch (err) {
             console.log(err);
         }
-        return returnList;
+        return returnList.reverse();
     } else {
         return Promise.reject(Error("Device does not exist."));
     }
