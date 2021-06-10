@@ -4,7 +4,6 @@ require('dotenv').config();
 // Core includes
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const morgan = require('morgan');
 
 // API includes
@@ -29,7 +28,7 @@ const particleAPISession = {
  
 app.use(morgan('tiny'));
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 app.use(checkAuth);
 
 function checkAuth(req, res, next) {
@@ -151,29 +150,6 @@ particle.login({ username: particleAPISession.username, password: particleAPISes
     }
 );
 
-const sendEnableConfig = function (deviceId, config) {
-    if (config.enabled) {
-        if (particleAPISession.deviceList[deviceId].online) {
-            const configData = {
-                enabled: config.enabled
-            };
-            sendConfiguration(deviceId, configData);
-        }
-    }
-};
-const sendFillLevelConfig = function (deviceId, config) {
-    if (config.fillStart && config.fillStop) {
-        if (particleAPISession.deviceList[deviceId].online) {
-            const configData = {
-                fillDistances: {
-                    start: config.fillStart,
-                    stop: config.fillStop
-                }
-            };
-            sendConfiguration(deviceId, configData);
-        }
-    }
-};
 const sendConfiguration = function (deviceId, newConfig = null) {
     if (particleAPISession.deviceList[deviceId].online) {
         api.getConfiguration(deviceId).then( (config) => {
