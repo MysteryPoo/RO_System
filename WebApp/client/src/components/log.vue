@@ -63,11 +63,13 @@ export default {
         } else if (log.component === 'ERROR') {
           colorization = 'danger';
         }
+        const criticality = log.component === 'system/restart' ? 'Restart' : log.component;
+        const message = log.component === 'system/restart' ? log.data.reason : log.data.message;
         logs.push({
           dbKey: log._id,
           datetime: new Date(log.datetime),
-          criticality: log.component,
-          message: log.data.message,
+          criticality,
+          message,
           _rowVariant: colorization,
         });
       });

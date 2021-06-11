@@ -101,7 +101,7 @@ async function getLastTick(
 
 function getLog(device) {
     if(deviceList[device]) {
-        return deviceList[device].find({'component': { $in: ['ERROR', 'TRACE', 'INFO'] }}, {sort: {datetime: -1}, limit: 20});
+        return deviceList[device].find({'component': { $in: ['ERROR', 'TRACE', 'INFO', 'system/restart'] }}, {sort: {datetime: -1}, limit: 20});
     } else {
         return Promise.reject(Error("Device does not exist."));
     }
