@@ -27,6 +27,23 @@ async function fetchTick(
   return Promise.reject(Error('Device Id Required'));
 }
 
+async function fetchLogs(deviceId) {
+  if (deviceId !== null) {
+    const fetchLogsFetch = await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/${deviceId}/logs?secret=${process.env.VUE_APP_API_SECRET}`);
+    return fetchLogsFetch.json();
+  }
+  return Promise.reject(Error('Device Id Required'));
+}
+
+async function clearLog(deviceId, logId) {
+  if (deviceId !== null) {
+    return fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/${deviceId}/logs/${logId}?secret=${process.env.VUE_APP_API_SECRET}`, {
+      method: 'DELETE',
+    });
+  }
+  return Promise.reject(Error('Device Id Required'));
+}
+
 async function fetchState(deviceId) {
   if (deviceId !== null) {
     const currentStateFetch = await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/${deviceId}/currentState?secret=${process.env.VUE_APP_API_SECRET}`);
@@ -54,6 +71,8 @@ export default {
   fetchDeviceList,
   fetchStatus,
   fetchTick,
+  fetchLogs,
+  clearLog,
   fetchState,
   fetchConfiguration,
   postConfiguration,
