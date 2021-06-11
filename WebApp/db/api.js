@@ -1,5 +1,6 @@
 const Joi = require('joi');
 const { db, client } = require('./connection');
+const { ObjectId } = require('mongodb');
 
 const eventSchema = Joi.object().keys({
     component: Joi.string().required(),
@@ -60,13 +61,10 @@ async function setConfiguration(device, data) {
 async function getLastTick(
     device,
     dateTo = new Date(),
-    dateFrom = new Date((new Date()).getTime() - (7 * 24 * 60 * 60 * 1000)),
+    dateFrom = new Date(dateTo.getTime() - (7 * 24 * 60 * 60 * 1000)),
     resolution = 10
 ) {
     if(deviceList[device]) {
-        console.log(dateTo.toLocaleString());
-        console.log(dateFrom.toLocaleString());
-        console.log(resolution);
         const returnList = [];
         try{
             const database = client.db('test');
@@ -101,6 +99,31 @@ async function getLastTick(
     }
 }
 
+function getLog(device) {
+    if(deviceList[device]) {
+        return deviceList[device].find({'component': { $in: ['ERROR', 'TRACE', 'INFO'] }}, {sort: {datetime: -1}, limit: 20});
+    } else {
+        return Promise.reject(Error("Device does not exist."));
+    }
+}
+
+async function clearLog(device, log) {
+    if(deviceList[device]) {
+        try {
+            const database = client.db('test');
+            const collection = database.collection(device);
+            const query = {
+                '_id': ObjectId(log),
+            };
+            return collection.deleteOne(query);
+        } catch (err) {
+            console.log(err);
+        }
+    } else {
+        return Promise.reject(Error("Device does not exist."));
+    }
+}
+
 function getCurrentState(device) {
     if(deviceList[device]) {
         return deviceList[device].find({'component': 'system/state-request', 'data.success': true}, {sort: {datetime: -1}, limit: 20});
@@ -123,6 +146,8 @@ module.exports = {
     getConfiguration,
     storeMessage,
     getLastTick,
+    getLog,
+    clearLog,
     getCurrentState,
     getPumpStates,
 };

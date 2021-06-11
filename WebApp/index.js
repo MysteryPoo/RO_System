@@ -54,40 +54,60 @@ app.get('/deviceList', (req, res) => {
 app.get('/:deviceId/lastTick', (req, res) => {
     const { deviceId } = req.params;
     const { to, from, resolution } = req.query;
-    console.log(req.query);
     api.getLastTick(deviceId, new Date(Number(to)), new Date(Number(from)), Number(resolution)).then( (data) => {
         res.json(data);
-    });
+    })
+    .catch(err => {console.log(err)});
 });
 
 app.get('/:deviceId/currentState', (req, res) => {
     api.getCurrentState(req.params.deviceId).then( (data) => {
         res.json(data);
-    });
+    })
+    .catch(err => {console.log(err)});;
 });
 
 app.get('/:deviceId/pumpState', (req, res) => {
     api.getPumpStates(req.params.deviceId).then( (data) => {
         res.json(data);
-    });
+    })
+    .catch(err => {console.log(err)});;
 });
 
 app.get('/:deviceId/status', (req, res) => {
-    res.send({
-        online: particleAPISession.deviceList[req.params.deviceId].online
-    });
+    const device = particleAPISession.deviceList[req.params.deviceId];
+    const status = {
+        online: device ? device.online : "Unknown"
+    };
+    res.send(status);
 });
 
 app.get('/:deviceId/configuration', (req, res) => {
     api.getConfiguration(req.params.deviceId).then( (data) => {
         res.json(data);
-    });
+    })
+    .catch(err => {console.log(err)});;
 });
 
 app.post('/:deviceId/configuration', (req, res) => {
     api.setConfiguration(req.params.deviceId, req.body);
     sendConfiguration(req.params.deviceId, req.body);
     res.send(req.body);
+});
+
+app.get('/:deviceId/logs', (req, res) => {
+    api.getLog(req.params.deviceId, req.body)
+    .then( (data) => {
+        res.json(data);
+    })
+    .catch(err => console.log(err));
+});
+
+app.delete('/:deviceId/logs/:logId', (req, res) => {
+    api.clearLog(req.params.deviceId, req.params.logId)
+    .then((res) => {})
+    .catch(err => {console.log(err)});
+    res.send();
 });
  
 const port = process.env.PORT || 4000;
