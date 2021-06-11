@@ -125,16 +125,13 @@ void loop()
 
 int sysRestart(String data)
 {
-    char buffer[1024];
-    memset(buffer, 0, sizeof(buffer));
-
-    JSONBufferWriter message(buffer, sizeof(buffer));
+    JSONBufferWriter message = SystemLog::createBuffer(2048);
     message.beginObject();
     message.name("event").value("restart");
     message.name("reason").value(data);
     message.endObject();
     ro.shutdown();
-    syslog.pushMessage("system/restart", String(message.buffer()));
+    syslog.pushMessage("system/restart", message.buffer());
     syslog.enabled = false;
     restartSystem.start();
     timeToRestart = Time.now() + SECONDS_PER_DAY;
