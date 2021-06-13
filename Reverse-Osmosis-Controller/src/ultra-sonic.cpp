@@ -6,6 +6,7 @@
 
 #define US_TRIGGER_TIME 11
 #define US_INTERVAL_TIME 51
+#define US_SAMPLE_COUNT 10
 #define CM_PER_MICROSECOND 0.0343f
 
 UltraSonic::UltraSonic(int trig, int echo, SystemLog &logger) :
@@ -40,15 +41,37 @@ void UltraSonic::sample()
 	unsigned long curMillis = millis();
     if(curMillis < this->cooldownPeriod) return; // Early bail out, we're still on cooldown
     
-    digitalWrite(this->triggerPin, HIGH); // Start trigger
-    delayMicroseconds(US_TRIGGER_TIME);
-    digitalWrite(this->triggerPin, LOW); // End trigger
-    
-    unsigned long pulse = pulseIn(this->echoPin, HIGH) / 2ul;
-    unsigned long sample = (unsigned long)(((float)pulse * CM_PER_MICROSECOND) / 2.f);
-    if(sample != 0)
+    unsigned long sampleTotal = 0ul;
+    unsigned long validReadings = 0ul;
+    for (int sample = 0; sample < US_SAMPLE_COUNT; ++sample)
     {
-        this->distance = ((unsigned long)this->distance + sample) / 2ul;
+        ATOMIC_BLOCK()
+        {
+            digitalWrite(this->triggerPin, HIGH); // Start trigger
+            delayMicroseconds(US_TRIGGER_TIME);
+            digitalWrite(this->triggerPin, LOW); // End trigger
+            
+            unsigned long thisReading = pulseIn(this->echoPin, HIGH);
+
+            if(thisReading != 0)
+            {
+                sampleTotal += thisReading;
+                validReadings += 1ul;
+            }
+        }
+    }
+
+    if(validReadings > 0)
+    {
+        unsigned long averageSample = sampleTotal / validReadings;
+        unsigned long averageSampleOneWay = averageSample / 2ul;
+        unsigned long convertedToCM = (unsigned long)((float)averageSampleOneWay * CM_PER_MICROSECOND);
+        this->distance = convertedToCM;
+    }
+    else
+    {
+        // TODO: If this is a normal occurrence, remove this log message to reduce spam
+        this->logger.warning("Ultra Sonic sensor failed to read.");
     }
     
     this->cooldownPeriod = curMillis + US_INTERVAL_TIME;
