@@ -32,6 +32,8 @@
         
 */
 
+SYSTEM_THREAD(ENABLED)
+
 #include "global-defines.h"
 #include "system-log.h"
 #include "ultra-sonic.h"
