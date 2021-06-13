@@ -187,13 +187,16 @@ bool ROSystem::activatePump()
     
     if(this->lastPumpTime + this->pumpCooldown < curMillis)
     {
-        this->inlet.set(Relay::State::ON);
-        delay(PUMP_INLET_DELAY_MS);
+        SINGLE_THREADED_BLOCK()
+        {
+            this->inlet.set(Relay::State::ON);
+            delay(PUMP_INLET_DELAY_MS);
 
-        curMillis = millis(); // Not sure this is necessary
-        this->pumpRunTime = curMillis;
+            curMillis = millis(); // Not sure this is necessary
+            this->pumpRunTime = curMillis;
 
-        this->pump.set(Relay::State::ON);
+            this->pump.set(Relay::State::ON);
+        }
         ++this->totalPumpRuns;
         return true;
     }
@@ -218,10 +221,13 @@ bool ROSystem::deactivatePump()
         this->totalPumpTime += curMillis - this->pumpRunTime;
         this->lastPumpTime = curMillis;
 
-        this->pump.set(Relay::State::OFF);
-        delay(PUMP_INLET_DELAY_MS);
-        this->inlet.set(Relay::State::OFF);
-        
+        SINGLE_THREADED_BLOCK()
+        {
+            this->pump.set(Relay::State::OFF);
+            delay(PUMP_INLET_DELAY_MS);
+            this->inlet.set(Relay::State::OFF);
+        }
+
         return true;
     }
     else if(curMillis > lastWarning + WARNING_DELAY)
