@@ -217,6 +217,7 @@ void sendTick()
     message.beginObject();
     message.name("event").value("tick");
     message.name("messageQueueSize").value(syslog.messageQueueSize());
+    message.name("version").value(VERSION_STRING);
     message.name("floatSwitch").value(fs.isActive());
     message.name("ultra-sonic").value(us.getDistance());
     message.name("enabled").value(ro.getEnabled());
