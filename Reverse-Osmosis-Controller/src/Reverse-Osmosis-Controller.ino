@@ -6,8 +6,6 @@
     Thornton Labs
     Copyright 2019
     
-    Version: 1.0
-    
     Description:
     Control the RO pump and valves to sustain water reservoir.
     Run a flush cycle at most once every 24-hour cycle, only if the system has ran that day.
