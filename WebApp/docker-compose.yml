@@ -6,11 +6,38 @@ services:
     restart: always
     volumes:
       - romcon_mongo_volume:/data/db
+#    ports:
+#      - "27017:27017"
+  
+  redis:
+    container_name: romcon_redis
+    image: redis
+    restart: always
+#    ports:
+#      - "6379:6379"
+  
+  stream:
+    container_name: romcon_stream
+    depends_on: 
+      - mongo
+      - redis
+    build: ./streamService
+    image: ${DOCKER_USERNAME}/romcon-stream
+    restart: always
+    links:
+      - mongo
+      - redis
+    environment: 
+      - PARTICLE_USERNAME=${PARTICLE_USERNAME}
+      - PARTICLE_PASSWORD=${PARTICLE_PASSWORD}
+      - MONGODB_URI=romcon_mongo
+      - REDIS_HOST=romcon_redis
   
   backend:
     container_name: romcon_backend
     depends_on:
       - mongo
+      - redis
     build: .
     image: ${DOCKER_USERNAME}/romcon-backend
     restart: always
@@ -18,11 +45,13 @@ services:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     links:
       - mongo
+      - redis
     environment: 
       - PORT=${BACKEND_PORT}
       - PARTICLE_USERNAME=${PARTICLE_USERNAME}
       - PARTICLE_PASSWORD=${PARTICLE_PASSWORD}
       - MONGODB_URI=romcon_mongo
+      - REDIS_HOST=romcon_redis
       - API_SECRET=${API_SECRET}
   
   frontend:

@@ -1,11 +1,25 @@
-const monk = require('monk'); // TODO: Remove this requirement, move over to the mongodb driver completely.
 const { MongoClient } = require("mongodb");
+const mongoose = require('mongoose');
+
 const connectionString = process.env.MONGODB_URI;
-const db = monk(connectionString);
-const client = new MongoClient(`mongodb://${connectionString}?retryWrites=true`);
-client.connect();
+const mongo = new MongoClient(`mongodb://${connectionString}?retryWrites=true`, {
+    useUnifiedTopology: true,
+});
+const databaseName = 'test';
+
+mongoose.connect(`mongodb://${connectionString}/${databaseName}`, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+});
+mongoose.set('useCreateIndex', true);
+mongoose.connection.on('error', err => console.log(err));
+mongoose.Promise = global.Promise;
+
+mongo.connect();
+const database = mongo.db(databaseName);
+const configCollection = database.collection('configuration');
  
 module.exports = {
-    db,
-    client,
+    database,
+    configCollection,
 };

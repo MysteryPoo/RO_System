@@ -1,6 +1,9 @@
 const Joi = require('joi');
-const { db, client } = require('./connection');
+const { database, configCollection } = require('./connection');
 const { ObjectId } = require('mongodb');
+const redis = require('redis');
+const particle = require('./particle');
+const { promisify } = require('util');
 
 const eventSchema = Joi.object().keys({
     component: Joi.string().required(),
@@ -8,30 +11,47 @@ const eventSchema = Joi.object().keys({
     data: Joi.object().required()
 });
 
-const configuration = db.get('configuration');
-const deviceList = [];
+const redisClient = redis.createClient({
+    host: process.env.REDIS_HOST,
+    port: 6379,
+});
+redisClient.on('error', (err) => {
+    console.log(err);
+});
+redisClient.setAsync = promisify(redisClient.set).bind(redisClient);
+redisClient.getAsync = promisify(redisClient.get).bind(redisClient);
 
-function storeMessage(device, message) {
+async function getDeviceList(userId) {
+    return particle.getDeviceList();
+}
+
+async function getDeviceStatus(deviceId) {
+    const status = await redisClient.getAsync(`${deviceId}_status`) === 'true';
+    return {
+        online: status,
+    };
+}
+
+async function storeMessage(device, message) {
     const result = eventSchema.validate(message.data);
     if(result.error == null) {
-        return deviceList[device].insert(message.data);
+        const collection = database.collection(device);
+        return collection.insertOne(message.data);
     } else {
         return Promise.reject(result.error);
     }
 }
 
-function addDevice(deviceName) {
-    deviceList[deviceName] = db.get(deviceName);
-}
-
-function getConfiguration(device) {
-    return configuration.find({'deviceId': device});
+async function getConfiguration(device) {
+    const query = {
+        deviceId: device,
+    };
+    const configuration = configCollection.findOne(query);
+    return configuration;
 }
 
 async function setConfiguration(device, data) {
     if(device) {
-        const database = client.db('test');
-        const collection = database.collection('configuration');
         const query = {
             deviceId: device,
         };
@@ -53,7 +73,7 @@ async function setConfiguration(device, data) {
         const options = {
             upsert: true,
         };
-        return collection.updateOne(query, update, options);
+        return configCollection.updateOne(query, update, options);
     }
     return Promise.reject(Error("Invalid device selected."));
 }
@@ -62,86 +82,111 @@ async function getLastTick(
     device,
     dateTo = new Date(),
     dateFrom = new Date(dateTo.getTime() - (7 * 24 * 60 * 60 * 1000)),
-    resolution = 10
+    resolution = 10,
 ) {
-    if(deviceList[device]) {
-        const returnList = [];
-        try{
-            const database = client.db('test');
-            const collection = database.collection(device);
-            const query = {
-                component: 'system/tick',
-                datetime: {
-                    $gt: dateFrom,
-                    $lt: dateTo,
-                },
-            };
-            const options = {
-                sort: {
-                    datetime: -1,
-                },
-            }
-            const recordCount = await collection.countDocuments(query, options);
-            const interval = Math.max(1, Math.round(recordCount / resolution));
-            for(let i = 0; i < recordCount; i += interval) {
-                const cursor = collection.find(query, options).skip(i).limit(1);
-                const tickList = await cursor.toArray();
-                if(tickList.length > 0) {
-                    returnList.push(tickList[0]);
-                }
-            }
-        } catch (err) {
-            console.log(err);
+    const collection = database.collection(device);
+    const returnList = [];
+    try{
+        const query = {
+            component: 'system/tick',
+            datetime: {
+                $gt: dateFrom,
+                $lt: dateTo,
+            },
+        };
+        const options = {
+            sort: {
+                datetime: -1,
+            },
         }
-        return returnList.reverse();
-    } else {
-        return Promise.reject(Error("Device does not exist."));
+        const recordCount = await collection.countDocuments(query, options);
+        const interval = Math.max(1, Math.round(recordCount / resolution));
+        for(let i = 0; i < recordCount; i += interval) {
+            const cursor = collection.find(query, options).skip(i).limit(1);
+            const tickList = await cursor.toArray();
+            if(tickList.length > 0) {
+                returnList.push(tickList[0]);
+            }
+        }
+    } catch (err) {
+        console.log(err);
     }
+    return returnList.reverse();
 }
 
-function getLog(device) {
-    if(deviceList[device]) {
-        return deviceList[device].find({'component': { $in: ['ERROR', 'TRACE', 'INFO', 'system/restart'] }}, {sort: {datetime: -1}, limit: 20});
-    } else {
-        return Promise.reject(Error("Device does not exist."));
-    }
+async function getLog(device) {
+    const collection = database.collection(device);
+    const query = {
+        component: {
+            $in: [
+                'ERROR',
+                'TRACE',
+                'INFO',
+                'system/restart',
+            ],
+        },
+    };
+    const options = {
+        sort: {
+            datetime: -1,
+        },
+        limit: 20,
+    };
+    const cursor = collection.find(query, options);
+    const resultsArray = await cursor.toArray();
+    return resultsArray;
 }
 
 async function clearLog(device, log) {
-    if(deviceList[device]) {
-        try {
-            const database = client.db('test');
-            const collection = database.collection(device);
-            const query = {
-                '_id': ObjectId(log),
-            };
-            return collection.deleteOne(query);
-        } catch (err) {
-            console.log(err);
-        }
-    } else {
-        return Promise.reject(Error("Device does not exist."));
+    try {
+        const collection = database.collection(device);
+        const query = {
+            '_id': ObjectId(log),
+        };
+        return collection.deleteOne(query);
+    } catch (err) {
+        console.log(err);
+        return Promise.reject(Error("Failed to clear log message."));
     }
 }
 
-function getCurrentState(device) {
-    if(deviceList[device]) {
-        return deviceList[device].find({'component': 'system/state-request', 'data.success': true}, {sort: {datetime: -1}, limit: 20});
-    } else {
-        return [{
-            data: {
-                state: 'UNKNOWN'
-            }
-        }];
-    }
+async function getCurrentState(device) {
+    const collection = database.collection(device);
+    const query = {
+        component: 'system/state-request',
+        'data.success': true,
+    };
+    const options = {
+        sort: {
+            datetime: -1,
+        },
+        limit: 20,
+    };
+    const cursor = collection.find(query, options);
+    const resultsArray = await cursor.toArray();
+    return resultsArray;
 }
 
-function getPumpStates(device) {
-    return deviceList[device].find({'component': 'relay/set', 'data.name': 'COMPONENT_PUMP'}, {sort: {datetime: -1}, limit: 20});
+async function getPumpStates(device) {
+    const collection = database.collection(device);
+    const query = {
+        component: 'relay/set',
+        'data.name': 'COMPONENT_PUMP',
+    };
+    const options = {
+        sort: {
+            datetime: -1,
+        },
+        limit: 20,
+    };
+    const cursor = collection.find(query, options);
+    const resultsArray = await cursor.toArray();
+    return resultsArray;
 }
  
 module.exports = {
-    addDevice,
+    getDeviceList,
+    getDeviceStatus,
     setConfiguration,
     getConfiguration,
     storeMessage,
