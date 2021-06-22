@@ -1,13 +1,38 @@
+const unauthorizedMessage = 'Unauthorized';
+const deviceIdRequiredMessage = 'Device Id Required';
+
 async function fetchDeviceList() {
-  return (await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/deviceList?secret=${process.env.VUE_APP_API_SECRET}`)).json();
+  const response = await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/deviceList`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${window.localStorage.token}`,
+    },
+  });
+  if (response.status === 200) {
+    return response.json();
+  }
+  if (response.status === 401) {
+    return Promise.reject(Error(unauthorizedMessage));
+  }
+  return Promise.reject(Error('Unknown error.'));
 }
 
 async function fetchStatus(deviceId) {
   if (deviceId !== null) {
-    const prFetchStatus = await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/${deviceId}/status?secret=${process.env.VUE_APP_API_SECRET}`);
-    return prFetchStatus.json();
+    const response = await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/devices/${deviceId}/status`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${window.localStorage.token}`,
+      },
+    });
+    if (response.status === 200) {
+      return response.json();
+    }
+    if (response.status === 401) {
+      return Promise.reject(Error(unauthorizedMessage));
+    }
   }
-  return Promise.reject(Error('Device Id Required'));
+  return Promise.reject(Error(deviceIdRequiredMessage));
 }
 
 async function fetchTick(
@@ -17,53 +42,135 @@ async function fetchTick(
   resolution = 10,
 ) {
   if (deviceId !== null) {
-    let uriString = `http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/${deviceId}/lastTick?secret=${process.env.VUE_APP_API_SECRET}`;
-    uriString += `&to=${dateTo.getTime()}`;
+    let uriString = `http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/devices/${deviceId}/ticks`;
+    uriString += `?to=${dateTo.getTime()}`;
     uriString += `&from=${dateFrom.getTime()}`;
     uriString += `&resolution=${resolution}`;
-    const promise = await fetch(uriString);
-    return promise.json();
+    const response = await fetch(uriString, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${window.localStorage.token}`,
+      },
+    });
+    if (response.status === 200) {
+      return response.json();
+    }
+    if (response.status === 401) {
+      return Promise.reject(Error(unauthorizedMessage));
+    }
+    return Promise.reject(Error('Failed to retrieve devices.'));
   }
-  return Promise.reject(Error('Device Id Required'));
+  return Promise.reject(Error(deviceIdRequiredMessage));
 }
 
 async function fetchLogs(deviceId) {
   if (deviceId !== null) {
-    const fetchLogsFetch = await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/${deviceId}/logs?secret=${process.env.VUE_APP_API_SECRET}`);
-    return fetchLogsFetch.json();
+    const response = await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/devices/${deviceId}/logs`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${window.localStorage.token}`,
+      },
+    });
+    if (response.status === 200) {
+      return response.json();
+    }
+    if (response.status === 401) {
+      return Promise.reject(Error(unauthorizedMessage));
+    }
   }
-  return Promise.reject(Error('Device Id Required'));
+  return Promise.reject(Error(deviceIdRequiredMessage));
 }
 
 async function clearLog(deviceId, logId) {
   if (deviceId !== null) {
-    return fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/${deviceId}/logs/${logId}?secret=${process.env.VUE_APP_API_SECRET}`, {
+    const response = await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/devices/${deviceId}/logs/${logId}`, {
       method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${window.localStorage.token}`,
+      },
     });
+    if (response.status === 200) {
+      return response;
+    }
+    if (response.status === 401) {
+      return Promise.reject(Error(unauthorizedMessage));
+    }
   }
-  return Promise.reject(Error('Device Id Required'));
+  return Promise.reject(Error(deviceIdRequiredMessage));
 }
 
 async function fetchState(deviceId) {
   if (deviceId !== null) {
-    const currentStateFetch = await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/${deviceId}/currentState?secret=${process.env.VUE_APP_API_SECRET}`);
+    const currentStateFetch = await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/devices/${deviceId}/currentState`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${window.localStorage.token}`,
+      },
+    });
     return currentStateFetch.json();
   }
-  return Promise.reject(Error('Device Id Required'));
+  return Promise.reject(Error(deviceIdRequiredMessage));
 }
 
 async function fetchConfiguration(deviceId) {
-  return (await (await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/${deviceId}/configuration?secret=${process.env.VUE_APP_API_SECRET}`)).json())[0];
+  if (deviceId !== null) {
+    const response = await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/devices/${deviceId}/configuration`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${window.localStorage.token}`,
+      },
+    });
+    if (response.status === 200) {
+      const configArray = await response.json();
+      return configArray[0];
+    }
+    if (response.status === 401) {
+      return Promise.reject(Error(unauthorizedMessage));
+    }
+  }
+  return Promise.reject(Error(deviceIdRequiredMessage));
 }
 
 async function postConfiguration(deviceId, config) {
-  return fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/${deviceId}/configuration?secret=${process.env.VUE_APP_API_SECRET}`, {
+  if (deviceId !== null) {
+    const response = await fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/devices/${deviceId}/configuration`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${window.localStorage.token}`,
+      },
+      body: JSON.stringify(config),
+    });
+    if (response.status === 200) {
+      return response;
+    }
+    if (response.status === 401) {
+      return Promise.reject(Error(unauthorizedMessage));
+    }
+  }
+  return Promise.reject(Error(deviceIdRequiredMessage));
+}
+
+function login(formData) {
+  return fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/auth/login`, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(config),
+    body: JSON.stringify(formData),
+  });
+}
+
+function signup(formData) {
+  return fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/auth/signup`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(formData),
   });
 }
 
@@ -76,4 +183,6 @@ export default {
   fetchState,
   fetchConfiguration,
   postConfiguration,
+  login,
+  signup,
 };

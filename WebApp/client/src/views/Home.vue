@@ -65,26 +65,38 @@ export default {
       logData: [],
     };
   },
+  mounted() {
+    if (window.localStorage.token === 'null') {
+      this.$router.push('Login');
+    }
+  },
   methods: {
     async fetchApi(deviceId) {
       let shouldShow = true;
-      if (deviceId && deviceId !== 'null') {
+      if (deviceId && deviceId !== 'null'
+      && window.localStorage.token !== 'null') {
         this.deviceId = deviceId;
-        this.deviceConfig = await Api.fetchConfiguration(deviceId);
-        this.status = (await Api.fetchStatus(deviceId)).online;
-        await this.updateGraphSettings(undefined, undefined);
-        await this.refreshLog();
-        if (this.lastTick.length > 0) {
-          this.lastOnline = (new Date(this.lastTick[0].datetime)).toLocaleString();
-        } else {
-          shouldShow = false;
-          this.lastOnline = null;
-        }
-        this.stateList = await Api.fetchState(deviceId);
-        if (this.stateList.length > 0) {
-          this.currentState = this.stateList[0].data.state;
-        } else {
-          this.currentState = 'Unknown';
+        try {
+          this.deviceConfig = await Api.fetchConfiguration(deviceId);
+          this.status = (await Api.fetchStatus(deviceId)).online;
+          await this.updateGraphSettings(undefined, undefined);
+          await this.refreshLog();
+          if (this.lastTick.length > 0) {
+            this.lastOnline = (new Date(this.lastTick[0].datetime)).toLocaleString();
+          } else {
+            shouldShow = false;
+            this.lastOnline = null;
+          }
+          this.stateList = await Api.fetchState(deviceId);
+          if (this.stateList.length > 0) {
+            this.currentState = this.stateList[0].data.state;
+          } else {
+            this.currentState = 'Unknown';
+          }
+        } catch (err) {
+          if (err.message === 'Unauthorized') {
+            this.$router.push('Login');
+          }
         }
       } else {
         shouldShow = false;

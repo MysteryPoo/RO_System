@@ -154,6 +154,11 @@ export default {
       },
     };
   },
+  mounted() {
+    if (window.localStorage.token === 'null') {
+      this.$router.push('Login');
+    }
+  },
   methods: {
     async onDeviceSelected(device) {
       if (device && device !== 'null') {
