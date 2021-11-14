@@ -70,6 +70,7 @@ private:
     unsigned long flushStartedTime;
     unsigned int flushDuration;
     unsigned long pumpRunTime;
+    bool firstPump;
 
     // Configuration
     bool enabled;

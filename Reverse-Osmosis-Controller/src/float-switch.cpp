@@ -58,8 +58,9 @@ void FloatSwitch::sample()
         this->stable = true;
         this->lastStable = curMillis;
     }
-#endif
+#else
     this->stable = true;
+#endif
 }
 
 void FloatSwitch::fireConfigurationMessage() const

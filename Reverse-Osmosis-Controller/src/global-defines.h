@@ -2,6 +2,6 @@
 #define _GLOBAL_DEFINES_
 
 #define VERSION_STRING "0.0.0"
-#define TESTING 1
+//#define TESTING 1
 
 #endif

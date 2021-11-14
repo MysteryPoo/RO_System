@@ -76,7 +76,7 @@ void simulateFull()
 Timer runTestTimer(TEN_MINUTES_MS, simulateFull, false);
 Timer tickTimer(THIRTY_SECONDS_MS, sendTick, false);
 #else
-Timer tickTimer(TEN_MINUTES_MS, sendTick, false);
+Timer tickTimer(THIRTY_SECONDS_MS, sendTick, false);
 #endif
 
 

@@ -5,7 +5,7 @@
 #include "system-log.h"
 
 #define US_TRIGGER_TIME 11
-#define US_INTERVAL_TIME 51
+#define US_INTERVAL_TIME 10000
 #define US_SAMPLE_COUNT 10
 #define CM_PER_MICROSECOND 0.0343f
 

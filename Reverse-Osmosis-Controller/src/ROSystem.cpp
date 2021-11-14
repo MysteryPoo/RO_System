@@ -9,8 +9,8 @@
 #define FLUSH_TIMER_MS 300000
 #define PUMP_INLET_DELAY_MS 5000
 #define PUMP_FREQUENCY_MS 500000 // Default
-#define FILL_START_DISTANCE_CM 80
-#define FILL_STOP_DISTANCE_CM 20
+#define FILL_START_DISTANCE_CM 160
+#define FILL_STOP_DISTANCE_CM 40
 #define PUMP_RUN_MIN_TO_FLUSH 2
 #define WARNING_DELAY 60000
 
@@ -32,7 +32,8 @@ ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, FloatSwitch &floatSw
     enabled(true),
     fillStartDistance(FILL_START_DISTANCE_CM),
     fillStopDistance(FILL_STOP_DISTANCE_CM),
-    pumpCooldown(PUMP_FREQUENCY_MS)
+    pumpCooldown(PUMP_FREQUENCY_MS),
+    firstPump(true)
 {
     
 }
@@ -185,7 +186,7 @@ bool ROSystem::activatePump()
     unsigned long curMillis = millis();
     static unsigned long lastWarning = curMillis;
     
-    if(this->lastPumpTime + this->pumpCooldown < curMillis)
+    if(this->firstPump || this->lastPumpTime + this->pumpCooldown < curMillis)
     {
         SINGLE_THREADED_BLOCK()
         {
@@ -198,6 +199,7 @@ bool ROSystem::activatePump()
             this->pump.set(Relay::State::ON);
         }
         ++this->totalPumpRuns;
+        this->firstPump = false;
         return true;
     }
     else
