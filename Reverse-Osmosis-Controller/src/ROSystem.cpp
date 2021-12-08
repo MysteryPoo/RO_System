@@ -29,11 +29,11 @@ ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, FloatSwitch &floatSw
     flushStartedTime(0),
     flushDuration(FLUSH_TIMER_MS),
     pumpRunTime(0),
+    firstPump(true),
     enabled(true),
     fillStartDistance(FILL_START_DISTANCE_CM),
     fillStopDistance(FILL_STOP_DISTANCE_CM),
-    pumpCooldown(PUMP_FREQUENCY_MS),
-    firstPump(true)
+    pumpCooldown(PUMP_FREQUENCY_MS)
 {
     
 }
