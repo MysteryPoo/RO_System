@@ -47,6 +47,8 @@ SYSTEM_THREAD(ENABLED)
 #define ONE_HOUR_MS 3600000
 #define RESTART_DELAY 10000 // Delay before attempting to restart after manual request
 
+ApplicationWatchdog *watchDog;
+
 time32_t timeToRestart;
 bool lastFloatSwitch = false;
 
@@ -82,6 +84,8 @@ Timer tickTimer(THIRTY_SECONDS_MS, sendTick, false);
 
 void setup()
 {
+    System.enableFeature(FEATURE_RESET_INFO);
+    watchDog = new ApplicationWatchdog(60000, watchDogHandler, 1536);
     timeToRestart = Time.now() + SECONDS_PER_DAY;
     
     Particle.function("reset", sysRestart);
@@ -99,6 +103,19 @@ void setup()
     componentsToUpdate.push_back(&fs);
     componentsToUpdate.push_back(&us);
     componentsToUpdate.push_back(&ro);
+
+    if (System.resetReason() == RESET_REASON_USER)
+    {
+        uint32_t resetData = System.resetReasonData();
+
+        JSONBufferWriter message = SystemLog::createBuffer(2048);
+        message.beginObject();
+        message.name("event").value("reset");
+        message.name("reason").value(resetData);
+        message.endObject();
+
+        syslog.pushMessage("system/reset", message.buffer());
+    }
 }
 
 void loop()
@@ -222,4 +239,9 @@ void sendTick()
     message.endObject();
 
     syslog.pushMessage("system/tick", message.buffer());
+}
+
+void watchDogHandler(void)
+{
+    System.reset(1, RESET_NO_WAIT);
 }
