@@ -36,6 +36,7 @@ private:
     int echoPin;
     int distance;
     unsigned long cooldownPeriod;
+    LEDStatus* samplingUltraSonicStatus;
 
     virtual void sample();
     virtual void fireConfigurationMessage() const override;

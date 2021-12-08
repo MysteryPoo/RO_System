@@ -22,7 +22,13 @@ UltraSonic::UltraSonic(int trig, int echo, SystemLog &logger) :
     
     digitalWrite(trig, LOW); // Start low
 #endif
+    samplingUltraSonicStatus = new LEDStatus(RGB_COLOR_ORANGE);
     this->fireConfigurationMessage();
+}
+
+UltraSonic::~UltraSonic()
+{
+    delete samplingUltraSonicStatus;
 }
 
 void UltraSonic::cloudSetup()
@@ -41,11 +47,13 @@ void UltraSonic::sample()
 	unsigned long curMillis = millis();
     if(curMillis < this->cooldownPeriod) return; // Early bail out, we're still on cooldown
     
+    samplingUltraSonicStatus->setActive();
     unsigned long sampleTotal = 0ul;
     unsigned long validReadings = 0ul;
     for (int sample = 0; sample < US_SAMPLE_COUNT; ++sample)
     {
-        ATOMIC_BLOCK()
+        ApplicationWatchdog::checkin();
+        SINGLE_THREADED_BLOCK()
         {
             digitalWrite(this->triggerPin, HIGH); // Start trigger
             delayMicroseconds(US_TRIGGER_TIME);
@@ -59,7 +67,9 @@ void UltraSonic::sample()
                 validReadings += 1ul;
             }
         }
+        Particle.process();
     }
+    samplingUltraSonicStatus->setActive(false);
 
     if(validReadings > 0)
     {
