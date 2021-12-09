@@ -5,8 +5,8 @@
 #include "system-log.h"
 
 #define US_TRIGGER_TIME 11
-#define US_INTERVAL_TIME 10000
-#define US_SAMPLE_COUNT 10
+#define US_INTERVAL_TIME 30000
+#define US_SAMPLE_COUNT 3
 #define CM_PER_MICROSECOND 0.0343f
 
 UltraSonic::UltraSonic(int trig, int echo, SystemLog &logger) :
@@ -47,14 +47,15 @@ void UltraSonic::sample()
 	unsigned long curMillis = millis();
     if(curMillis < this->cooldownPeriod) return; // Early bail out, we're still on cooldown
     
-    samplingUltraSonicStatus->setActive();
     unsigned long sampleTotal = 0ul;
     unsigned long validReadings = 0ul;
     for (int sample = 0; sample < US_SAMPLE_COUNT; ++sample)
     {
         ApplicationWatchdog::checkin();
+        
         SINGLE_THREADED_BLOCK()
         {
+            samplingUltraSonicStatus->setActive();
             digitalWrite(this->triggerPin, HIGH); // Start trigger
             delayMicroseconds(US_TRIGGER_TIME);
             digitalWrite(this->triggerPin, LOW); // End trigger
@@ -66,10 +67,10 @@ void UltraSonic::sample()
                 sampleTotal += thisReading;
                 validReadings += 1ul;
             }
+            samplingUltraSonicStatus->setActive(false);
         }
         Particle.process();
     }
-    samplingUltraSonicStatus->setActive(false);
 
     if(validReadings > 0)
     {
@@ -84,7 +85,7 @@ void UltraSonic::sample()
         this->logger.warning("Ultra Sonic sensor failed to read.");
     }
     
-    this->cooldownPeriod = curMillis + US_INTERVAL_TIME;
+    this->cooldownPeriod = millis() + US_INTERVAL_TIME;
 #endif
 }
 
