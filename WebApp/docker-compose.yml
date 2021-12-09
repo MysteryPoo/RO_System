@@ -6,15 +6,15 @@ services:
     restart: always
     volumes:
       - romcon_mongo_volume:/data/db
-#    ports:
-#      - "27017:27017"
+    ports:
+      - "27017:27017"
   
   redis:
     container_name: romcon_redis
     image: redis
     restart: always
-#    ports:
-#      - "6379:6379"
+    ports:
+      - "6379:6379"
   
   stream:
     container_name: romcon_stream
