@@ -20,6 +20,9 @@ const redisConfig = {
   scope: 'romcon',
 };
 
+console.log("REDIS_HOST is set to: ");
+console.log(process.env.REDIS_HOST);
+
 const redisClient = redis.createClient({
   host: process.env.REDIS_HOST,
   port: 6379,

@@ -11,10 +11,12 @@ services:
   
   redis:
     container_name: romcon_redis
-    image: redis
+    image: 'bitnami/redis:latest'
     restart: always
-    ports:
-      - "6379:6379"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+#    ports:
+#      - "6379:6379"
   
   stream:
     container_name: romcon_stream
@@ -58,7 +60,7 @@ services:
     container_name: romcon_frontend
     depends_on:
       - backend
-    build: ./client
+    build: ./client_new
     image: ${DOCKER_USERNAME}/romcon-frontend
     restart: always
     ports:
