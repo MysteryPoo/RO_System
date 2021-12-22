@@ -2,13 +2,13 @@
   <div>
     <VeeForm v-slot="{ handleSubmit }" as="div">
       <form @submit="handleSubmit($event, onSubmit)">
-        <Field name="field" :rules="usernameRules" />
-        <ErrorMessage name="field" />
+        <Field name="username" :rules="usernameRules" />
+        <ErrorMessage name="username" />
 
         <Field name="password" :rules="passwordRules" />
         <ErrorMessage name="password" />
 
-        <button>Submit</button>
+        <button>Sign Up</button>
       </form>
     </VeeForm>
   </div>
@@ -27,7 +27,6 @@ export default {
   },
   data() {
     return {
-      passwordVerified: false,
       form: {
         username: '',
         password: '',
@@ -42,7 +41,7 @@ export default {
   },
   methods: {
     async onSubmit(values) {
-      //event.preventDefault();
+      console.log(values);
       const response = await Api.signup(values);
       if (response.status === 200) {
         const responseJson = await response.json();
@@ -52,6 +51,8 @@ export default {
         } else {
           this.showToast('Login Failed', responseJson.message, 'danger');
         }
+      } else {
+        console.error(`Error: ${response}`);
       }
     },
     onReset(event) {

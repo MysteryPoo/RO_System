@@ -164,6 +164,7 @@ function login(formData) {
 }
 
 function signup(formData) {
+  console.log(formData);
   return fetch(`http://${window.location.hostname}:${process.env.VUE_APP_API_PORT}/auth/signup`, {
     method: 'POST',
     headers: {

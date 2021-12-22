@@ -16,7 +16,7 @@
     "joi": "^17.3.0",
     "jsonwebtoken": "^8.5.1",
     "mongodb": "^3.6.4",
-    "mongoose": "^5.12.14",
+    "mongoose": "^6.1.2",
     "morgan": "^1.10.0",
     "node-fetch": "^2.6.1",
     "particle-api-js": "^9.1.0",

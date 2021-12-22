@@ -15,9 +15,6 @@
 <script>
 export default {
   name: 'App',
-  components: {
-    
-  }
 }
 </script>
 
@@ -29,5 +26,6 @@ export default {
   text-align: center;
   color: #2c3e50;
   margin-top: 60px;
+  height: 100vh;
 }
 </style>

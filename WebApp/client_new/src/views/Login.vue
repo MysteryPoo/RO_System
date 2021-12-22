@@ -1,57 +1,50 @@
 <template>
   <div>
-    <b-form @submit="onSubmit" @reset="onReset">
-      <b-form-group
-        id="form-group-username"
-        label="Username"
-        label-for="username"
-        description="Username"
-      >
-        <b-form-input
-          id="username"
-          v-model="form.username"
-          placeholder="Username"
-          required
-        />
-      </b-form-group>
-      <b-form-group
-        id="form-group-password"
-        label="Password"
-        label-for="password"
-        description="Password"
-      >
-        <b-form-input
-          id="password"
-          v-model="form.password"
-          placeholder="Password"
-          type="password"
-          required
-        />
-      </b-form-group>
-      <b-button type="submit" variant="primary">Login</b-button>
-    </b-form>
+    <div class="p-d-flex p-flex-column p-jc-center">
+      <div class="p-field">
+        <label for="username">Username</label>
+        <InputText id="username" type="text" v-model="form.username" />
+      </div>
+      <div class="p-field">
+        <label for="password">Password</label>
+        <Password id="password" v-model="form.password" />
+      </div>
+      
+      <Button label="Login"/>
+    </div>
   </div>
 </template>
 
 <script>
 import Api from '@/api/Api';
+import * as yup from 'yup';
+import Button from 'primevue/button';
+import InputText from 'primevue/inputtext';
+import Password from 'primevue/password';
 
 export default {
+  components: {
+    Button,
+    InputText,
+    Password,
+  },
   data() {
     return {
       form: {
         username: '',
         password: '',
       },
+      usernameRules: yup.string().required().min(4).label('Username'),
+      passwordRules: yup.string().required().min(8).label('Password'),
     };
   },
   mounted() {
     window.localStorage.token = null;
   },
   methods: {
-    async onSubmit(event) {
-      event.preventDefault();
-      const response = await Api.login(this.form);
+    async onSubmit(values) {
+      console.log(values);
+      const response = await Api.login(values);
       if (response.status === 200) {
         const responseJson = await response.json();
         if (responseJson.success) {
@@ -74,3 +67,14 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.box {
+  background-color: var(--surface-e);
+  text-align: center;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  border-radius: 4px;
+  box-shadow: 0 2px 1px -1px rgba(0,0,0,.2), 0 1px 1px 0 rgba(0,0,0,.14), 0 1px 3px 0 rgba(0,0,0,.12);
+}
+</style>
