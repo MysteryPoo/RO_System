@@ -46,7 +46,9 @@ void ROSystem::cloudSetup()
 
 void ROSystem::Update()
 {
-    this->update(this->floatSwitch.isActive(), this->ultraSonic.getDistance());
+    //this->update(this->floatSwitch.isActive(), this->ultraSonic.getDistance());
+    // Temporary until Ultra-Sonic issue is fixed
+    this->update(this->floatSwitch.isActive(), this->fillStartDistance + 1);
 }
 
 void ROSystem::update(bool tankFull, unsigned short distance)
@@ -372,7 +374,7 @@ void ROSystem::ConfigurePumpCooldown(int newPumpCooldown)
 {
     if(newPumpCooldown > 0)
     {
-        this->pumpCooldown = newPumpCooldown;
+        this->pumpCooldown = (unsigned int) newPumpCooldown;
     }
 }
 

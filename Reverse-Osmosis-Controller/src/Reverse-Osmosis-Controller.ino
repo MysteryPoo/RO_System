@@ -58,7 +58,7 @@ Relay inlet(Relay::Name::COMPONENT_INLETVALVE, syslog, D6, true);
 Relay flush(Relay::Name::COMPONENT_FLUSHVALVE, syslog, D5, true);
 
 UltraSonic us(A3, A4, syslog);
-FloatSwitch fs(A0, syslog);
+FloatSwitch fs(D4, syslog);
 
 ROSystem ro(pump, inlet, flush, fs, us, syslog);
 
@@ -135,7 +135,7 @@ void loop()
     // Notify if the float switch was triggered.
     if(fs.isActive() && !lastFloatSwitch)
     {
-        syslog.error("Float Switch has been triggered!");
+        syslog.warning("Float Switch has been triggered!");
     }
     lastFloatSwitch = fs.isActive();
 }
