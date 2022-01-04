@@ -1,0 +1,35 @@
+<template>
+    <div class="p-d-flex p-ai-center">
+        <Dropdown v-if="deviceList && deviceList.length === 0" placeholder="Loading..." loading></Dropdown>
+        <Dropdown v-else-if="deviceList" v-model="selectedDevice" :options="deviceList" @change="onDeviceSelected" optionLabel="name" placeholder="Select device..."/>
+    </div>
+</template>
+
+<script setup>
+import { ref, defineEmits, onMounted } from 'vue';
+import Dropdown from 'primevue/dropdown';
+
+const emit = defineEmits(['deviceSelected']);
+const deviceList = ref([]);
+const deviceId = ref(null);
+const selectedDevice = ref(null);
+
+const onDeviceSelected = (event) => {
+    window.localStorage.deviceId = event.value.id;
+    emit('deviceSelected', event.value.id);
+};
+
+onMounted( async () => {
+    deviceId.value = window.localStorage.deviceId;
+    const deviceListRequest = await fetch('http://localhost:4000/deviceList');
+    if(deviceListRequest.status === 200) {
+        deviceList.value = await deviceListRequest.json();
+        if(deviceId.value) {
+            selectedDevice.value = deviceList.value.find( (element) => element.id === deviceId.value);
+            emit('deviceSelected', deviceId.value);
+        }
+    } else {
+        // Todo: add error toast
+    }
+});
+</script>

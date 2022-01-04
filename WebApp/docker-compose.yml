@@ -45,7 +45,7 @@ services:
     container_name: romcon_frontend
     depends_on:
       - backend
-    build: ./client_new
+    build: ./frontend
     image: ${DOCKER_USERNAME}/romcon-frontend
     restart: always
     ports:

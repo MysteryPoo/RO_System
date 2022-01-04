@@ -84,7 +84,11 @@ passport.use(
     },
     async (token, done) => {
       try {
-        const user = await UserModel.findOne({ username: token.user.username });
+        const collection = database.collection('users');
+        const query = {
+          username: token.user.username
+        };
+        const user = await collection.findOne(query);
         if(!user) {
           return done(null, false, { message: 'User not found.' });
         }
