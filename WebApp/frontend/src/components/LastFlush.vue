@@ -29,7 +29,7 @@ const unauthorizedMessage = "Unauthorized";
 const deviceIdRequiredMessage = "No device provided";
 
 const getTimeOfLastFlush = async (deviceId) => {
-    if (deviceId !== null) {
+  if (deviceId !== null) {
     const request = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/flush`, {
       method: 'GET',
       headers: {
@@ -48,8 +48,9 @@ const getTimeOfLastFlush = async (deviceId) => {
     if (request.status === 401) {
       throw Error(unauthorizedMessage);
     }
+  } else {
+    throw Error(deviceIdRequiredMessage);
   }
-  throw Error(deviceIdRequiredMessage);
 };
 
 watch( () => props.deviceId, async (newDeviceId) => {
