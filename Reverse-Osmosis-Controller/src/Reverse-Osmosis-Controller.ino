@@ -47,6 +47,8 @@ SYSTEM_THREAD(ENABLED)
 #define ONE_HOUR_MS 3600000
 #define RESTART_DELAY 10000 // Delay before attempting to restart after manual request
 
+ApplicationWatchdog *watchDog;
+
 time32_t timeToRestart;
 bool lastFloatSwitch = false;
 
@@ -56,7 +58,7 @@ Relay inlet(Relay::Name::COMPONENT_INLETVALVE, syslog, D6, true);
 Relay flush(Relay::Name::COMPONENT_FLUSHVALVE, syslog, D5, true);
 
 UltraSonic us(A3, A4, syslog);
-FloatSwitch fs(A0, syslog);
+FloatSwitch fs(D4, syslog);
 
 ROSystem ro(pump, inlet, flush, fs, us, syslog);
 
@@ -76,12 +78,14 @@ void simulateFull()
 Timer runTestTimer(TEN_MINUTES_MS, simulateFull, false);
 Timer tickTimer(THIRTY_SECONDS_MS, sendTick, false);
 #else
-Timer tickTimer(TEN_MINUTES_MS, sendTick, false);
+Timer tickTimer(THIRTY_SECONDS_MS, sendTick, false);
 #endif
 
 
 void setup()
 {
+    System.enableFeature(FEATURE_RESET_INFO);
+    watchDog = new ApplicationWatchdog(60000, watchDogHandler, 1536);
     timeToRestart = Time.now() + SECONDS_PER_DAY;
     
     Particle.function("reset", sysRestart);
@@ -97,8 +101,21 @@ void setup()
     tickTimer.start();
 
     componentsToUpdate.push_back(&fs);
-    componentsToUpdate.push_back(&us);
+    //componentsToUpdate.push_back(&us);
     componentsToUpdate.push_back(&ro);
+
+    if (System.resetReason() == RESET_REASON_USER)
+    {
+        uint32_t resetData = System.resetReasonData();
+
+        JSONBufferWriter message = SystemLog::createBuffer(2048);
+        message.beginObject();
+        message.name("event").value("reset");
+        message.name("reason").value(resetData);
+        message.endObject();
+
+        syslog.pushMessage("system/reset", message.buffer());
+    }
 }
 
 void loop()
@@ -118,7 +135,7 @@ void loop()
     // Notify if the float switch was triggered.
     if(fs.isActive() && !lastFloatSwitch)
     {
-        syslog.error("Float Switch has been triggered!");
+        syslog.warning("Float Switch has been triggered!");
     }
     lastFloatSwitch = fs.isActive();
 }
@@ -222,4 +239,9 @@ void sendTick()
     message.endObject();
 
     syslog.pushMessage("system/tick", message.buffer());
+}
+
+void watchDogHandler(void)
+{
+    System.reset(1, RESET_NO_WAIT);
 }

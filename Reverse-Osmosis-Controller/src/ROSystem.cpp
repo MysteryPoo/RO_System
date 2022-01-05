@@ -9,8 +9,8 @@
 #define FLUSH_TIMER_MS 300000
 #define PUMP_INLET_DELAY_MS 5000
 #define PUMP_FREQUENCY_MS 500000 // Default
-#define FILL_START_DISTANCE_CM 80
-#define FILL_STOP_DISTANCE_CM 20
+#define FILL_START_DISTANCE_CM 160
+#define FILL_STOP_DISTANCE_CM 40
 #define PUMP_RUN_MIN_TO_FLUSH 2
 #define WARNING_DELAY 60000
 
@@ -29,6 +29,7 @@ ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, FloatSwitch &floatSw
     flushStartedTime(0),
     flushDuration(FLUSH_TIMER_MS),
     pumpRunTime(0),
+    firstPump(true),
     enabled(true),
     fillStartDistance(FILL_START_DISTANCE_CM),
     fillStopDistance(FILL_STOP_DISTANCE_CM),
@@ -45,7 +46,9 @@ void ROSystem::cloudSetup()
 
 void ROSystem::Update()
 {
-    this->update(this->floatSwitch.isActive(), this->ultraSonic.getDistance());
+    //this->update(this->floatSwitch.isActive(), this->ultraSonic.getDistance());
+    // Temporary until Ultra-Sonic issue is fixed
+    this->update(this->floatSwitch.isActive(), this->fillStartDistance + 1);
 }
 
 void ROSystem::update(bool tankFull, unsigned short distance)
@@ -185,7 +188,7 @@ bool ROSystem::activatePump()
     unsigned long curMillis = millis();
     static unsigned long lastWarning = curMillis;
     
-    if(this->lastPumpTime + this->pumpCooldown < curMillis)
+    if(this->firstPump || this->lastPumpTime + this->pumpCooldown < curMillis)
     {
         SINGLE_THREADED_BLOCK()
         {
@@ -198,6 +201,7 @@ bool ROSystem::activatePump()
             this->pump.set(Relay::State::ON);
         }
         ++this->totalPumpRuns;
+        this->firstPump = false;
         return true;
     }
     else
@@ -370,7 +374,7 @@ void ROSystem::ConfigurePumpCooldown(int newPumpCooldown)
 {
     if(newPumpCooldown > 0)
     {
-        this->pumpCooldown = newPumpCooldown;
+        this->pumpCooldown = (unsigned int) newPumpCooldown;
     }
 }
 

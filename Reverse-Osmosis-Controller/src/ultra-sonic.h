@@ -11,6 +11,7 @@
 #ifndef _ULTRA_SONIC_
 #define _ULTRA_SONIC_
 
+#include "application.h"
 #include "global-defines.h"
 #include "ICloud.h"
 #include "IComponent.h"
@@ -21,6 +22,7 @@ class SystemLog;
 class UltraSonic : public ICloud, public IComponent, IConfigurable {
 public:
     UltraSonic(int trig, int echo, SystemLog &logger);
+    ~UltraSonic();
     
     virtual int getDistance();
 
@@ -36,6 +38,7 @@ private:
     int echoPin;
     int distance;
     unsigned long cooldownPeriod;
+    LEDStatus* samplingUltraSonicStatus;
 
     virtual void sample();
     virtual void fireConfigurationMessage() const override;
