@@ -1,40 +1,16 @@
 // DotENV setup
 require('dotenv').config();
 const Particle = require('particle-api-js');
-const redis = require('redis');
-const NRP = require('node-redis-pubsub');
-const { promisify } = require('util');
 const { MongoClient } = require('mongodb');
 
-const connectionString = process.env.MONGODB_URI;
-const databaseName = 'test';
+const connectionString = process.env.MONGODB_URI ?? 'localhost';
+const databaseName = process.env.MONGODB_DB_NAME ?? 'test';
 
 const mongo = new MongoClient(`mongodb://${connectionString}?retryWrites=true`, {
     useUnifiedTopology: true,
 });
 mongo.connect();
 const database = mongo.db(databaseName);
-
-const redisConfig = {
-  port: 6379,
-  scope: 'romcon',
-};
-
-const redisClient = redis.createClient({
-  host: process.env.REDIS_HOST,
-  port: 6379,
-});
-redisClient.on('error', (err) => {
-  console.log(err);
-});
-redisClient.setAsync = promisify(redisClient.set).bind(redisClient);
-redisClient.getAsync = promisify(redisClient.get).bind(redisClient);
-redisClient.expireAsync = promisify(redisClient.expire).bind(redisClient);
-
-const nrp = new NRP(redisConfig);
-nrp.on('error', (err) => {
-  console.log(err);
-});
 
 const particle = new Particle();
 
@@ -69,31 +45,42 @@ async function login() {
   }
 }
 
+async function UpdateDeviceStatus(device) {
+  const collection = database.collection('status');
+  const query = {
+    'deviceId': device.id
+  };
+  const update = {
+    $set: {
+      'deviceId': device.id,
+      'online': device.online,
+      'last_heard': new Date(device.last_heard)
+    }
+  };
+  const options = {
+    upsert: true
+  };
+  await collection.updateOne(query, update, options);
+}
+
 (async function run() {
+  // Login
   const token = await login();
+  // Get Device List
   const getDevices = await particle.listDevices({ auth: token });
+  // Setup each device
   Object.keys(getDevices.body).forEach(async (key) => {
     const device = getDevices.body[key];
     console.log(`Found device: ${device.name}`);
-    if(device.online) {
-      nrp.emit('online', device.id);
-    } else {
-      nrp.emit('offline', device.id);
-    }
-    await redisClient.setAsync(`${device.id}_status`, device.online);
-      await redisClient.expireAsync(`${device.id}_status`, 30);
+    UpdateDeviceStatus(device);
+    // Setup Status stream
     const statusStream = await particle.getEventStream({ deviceId: device.id, name: "spark/status", auth: token });
     statusStream.on('event', async function (event) {
       const status = event.data === 'online';
       console.log(`Device {${device.name}}(${event.coreid}) registered as '${event.data}'`);
-      if(status) {
-        nrp.emit('online', device.id);
-      } else {
-        nrp.emit('offline', device.id);
-      }
-      await redisClient.setAsync(`${device.id}_status`, status);
-      await redisClient.expireAsync(`${device.id}_status`, 30);
+      UpdateDeviceStatus({id: device.id, online: status});
     });
+    // Setup Logger stream
     const logStream = await particle.getEventStream({ deviceId: device.id, name: "romcon", auth: token });
     logStream.on('event', async function (data) {
       const incomingEvent = data;
@@ -105,9 +92,6 @@ async function login() {
       }
       const collection = database.collection(device.id);
       await collection.insertOne(incomingEvent.data);
-      nrp.emit('online', device.id);
-      await redisClient.setAsync(`${device.id}_status`, true);
-      await redisClient.expireAsync(`${device.id}_status`, 30);
     });
   });
 })();

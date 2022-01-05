@@ -1,5 +1,7 @@
 // Route Setup
 const express = require('express');
+// API
+const api = require('../db/api');
 
 const router = express.Router();
 
@@ -15,9 +17,10 @@ router.get(
 
 router.get(
   '/deviceList',
-  (req, res, next) => {
-    //res.send(particleAPISession.deviceList);
+  async (req, res, next) => {
+    const deviceList = await api.getDeviceList(null);
+    res.json(deviceList);
   }
-)
+);
 
 module.exports = router;

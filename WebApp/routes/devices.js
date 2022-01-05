@@ -89,4 +89,12 @@ router.delete(
   }
 );
 
+router.get(
+  '/:deviceId/flush',
+  async (req, res) => {
+    const flushStates = await api.getSystemStates(req.params.deviceId, ['FLUSH']);
+    res.json(flushStates);
+  }
+);
+
 module.exports = router;

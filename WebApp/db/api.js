@@ -1,9 +1,7 @@
 const Joi = require('joi');
-const { database, configCollection } = require('./connection');
+const { database, configCollection, statusCollection } = require('./connection');
 const { ObjectId } = require('mongodb');
-const redis = require('redis');
 const particle = require('./particle');
-const { promisify } = require('util');
 
 const eventSchema = Joi.object().keys({
     component: Joi.string().required(),
@@ -11,24 +9,17 @@ const eventSchema = Joi.object().keys({
     data: Joi.object().required()
 });
 
-const redisClient = redis.createClient({
-    host: process.env.REDIS_HOST,
-    port: 6379,
-});
-redisClient.on('error', (err) => {
-    console.log(err);
-});
-redisClient.setAsync = promisify(redisClient.set).bind(redisClient);
-redisClient.getAsync = promisify(redisClient.get).bind(redisClient);
-
 async function getDeviceList(userId) {
     return particle.getDeviceList();
 }
 
 async function getDeviceStatus(deviceId) {
-    const status = await redisClient.getAsync(`${deviceId}_status`) === 'true';
+    const query = {
+        deviceId
+    };
+    const deviceStatus = await statusCollection.findOne(query);
     return {
-        online: status,
+        online: deviceStatus.online,
     };
 }
 
@@ -183,6 +174,26 @@ async function getPumpStates(device) {
     const resultsArray = await cursor.toArray();
     return resultsArray;
 }
+
+async function getSystemStates(device, filter) {
+    const collection = database.collection(device);
+    const query = {
+        component: 'system/state-request',
+        'data.success': true,
+        'data.state': {
+            $in: filter
+        },
+    };
+    const options = {
+        sort: {
+            datetime: -1,
+        },
+        limit: 20,
+    };
+    const cursor = collection.find(query, options);
+    const resultsArray = await cursor.toArray();
+    return resultsArray;
+}
  
 module.exports = {
     getDeviceList,
@@ -195,4 +206,5 @@ module.exports = {
     clearLog,
     getCurrentState,
     getPumpStates,
+    getSystemStates,
 };
