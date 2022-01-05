@@ -101,7 +101,7 @@ void setup()
     tickTimer.start();
 
     componentsToUpdate.push_back(&fs);
-    componentsToUpdate.push_back(&us);
+    //componentsToUpdate.push_back(&us);
     componentsToUpdate.push_back(&ro);
 
     if (System.resetReason() == RESET_REASON_USER)
