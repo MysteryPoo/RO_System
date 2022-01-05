@@ -69,7 +69,6 @@ void UltraSonic::sample()
             }
             samplingUltraSonicStatus->setActive(false);
         }
-        Particle.process();
     }
 
     if(validReadings > 0)
