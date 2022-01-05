@@ -21,7 +21,7 @@ const onDeviceSelected = (event) => {
 
 onMounted( async () => {
     deviceId.value = window.localStorage.deviceId;
-    const deviceListRequest = await fetch('http://localhost:4000/deviceList');
+    const deviceListRequest = await fetch(`http://${window.location.hostname}:4000/deviceList`);
     if(deviceListRequest.status === 200) {
         deviceList.value = await deviceListRequest.json();
         if(deviceId.value) {

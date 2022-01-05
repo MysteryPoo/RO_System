@@ -1,7 +1,7 @@
 FROM node:lts-alpine3.13 as build-stage
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN apk --no-cache add --virtual builds-deps build-base python3 && npm install && npm rebuild bcrypt --build-from-source
 COPY ./ .
 
 FROM node:lts-alpine3.13 as production-stage
