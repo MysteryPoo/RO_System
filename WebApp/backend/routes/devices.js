@@ -97,4 +97,20 @@ router.get(
   }
 );
 
+router.get(
+  '/:deviceId/restart',
+  async (req, res) => {
+    const restarts = await api.getRestarts(req.params.deviceId);
+    res.json(restarts);
+  }
+);
+
+router.get(
+  '/:deviceId/states',
+  async (req, res) => {
+    const states = await api.getSystemStates(req.params.deviceId, ['IDLE', 'FILL', 'FLUSH']);
+    res.json(states);
+  }
+);
+
 module.exports = router;
