@@ -194,6 +194,22 @@ async function getSystemStates(device, filter) {
     const resultsArray = await cursor.toArray();
     return resultsArray;
 }
+
+async function getRestarts(device) {
+    const collection = database.collection(device);
+    const query = {
+        component: 'system/restart',
+    };
+    const options = {
+        sort: {
+            datetime: -1,
+        },
+        limit: 20,
+    };
+    const cursor = collection.find(query, options);
+    const resultsArray = await cursor.toArray();
+    return resultsArray;
+}
  
 module.exports = {
     getDeviceList,
@@ -207,4 +223,5 @@ module.exports = {
     getCurrentState,
     getPumpStates,
     getSystemStates,
+    getRestarts,
 };
