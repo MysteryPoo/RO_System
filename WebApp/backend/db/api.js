@@ -113,6 +113,7 @@ async function getLog(device) {
                 'ERROR',
                 'TRACE',
                 'INFO',
+                'WARN',
                 'system/restart',
             ],
         },
