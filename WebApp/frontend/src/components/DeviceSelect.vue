@@ -1,7 +1,6 @@
 <template>
     <div class="p-d-flex p-ai-center">
-        <Dropdown v-if="deviceList && deviceList.length === 0" placeholder="Loading..." loading></Dropdown>
-        <Dropdown v-else-if="deviceList" v-model="selectedDevice" :options="deviceList" @change="onDeviceSelected" optionLabel="name" placeholder="Select device..."/>
+        <Dropdown :loading="deviceList && deviceList.length === 0" v-model="selectedDevice" :options="deviceList" @change="onDeviceSelected" optionLabel="name" placeholder="Select device..."/>
     </div>
 </template>
 
