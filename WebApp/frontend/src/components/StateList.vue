@@ -10,11 +10,12 @@
       </template>
       <Column v-for="col of columns" :field="col.field" :header="col.header" :key="col.field"></Column>
     </DataTable>
+    <p> Average fill time: About {{ averageFillTime }} minutes</p>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps, computed, watch } from 'vue';
+import { ref, defineProps, computed, watch, toRaw } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
@@ -87,6 +88,30 @@ const getStates = async (deviceId, skip = 0) => {
   }
   throw Error(deviceIdRequiredMessage);
 };
+
+const averageFillTime = computed( () => {
+  let sum = 0;
+  let count = 0;
+  let average = 0;
+  let stateList = [];
+  deviceStates.value.forEach( (state) => {
+    stateList.push(toRaw(state));
+  });
+  for (let index = stateList.length; index > 0; index -= 1) {
+    const state = stateList[index];
+    if (state) {
+      if (stateList[index].data.state === 'FILL' && 
+          stateList[index - 1].data.state === 'IDLE') {
+        count += 1;
+        sum += new Date(stateList[index - 1].datetime) - new Date(stateList[index].datetime);
+      }
+    }
+  }
+  if (count > 0) {
+    average = sum / count;
+  }
+  return (average / 1000 / 60).toFixed(0);
+});
 
 const refresh = async () => {
   loading.value = true;
