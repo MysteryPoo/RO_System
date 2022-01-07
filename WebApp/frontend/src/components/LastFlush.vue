@@ -42,6 +42,8 @@ const getTimeOfLastFlush = async (deviceId) => {
         const flushEvent = response[0];
         if (flushEvent.data.success && flushEvent.data.state === 'FLUSH') {
           return flushEvent.datetime;
+        } else {
+          return null;
         }
       }
     }
@@ -58,6 +60,8 @@ watch( () => props.deviceId, async (newDeviceId) => {
         const flushEventTime = await getTimeOfLastFlush(newDeviceId);
         if (flushEventTime) {
           lastFlush.value = new Date(flushEventTime);
+        } else {
+          lastFlush.value = null;
         }
     } catch (err) {
         console.log(err);

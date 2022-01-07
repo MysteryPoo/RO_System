@@ -43,6 +43,8 @@ const getTimeOfLastRestart = async (deviceId) => {
       if (response.length > 0) {
         const restartEvent = response[0];
         return restartEvent;
+      } else {
+        return null;
       }
     }
     if (request.status === 401) {
@@ -56,8 +58,13 @@ const getTimeOfLastRestart = async (deviceId) => {
 watch( () => props.deviceId, async (newDeviceId) => {
   try {
     const restartEvent = await getTimeOfLastRestart(newDeviceId);
-    lastRestart.value = new Date(restartEvent.datetime);
-    lastRestartReason.value = restartEvent.data.reason;
+    if (restartEvent) {
+      lastRestart.value = new Date(restartEvent.datetime);
+      lastRestartReason.value = restartEvent.data.reason;
+    } else {
+      lastRestart.value = null;
+      lastRestartReason.value = '';
+    }
   } catch (err) {
     console.log(err);
   }
