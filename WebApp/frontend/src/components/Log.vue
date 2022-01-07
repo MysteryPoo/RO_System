@@ -1,8 +1,24 @@
 <template>
   <div v-if="show">
-    <h1>Error Logs</h1>
-    <DataTable :value="logs" responsiveLayout="scroll">
-      <Column v-for="col of columns" :field="col.field" :header="col.header" :key="col.field"></Column>
+    <DataTable :value="logs" responsiveLayout="scroll" :paginator="true" :rows="10">
+      <template #header>
+        <div class="table-header">
+          Error Logs
+          <Button icon="pi pi-refresh" @click="refresh" />
+        </div>
+      </template>
+      <Column field="datetime" header="Date/Time"></Column>
+      <Column field="criticality" header="Criticality">
+        <template #body="slotProps">
+          <Badge class="p-mr-2" :severity="slotProps.data.colorization">{{ slotProps.data.criticality }}</Badge>
+        </template>
+      </Column>
+      <Column field="message" header="Message"></Column>
+      <Column field="actions" header="Actions">
+        <template #body="slotProps">
+          <Button v-if="slotProps.data.criticality !== 'Restart'" icon="pi pi-trash" @click="clearLog(props.deviceId, slotProps.data.dbKey)" />
+        </template>
+      </Column>
     </DataTable>
   </div>
 </template>
@@ -11,6 +27,8 @@
 import { ref, defineProps, computed, watch } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
+import Button from 'primevue/button';
+import Badge from 'primevue/badge';
 
 const props = defineProps({
   show: Boolean,
@@ -21,12 +39,6 @@ const unauthorizedMessage = "Unauthorized";
 const deviceIdRequiredMessage = "No device provided";
 
 const deviceLogs = ref([]);
-
-const columns = ref([
-  {field: 'datetime', header: 'Date/Time'},
-  {field: 'criticality', header: 'Criticality'},
-  {field: 'message', header: 'Message'}
-]);
 
 const logs = computed( () => {
   const logs = [];
@@ -43,10 +55,15 @@ const logs = computed( () => {
     const message = log.component === 'system/restart' ? log.data.reason : log.data.message;
     logs.push({
       dbKey: log._id,
-      datetime: new Date(log.datetime),
+      datetime: new Date(log.datetime).toLocaleString('en-US', {
+            day: 'numeric',
+            month: 'short',
+            hour: 'numeric',
+            minute: '2-digit'
+      }),
       criticality,
       message,
-      _rowVariant: colorization,
+      colorization,
     });
   });
   return logs;
@@ -70,7 +87,35 @@ const getLogs = async (deviceId) => {
   return Promise.reject(Error(deviceIdRequiredMessage));
 };
 
-watch( () => props.deviceId, async () => {
+const clearLog = async (deviceId, logId) => {
+  if (deviceId !== null) {
+    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/logs/${logId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${window.localStorage.token}`,
+      },
+    });
+    if (response.status === 200) {
+      return response;
+    }
+    if (response.status === 401) {
+      throw Error(unauthorizedMessage);
+    }
+  }
+  throw Error(deviceIdRequiredMessage);
+};
+
+const refresh = async () => {
   deviceLogs.value = await getLogs(props.deviceId);
-});
+};
+
+watch( () => props.deviceId, refresh);
 </script>
+
+<style scoped>
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+</style>

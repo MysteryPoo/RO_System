@@ -1,7 +1,12 @@
 <template>
   <div v-if="show">
-    <h1>Activity</h1>
-    <DataTable :value="states" responsiveLayout="scroll">
+    <DataTable :value="states" responsiveLayout="scroll" :paginator="true" :rows="10">
+      <template #header>
+        <div class="table-header">
+          Activity
+          <Button icon="pi pi-refresh" @click="refresh" />
+        </div>
+      </template>
       <Column v-for="col of columns" :field="col.field" :header="col.header" :key="col.field"></Column>
     </DataTable>
   </div>
@@ -11,6 +16,7 @@
 import { ref, defineProps, computed, watch } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
+import Button from 'primevue/button';
 
 const props = defineProps({
   show: Boolean,
@@ -31,7 +37,12 @@ const states = computed( () => {
   const stateList = [];
   deviceStates.value.forEach( (state) => {
     stateList.push({
-      datetime: new Date(state.datetime),
+      datetime: new Date(state.datetime).toLocaleString('en-US', {
+            day: 'numeric',
+            month: 'short',
+            hour: 'numeric',
+            minute: '2-digit'
+      }),
       state: state.data.state,
     });
   });
@@ -56,7 +67,17 @@ const getStates = async (deviceId) => {
   throw Error(deviceIdRequiredMessage);
 };
 
-watch( () => props.deviceId, async () => {
+const refresh = async () => {
   deviceStates.value = await getStates(props.deviceId);
-});
+};
+
+watch( () => props.deviceId, refresh);
 </script>
+
+<style scoped>
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+</style>
