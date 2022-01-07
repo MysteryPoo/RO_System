@@ -1,6 +1,7 @@
 <template>
   <div v-if="show">
-    <DataTable :value="logs" responsiveLayout="scroll" :paginator="true" :rows="10">
+    <DataTable :value="logs" responsiveLayout="scroll" :paginator="true" :rows="10" stripedRows
+      :totalRecords="deviceLogsCount" :loading="loading">
       <template #header>
         <div class="table-header">
           Error Logs
@@ -38,6 +39,8 @@ const props = defineProps({
 const unauthorizedMessage = "Unauthorized";
 const deviceIdRequiredMessage = "No device provided";
 
+const loading = ref(true);
+const deviceLogsCount = ref(0);
 const deviceLogs = ref([]);
 
 const logs = computed( () => {
@@ -69,9 +72,27 @@ const logs = computed( () => {
   return logs;
 });
 
-const getLogs = async (deviceId) => {
+const getLogsCount = async (deviceId) => {
   if (deviceId !== null) {
-    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/logs`, {
+    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/logs?count=true`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${window.localStorage.token}`,
+      },
+    });
+    if (response.status === 200) {
+      return response.json();
+    }
+    if (response.status === 401) {
+      throw Error(unauthorizedMessage);
+    }
+  }
+  throw Error(deviceIdRequiredMessage);
+};
+
+const getLogs = async (deviceId, skip = 0) => {
+  if (deviceId !== null) {
+    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/logs?skip=${skip}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${window.localStorage.token}`,
@@ -106,7 +127,10 @@ const clearLog = async (deviceId, logId) => {
 };
 
 const refresh = async () => {
+  loading.value = true;
+  deviceLogsCount.value = await getLogsCount(props.deviceId);
   deviceLogs.value = await getLogs(props.deviceId);
+  loading.value = false;
 };
 
 watch( () => props.deviceId, refresh);

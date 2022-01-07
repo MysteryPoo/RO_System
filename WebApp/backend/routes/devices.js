@@ -76,7 +76,13 @@ router.post(
 router.get(
   '/:deviceId/logs',
   async (req, res) => {
-    const logs = await api.getLog(req.params.deviceId, req.body);
+    const skipParam = req.query.skip ? Number(req.query.skip) : null;
+    const rowCount = req.query.rows ? Number(req.query.rows) : null;
+    const logs = await api.getLog(
+      req.params.deviceId,
+      req.query.count === 'true',
+      rowCount,
+      skipParam);
     res.json(logs);
   }
 );
@@ -108,7 +114,13 @@ router.get(
 router.get(
   '/:deviceId/states',
   async (req, res) => {
-    const states = await api.getSystemStates(req.params.deviceId, ['IDLE', 'FILL', 'FLUSH']);
+    const skipParam = req.query.skip ? Number(req.query.skip) : null;
+    const rowCount = req.query.rows ? Number(req.query.rows) : null;
+    const states = await api.getSystemStates(
+      req.params.deviceId, ['IDLE', 'FILL', 'FLUSH'],
+      req.query.count === 'true',
+      rowCount,
+      skipParam);
     res.json(states);
   }
 );

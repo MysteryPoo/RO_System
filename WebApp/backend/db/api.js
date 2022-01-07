@@ -105,7 +105,7 @@ async function getLastTick(
     return returnList.reverse();
 }
 
-async function getLog(device) {
+async function getLog(device, projectionOnly = false, rowCount = 10, skip = 0) {
     const collection = database.collection(device);
     const query = {
         component: {
@@ -122,11 +122,17 @@ async function getLog(device) {
         sort: {
             datetime: -1,
         },
-        limit: 20,
+        limit: rowCount,
+        skip,
     };
-    const cursor = collection.find(query, options);
-    const resultsArray = await cursor.toArray();
-    return resultsArray;
+    if (projectionOnly) {
+        const cursor = await collection.countDocuments(query);
+        return cursor;
+    } else {
+        const cursor = collection.find(query, options);
+        const resultsArray = await cursor.toArray();
+        return resultsArray;
+    }
 }
 
 async function clearLog(device, log) {
@@ -142,6 +148,7 @@ async function clearLog(device, log) {
     }
 }
 
+/// Deprecated
 async function getCurrentState(device) {
     const collection = database.collection(device);
     const query = {
@@ -176,24 +183,30 @@ async function getPumpStates(device) {
     return resultsArray;
 }
 
-async function getSystemStates(device, filter) {
+async function getSystemStates(device, include = [], projectionOnly = false, rowCount = 10, skip = 0) {
     const collection = database.collection(device);
     const query = {
         component: 'system/state-request',
         'data.success': true,
         'data.state': {
-            $in: filter
+            $in: include
         },
     };
     const options = {
         sort: {
             datetime: -1,
         },
-        limit: 20,
+        limit: rowCount,
+        skip,
     };
-    const cursor = collection.find(query, options);
-    const resultsArray = await cursor.toArray();
-    return resultsArray;
+    if (projectionOnly) {
+        const cursor = await collection.countDocuments(query);
+        return cursor;
+    } else {
+        const cursor = collection.find(query, options);
+        const resultsArray = await cursor.toArray();
+        return resultsArray;
+    }
 }
 
 async function getRestarts(device) {

@@ -1,6 +1,7 @@
 <template>
   <div v-if="show">
-    <DataTable :value="states" responsiveLayout="scroll" :paginator="true" :rows="10">
+    <DataTable :value="states" responsiveLayout="scroll" :paginator="true" :rows="10" stripedRows
+      :totalRecords="deviceStatesCount" :loading="loading">
       <template #header>
         <div class="table-header">
           Activity
@@ -26,7 +27,9 @@ const props = defineProps({
 const unauthorizedMessage = "Unauthorized";
 const deviceIdRequiredMessage = "No device provided";
 
+const loading = ref(true);
 const deviceStates = ref([]);
+const deviceStatesCount = ref(0);
 
 const columns = ref([
   {field: 'datetime', header: 'Date/Time'},
@@ -49,9 +52,27 @@ const states = computed( () => {
   return stateList;
 });
 
-const getStates = async (deviceId) => {
+const getStatesCount = async (deviceId) => {
   if (deviceId !== null) {
-    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/states`, {
+    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/states?count=true`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${window.localStorage.token}`,
+      },
+    });
+    if (response.status === 200) {
+      return response.json();
+    }
+    if (response.status === 401) {
+      throw Error(unauthorizedMessage);
+    }
+  }
+  throw Error(deviceIdRequiredMessage);
+};
+
+const getStates = async (deviceId, skip = 0) => {
+  if (deviceId !== null) {
+    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/states?skip=${skip}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${window.localStorage.token}`,
@@ -68,7 +89,10 @@ const getStates = async (deviceId) => {
 };
 
 const refresh = async () => {
+  loading.value = true;
+  deviceStatesCount.value = await getStatesCount(props.deviceId);
   deviceStates.value = await getStates(props.deviceId);
+  loading.value = false;
 };
 
 watch( () => props.deviceId, refresh);
