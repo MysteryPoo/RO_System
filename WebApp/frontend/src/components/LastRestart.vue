@@ -1,12 +1,22 @@
 <template>
     <div>
-        <h1 v-if="show">Last Restart: {{ lastRestartDisplay }}</h1>
-        <h2 v-if="show">Reason: {{ lastRestartReason }}</h2>
+      <Card v-if="show" style="width: 25rem; margin-bottom: 2em">
+        <template #title>
+          Last Restart
+        </template>
+        <template #subtitle>
+          Reason: {{ lastRestartReason }}
+        </template>
+        <template #content>
+          {{ lastRestartDisplay }}
+        </template>
+      </Card>
     </div>
 </template>
 
 <script setup>
 import { ref, defineProps, watch, computed } from 'vue';
+import Card from 'primevue/card';
 
 const props = defineProps({
     show: Boolean,

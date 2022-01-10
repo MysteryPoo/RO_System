@@ -1,11 +1,15 @@
 <template>
-  <div class="home">
-    <DeviceSelect @deviceSelected="onDeviceSelected"/>
-    <DeviceStatus :show="deviceId !== ''" :deviceId="deviceId" />
-    <LastFlush :show="deviceId !== ''" :deviceId="deviceId" />
-    <LastRestart :show="deviceId !== ''" :deviceId="deviceId" />
+  <div class="flex flex-column">
+    <DeviceSelect @deviceSelected="onDeviceSelected" class="flex align-items-center justify-content-center m-2 px-5 py-3 border-round" />
+    <div class="card">
+      <div class="flex flex-row flex-wrap justify-content-center">
+        <DeviceStatus :show="deviceId !== ''" :deviceId="deviceId" :averageFillTime="averageFillTime" class="flex align-items-center justify-content-center w-16rem m-2" />
+        <LastFlush :show="deviceId !== ''" :deviceId="deviceId" class="flex align-items-center justify-content-center w-16rem m-2" />
+        <LastRestart :show="deviceId !== ''" :deviceId="deviceId" class="flex align-items-center justify-content-center w-16rem m-2" />
+      </div>
+    </div>
     <Log :show="deviceId !== ''" :deviceId="deviceId" />
-    <StateList :show="deviceId !== ''" :deviceId="deviceId" />
+    <StateList class="flex-auto flex align-items-center justify-content-center" :show="deviceId !== ''" :deviceId="deviceId" @averageFillTime="onAverageFillTime" />
   </div>
 </template>
 
@@ -24,6 +28,7 @@ const router = useRouter();
 const store = useStore();
 
 const deviceId = ref('');
+const averageFillTime = ref(0);
 
 const onDeviceSelected = (_deviceId) => {
   deviceId.value = _deviceId;
@@ -34,4 +39,8 @@ onMounted( () => {
     router.replace('/login');
   }
 });
+
+const onAverageFillTime = (data) => {
+  averageFillTime.value = data * 60;
+}
 </script>

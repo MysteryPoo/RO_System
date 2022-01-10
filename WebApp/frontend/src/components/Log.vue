@@ -87,7 +87,7 @@ const getLogsCount = async (deviceId) => {
       throw Error(unauthorizedMessage);
     }
   }
-  throw Error(deviceIdRequiredMessage);
+  return 0;
 };
 
 const getLogs = async (deviceId, skip = 0) => {
@@ -117,6 +117,7 @@ const clearLog = async (deviceId, logId) => {
       },
     });
     if (response.status === 200) {
+      refresh();
       return response;
     }
     if (response.status === 401) {

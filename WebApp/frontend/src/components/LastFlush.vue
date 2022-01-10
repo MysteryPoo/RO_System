@@ -1,11 +1,19 @@
 <template>
     <div>
-        <h1 v-if="show">Last Flush: {{ lastFlushDisplay }}</h1>
+      <Card v-if="show" style="width: 25rem; margin-bottom: 2em">
+        <template #title>
+          Last Flush
+        </template>
+        <template #content>
+          {{ lastFlushDisplay }}
+        </template>
+      </Card>
     </div>
 </template>
 
 <script setup>
 import { ref, defineProps, watch, computed } from 'vue';
+import Card from 'primevue/card';
 
 const props = defineProps({
     show: Boolean,

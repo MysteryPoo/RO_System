@@ -1,5 +1,5 @@
 <template>
-  <div v-if="show">
+  <div v-if="show" class="flex flex-column">
     <DataTable :value="states" responsiveLayout="scroll" :paginator="true" :rows="10" stripedRows
       :totalRecords="deviceStatesCount" :loading="loading">
       <template #header>
@@ -10,12 +10,12 @@
       </template>
       <Column v-for="col of columns" :field="col.field" :header="col.header" :key="col.field"></Column>
     </DataTable>
-    <p> Average fill time: About {{ averageFillTime }} minutes</p>
+    <p>Average fill time: About {{ averageFillTime }} minutes</p>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps, computed, watch, toRaw } from 'vue';
+import { ref, defineProps, defineEmits, computed, watch, toRaw } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
@@ -24,6 +24,8 @@ const props = defineProps({
   show: Boolean,
   deviceId: String,
 });
+
+const emit = defineEmits(['averageFillTime']);
 
 const unauthorizedMessage = "Unauthorized";
 const deviceIdRequiredMessage = "No device provided";
@@ -68,7 +70,7 @@ const getStatesCount = async (deviceId) => {
       throw Error(unauthorizedMessage);
     }
   }
-  throw Error(deviceIdRequiredMessage);
+  return 0;
 };
 
 const getStates = async (deviceId, skip = 0) => {
@@ -110,7 +112,9 @@ const averageFillTime = computed( () => {
   if (count > 0) {
     average = sum / count;
   }
-  return (average / 1000 / 60).toFixed(0);
+  const averageAsMinutes = (average / 1000 / 60);
+  emit('averageFillTime', averageAsMinutes);
+  return averageAsMinutes.toFixed(0);
 });
 
 const refresh = async () => {
