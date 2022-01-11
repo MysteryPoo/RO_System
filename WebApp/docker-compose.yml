@@ -8,8 +8,8 @@ services:
       - MONGODB_DB_NAME=${MONGODB_DB_NAME}
     volumes:
       - romcon_mongo_volume:/data/db
-    ports:
-      - "27017:27017"
+#    ports:
+#      - "27017:27017"
   
   stream:
     container_name: romcon_stream
