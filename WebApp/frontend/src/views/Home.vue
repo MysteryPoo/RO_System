@@ -8,7 +8,7 @@
         <LastRestart :show="deviceId !== ''" :deviceId="deviceId" class="flex align-items-center justify-content-center w-16rem m-2" />
       </div>
     </div>
-    <Log :show="deviceId !== ''" :deviceId="deviceId" />
+    <Log class="flex-auto flex align-items-center justify-content-center" :show="deviceId !== ''" :deviceId="deviceId" />
     <StateList class="flex-auto flex align-items-center justify-content-center" :show="deviceId !== ''" :deviceId="deviceId" @averageFillTime="onAverageFillTime" />
   </div>
 </template>

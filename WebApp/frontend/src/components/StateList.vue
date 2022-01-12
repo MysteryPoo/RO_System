@@ -1,7 +1,7 @@
 <template>
   <div v-if="show" class="flex flex-column">
-    <DataTable :value="states" responsiveLayout="scroll" :paginator="true" :rows="10" stripedRows
-      :totalRecords="deviceStatesCount" :loading="loading">
+    <DataTable :value="states" :lazy="true" responsiveLayout="scroll" :paginator="true" :rows="10" stripedRows
+      :totalRecords="deviceStatesCount" @page="onPage($event)" :loading="loading">
       <template #header>
         <div class="table-header">
           Activity
@@ -19,6 +19,7 @@ import { ref, defineProps, defineEmits, computed, watch, toRaw } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
+import { useDevicesApi } from '@/services/devices.ts';
 
 const props = defineProps({
   show: Boolean,
@@ -27,9 +28,7 @@ const props = defineProps({
 
 const emit = defineEmits(['averageFillTime']);
 
-const unauthorizedMessage = "Unauthorized";
-const deviceIdRequiredMessage = "No device provided";
-
+const api = useDevicesApi();
 const loading = ref(true);
 const deviceStates = ref([]);
 const deviceStatesCount = ref(0);
@@ -54,42 +53,6 @@ const states = computed( () => {
   });
   return stateList;
 });
-
-const getStatesCount = async (deviceId) => {
-  if (deviceId !== null) {
-    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/states?count=true`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${window.localStorage.token}`,
-      },
-    });
-    if (response.status === 200) {
-      return response.json();
-    }
-    if (response.status === 401) {
-      throw Error(unauthorizedMessage);
-    }
-  }
-  return 0;
-};
-
-const getStates = async (deviceId, skip = 0) => {
-  if (deviceId !== null) {
-    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/states?skip=${skip}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${window.localStorage.token}`,
-      },
-    });
-    if (response.status === 200) {
-      return response.json();
-    }
-    if (response.status === 401) {
-      throw Error(unauthorizedMessage);
-    }
-  }
-  throw Error(deviceIdRequiredMessage);
-};
 
 const averageFillTime = computed( () => {
   let sum = 0;
@@ -119,10 +82,14 @@ const averageFillTime = computed( () => {
 
 const refresh = async () => {
   loading.value = true;
-  deviceStatesCount.value = await getStatesCount(props.deviceId);
-  deviceStates.value = await getStates(props.deviceId);
+  deviceStatesCount.value = await api.getStatesCount(props.deviceId);
+  deviceStates.value = await api.getStates(props.deviceId);
   loading.value = false;
 };
+
+const onPage = async (event) => {
+  deviceStates.value = await api.getStates(props.deviceId, event.first);
+}
 
 watch( () => props.deviceId, refresh);
 </script>

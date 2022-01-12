@@ -1,7 +1,7 @@
 <template>
-  <div v-if="show">
-    <DataTable :value="logs" responsiveLayout="scroll" :paginator="true" :rows="10" stripedRows
-      :totalRecords="deviceLogsCount" :loading="loading">
+  <div v-if="show" class="flex flex-column">
+    <DataTable :value="logs" :lazy="true" responsiveLayout="scroll" :paginator="true" :rows="10" stripedRows
+      :totalRecords="deviceLogsCount" @page="onPage($event)" :loading="loading">
       <template #header>
         <div class="table-header">
           Error Logs
@@ -30,15 +30,14 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 import Badge from 'primevue/badge';
+import { useDevicesApi } from '@/services/devices.ts';
 
 const props = defineProps({
   show: Boolean,
   deviceId: String,
 });
 
-const unauthorizedMessage = "Unauthorized";
-const deviceIdRequiredMessage = "No device provided";
-
+const api = useDevicesApi();
 const loading = ref(true);
 const deviceLogsCount = ref(0);
 const deviceLogs = ref([]);
@@ -72,67 +71,27 @@ const logs = computed( () => {
   return logs;
 });
 
-const getLogsCount = async (deviceId) => {
-  if (deviceId !== null) {
-    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/logs?count=true`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${window.localStorage.token}`,
-      },
-    });
-    if (response.status === 200) {
-      return response.json();
-    }
-    if (response.status === 401) {
-      throw Error(unauthorizedMessage);
-    }
-  }
-  return 0;
-};
-
-const getLogs = async (deviceId, skip = 0) => {
-  if (deviceId !== null) {
-    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/logs?skip=${skip}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${window.localStorage.token}`,
-      },
-    });
-    if (response.status === 200) {
-      return response.json();
-    }
-    if (response.status === 401) {
-      return Promise.reject(Error(unauthorizedMessage));
-    }
-  }
-  return Promise.reject(Error(deviceIdRequiredMessage));
-};
-
 const clearLog = async (deviceId, logId) => {
-  if (deviceId !== null) {
-    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/logs/${logId}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${window.localStorage.token}`,
-      },
-    });
+  try {
+    const response = await api.clearLog(deviceId, logId);
     if (response.status === 200) {
       refresh();
-      return response;
     }
-    if (response.status === 401) {
-      throw Error(unauthorizedMessage);
-    }
+  } catch (e) {
+    console.log(e);
   }
-  throw Error(deviceIdRequiredMessage);
 };
 
 const refresh = async () => {
   loading.value = true;
-  deviceLogsCount.value = await getLogsCount(props.deviceId);
-  deviceLogs.value = await getLogs(props.deviceId);
+  deviceLogsCount.value = await api.getLogsCount(props.deviceId);
+  deviceLogs.value = await api.getLogs(props.deviceId);
   loading.value = false;
 };
+
+const onPage = async (event) => {
+  deviceLogs.value = await api.getLogs(props.deviceId, event.first);
+}
 
 watch( () => props.deviceId, refresh);
 </script>

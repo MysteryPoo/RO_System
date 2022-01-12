@@ -17,12 +17,14 @@
 <script setup>
 import { ref, defineProps, watch, computed } from 'vue';
 import Card from 'primevue/card';
+import { useDevicesApi } from '@/services/devices.ts';
 
 const props = defineProps({
     show: Boolean,
     deviceId: String,
 });
 
+const api = useDevicesApi();
 const lastRestart = ref(null);
 const lastRestartDisplay = computed( () => {
     if (lastRestart.value !== null) {
@@ -37,31 +39,13 @@ const lastRestartDisplay = computed( () => {
 });
 const lastRestartReason = ref('');
 
-const unauthorizedMessage = "Unauthorized";
-const deviceIdRequiredMessage = "No device provided";
-
 const getTimeOfLastRestart = async (deviceId) => {
-  if (deviceId !== null) {
-    const request = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/restart`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${window.localStorage.token}`,
-      },
-    });
-    if (request.status === 200) {
-      const response = await request.json();
-      if (response.length > 0) {
-        const restartEvent = response[0];
-        return restartEvent;
-      } else {
-        return null;
-      }
-    }
-    if (request.status === 401) {
-      throw Error(unauthorizedMessage);
-    }
+  const restarts = await api.getRestarts(deviceId);
+  if (restarts.length > 0) {
+    const restartEvent = restarts[0];
+    return restartEvent;
   } else {
-    throw Error(deviceIdRequiredMessage);
+    return null;
   }
 };
 
