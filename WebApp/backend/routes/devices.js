@@ -114,13 +114,14 @@ router.get(
 router.get(
   '/:deviceId/states',
   async (req, res) => {
-    const skipParam = req.query.skip ? Number(req.query.skip) : null;
-    const rowCount = req.query.rows ? Number(req.query.rows) : null;
+    const skipParam = req.query.skip ? Number(req.query.skip) : undefined;
+    const rowCount = req.query.rows ? Number(req.query.rows) : undefined;
     const states = await api.getSystemStates(
       req.params.deviceId, ['IDLE', 'FILL', 'FLUSH'],
       req.query.count === 'true',
       rowCount,
-      skipParam);
+      skipParam
+    );
     res.json(states);
   }
 );

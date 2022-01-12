@@ -196,7 +196,7 @@ async function getSystemStates(device, include = [], projectionOnly = false, row
         sort: {
             datetime: -1,
         },
-        limit: rowCount,
+        limit: projectionOnly ? null : rowCount,
         skip,
     };
     if (projectionOnly) {
