@@ -45,6 +45,30 @@ async function login() {
   }
 }
 
+async function getConfiguration(device) {
+  const query = {
+      deviceId: device,
+  };
+  const configuration = database.collection('configuration').findOne(query);
+  return configuration;
+}
+
+async function sendConfiguration(deviceId) {
+  const token = await login();
+  const configurationStored = await getConfiguration(deviceId);
+  const configuration = configurationStored || {};
+  try {
+    const response = await particle.callFunction({ deviceId: deviceId, name: 'configuration', argument: JSON.stringify(configuration), auth: token });
+    console.log(response);
+    return response;
+  } catch(err) {
+    console.log(err);
+    particleAPISession.connected = false;
+    // Try again
+    return sendConfiguration(deviceId, configuration);
+  }
+}
+
 async function UpdateDeviceStatus(device) {
   const collection = database.collection('status');
   const query = {
@@ -61,6 +85,10 @@ async function UpdateDeviceStatus(device) {
     upsert: true
   };
   await collection.updateOne(query, update, options);
+
+  if (device.online) {
+    sendConfiguration(device.id);
+  }
 }
 
 (async function run() {
