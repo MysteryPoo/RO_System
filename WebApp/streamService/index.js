@@ -57,15 +57,17 @@ async function sendConfiguration(deviceId) {
   const token = await login();
   const configurationStored = await getConfiguration(deviceId);
   const configuration = configurationStored || {};
-  try {
-    const response = await particle.callFunction({ deviceId: deviceId, name: 'configuration', argument: JSON.stringify(configuration), auth: token });
-    console.log(response);
-    return response;
-  } catch(err) {
-    console.log(err);
-    particleAPISession.connected = false;
-    // Try again
-    return sendConfiguration(deviceId, configuration);
+  if (configuration != {}) {
+    try {
+      const response = await particle.callFunction({ deviceId: deviceId, name: 'configuration', argument: JSON.stringify(configuration), auth: token });
+      console.log(response);
+      return response;
+    } catch(err) {
+      console.log(err);
+      particleAPISession.connected = false;
+      // Try again
+      return sendConfiguration(deviceId, configuration);
+    }
   }
 }
 
