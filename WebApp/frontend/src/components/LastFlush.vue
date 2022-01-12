@@ -37,14 +37,25 @@ const lastFlushDisplay = computed( () => {
     return 'Unknown';
 });
 
+const getTimeOfLastFlush = async (deviceId) => {
+  try {
+    const response = await api.getStates(deviceId, 0, 1, ['FLUSH']);
+    if (response.length > 0) {
+      const flushEvent = response[0];
+      if (flushEvent.data.success && flushEvent.data.state === 'FLUSH') {
+        return flushEvent.datetime;
+      }
+    }
+  } catch (e) {
+    console.log(e);
+  }
+  return null;
+};
+
 watch( () => props.deviceId, async (newDeviceId) => {
     try {
-        const flushEventTime = await api.getTimeOfLastFlush(newDeviceId);
-        if (flushEventTime) {
-          lastFlush.value = new Date(flushEventTime);
-        } else {
-          lastFlush.value = null;
-        }
+        const flushEventTime = await getTimeOfLastFlush(newDeviceId);
+        lastFlush.value = flushEventTime ? new Date(flushEventTime) : null;
     } catch (err) {
         console.log(err);
     }

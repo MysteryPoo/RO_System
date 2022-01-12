@@ -22,14 +22,6 @@ router.get(
 );
 
 router.get(
-  '/:deviceId/currentState',
-  async (req, res) => {
-    const state = await api.getCurrentState(req.params.deviceId);
-    res.json(state);
-  }
-);
-
-router.get(
   '/:deviceId/pumpState',
   (req, res) => {
     api.getPumpStates(req.params.deviceId).then( (data) => {
@@ -51,7 +43,7 @@ router.get(
   '/:deviceId/configuration',
   (req, res) => {
     api.getConfiguration(req.params.deviceId).then( (data) => {
-        res.json([data]); // Front-end expects an array
+        res.json(data);
     })
     .catch(err => {console.log(err)});;
   }
@@ -96,14 +88,6 @@ router.delete(
 );
 
 router.get(
-  '/:deviceId/flush',
-  async (req, res) => {
-    const flushStates = await api.getSystemStates(req.params.deviceId, ['FLUSH']);
-    res.json(flushStates);
-  }
-);
-
-router.get(
   '/:deviceId/restart',
   async (req, res) => {
     const restarts = await api.getRestarts(req.params.deviceId);
@@ -114,10 +98,17 @@ router.get(
 router.get(
   '/:deviceId/states',
   async (req, res) => {
+    let statesToGet = undefined;
+    try {
+      statesToGet = req.query.states ? JSON.parse(req.query.states) : ['IDLE', 'FILL', 'FLUSH'];
+    } catch (e) {
+      console.log(e);
+    }
     const skipParam = req.query.skip ? Number(req.query.skip) : undefined;
     const rowCount = req.query.rows ? Number(req.query.rows) : undefined;
     const states = await api.getSystemStates(
-      req.params.deviceId, ['IDLE', 'FILL', 'FLUSH'],
+      req.params.deviceId,
+      statesToGet,
       req.query.count === 'true',
       rowCount,
       skipParam

@@ -37,27 +37,6 @@ class DevicesApi {
     throw new DeviceRequiredException();
   }
 
-  async getState(deviceId: string) {
-    if (deviceId !== null) {
-      const stateRequest = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/currentState`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${window.localStorage.token}`,
-        },
-      });
-      if (stateRequest.status === 200) {
-        const response = await stateRequest.json();
-        if (response.length > 0) {
-          return response[0];
-        }
-      }
-      if (stateRequest.status === 401) {
-        throw new UnauthorizedException();
-      }
-    }
-    throw new DeviceRequiredException();
-  }
-
   async getStatesCount(deviceId: string) {
     if (deviceId !== null) {
       const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/states?count=true`, {
@@ -76,9 +55,9 @@ class DevicesApi {
     return 0;
   }
 
-  async getStates(deviceId: string, skip = 0, rows = 10) {
+  async getStates(deviceId: string, skip = 0, rows = 10, stateFilter = ['IDLE', 'FILL', 'FLUSH']) {
     if (deviceId !== null) {
-      const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/states?skip=${skip}&rows=${rows}`, {
+      const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/states?states=${JSON.stringify(stateFilter)}&skip=${skip}&rows=${rows}`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${window.localStorage.token}`,
@@ -144,33 +123,6 @@ class DevicesApi {
       return response;
     }
     throw new DeviceRequiredException();
-  }
-
-  async getTimeOfLastFlush(deviceId: string) {
-    if (deviceId !== null) {
-      const request = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/flush`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${window.localStorage.token}`,
-        },
-      });
-      if (request.status === 200) {
-        const response = await request.json();
-        if (response.length > 0) {
-          const flushEvent = response[0];
-          if (flushEvent.data.success && flushEvent.data.state === 'FLUSH') {
-            return flushEvent.datetime;
-          } else {
-            return null;
-          }
-        }
-      }
-      if (request.status === 401) {
-        throw new UnauthorizedException();
-      }
-    } else {
-      throw new DeviceRequiredException();
-    }
   }
 
   async getRestarts(deviceId: string) {

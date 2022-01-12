@@ -34,9 +34,9 @@ watch( () => props.deviceId, async (newDeviceId) => {
     try {
       const statusRequest = await api.getStatus(newDeviceId);
       deviceStatus.value = statusRequest.online;
-      const stateRequest = await api.getState(newDeviceId);
-      currentState.value = stateRequest.data.state;
-      stateStartTime.value = new Date(stateRequest.datetime);
+      const stateRequest = await api.getStates(newDeviceId, 0, 1);
+      currentState.value = stateRequest[0].data.state;
+      stateStartTime.value = new Date(stateRequest[0].datetime);
     } catch( e ) {
         if (e.code === 401) {
           router.replace('/login');

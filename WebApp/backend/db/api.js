@@ -148,24 +148,6 @@ async function clearLog(device, log) {
     }
 }
 
-/// Deprecated
-async function getCurrentState(device) {
-    const collection = database.collection(device);
-    const query = {
-        component: 'system/state-request',
-        'data.success': true,
-    };
-    const options = {
-        sort: {
-            datetime: -1,
-        },
-        limit: 20,
-    };
-    const cursor = collection.find(query, options);
-    const resultsArray = await cursor.toArray();
-    return resultsArray;
-}
-
 async function getPumpStates(device) {
     const collection = database.collection(device);
     const query = {
@@ -183,7 +165,7 @@ async function getPumpStates(device) {
     return resultsArray;
 }
 
-async function getSystemStates(device, include = [], projectionOnly = false, rowCount = 10, skip = 0) {
+async function getSystemStates(device, include = ['IDLE', 'FILL', 'FLUSH'], projectionOnly = false, rowCount = 10, skip = 0) {
     const collection = database.collection(device);
     const query = {
         component: 'system/state-request',
@@ -234,7 +216,6 @@ module.exports = {
     getLastTick,
     getLog,
     clearLog,
-    getCurrentState,
     getPumpStates,
     getSystemStates,
     getRestarts,
