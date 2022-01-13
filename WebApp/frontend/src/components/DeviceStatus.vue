@@ -7,6 +7,8 @@
         <template #content>
           {{ deviceStatus ? currentState : "Offline" }}
           <RemainingTime v-if="currentState === 'FLUSH' || currentState === 'FILL'" :startTime="stateStartTime" :estimatedElapsedSeconds="currentState === 'FLUSH' ? 300 : props.averageFillTime" />
+          <p>Firmware Version: {{ version }}</p>
+          <p>System is {{ enabled ? "Enabled" : "Disabled" }}</p>
         </template>
       </Card>
     </div>
@@ -29,6 +31,8 @@ const props = defineProps({
 const deviceStatus = ref(false);
 const currentState = ref("Unknown");
 const stateStartTime = ref(null);
+const version = ref('');
+const enabled = ref(true);
 
 watch( () => props.deviceId, async (newDeviceId) => {
     try {
@@ -37,6 +41,9 @@ watch( () => props.deviceId, async (newDeviceId) => {
       const stateRequest = await api.getStates(newDeviceId, 0, 1);
       currentState.value = stateRequest[0].data.state;
       stateStartTime.value = new Date(stateRequest[0].datetime);
+      const ticks = await api.getTicks(newDeviceId);
+      version.value = ticks[0].data.version;
+      enabled.value = ticks[0].data.enabled;
     } catch( e ) {
         if (e.code === 401) {
           router.replace('/login');
