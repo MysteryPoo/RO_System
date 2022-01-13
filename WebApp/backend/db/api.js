@@ -69,7 +69,28 @@ async function setConfiguration(device, data) {
     return Promise.reject(Error("Invalid device selected."));
 }
 
-async function getLastTick(
+async function getTicks(
+    device,
+    skip = 0,
+    rows = 1,
+) {
+    const collection = database.collection(device);
+    const query = {
+        component: 'system/tick',
+    };
+    const options = {
+        sort: {
+            datetime: -1,
+        },
+        limit: rows,
+        skip,
+    };
+    const cursor = collection.find(query, options);
+    const resultsArray = await cursor.toArray();
+    return resultsArray;
+}
+
+async function getTicksByDate(
     device,
     dateTo = new Date(),
     dateFrom = new Date(dateTo.getTime() - (7 * 24 * 60 * 60 * 1000)),
@@ -89,7 +110,7 @@ async function getLastTick(
             sort: {
                 datetime: -1,
             },
-        }
+        };
         const recordCount = await collection.countDocuments(query, options);
         const interval = Math.max(1, Math.round(recordCount / resolution));
         for(let i = 0; i < recordCount; i += interval) {
@@ -213,7 +234,8 @@ module.exports = {
     setConfiguration,
     getConfiguration,
     storeMessage,
-    getLastTick,
+    getTicks,
+    getTicksByDate,
     getLog,
     clearLog,
     getPumpStates,
