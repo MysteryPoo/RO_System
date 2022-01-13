@@ -37,6 +37,24 @@ class DevicesApi {
     throw new DeviceRequiredException();
   }
 
+  async getTicks(deviceId: string, skip = 0, rows = 1) {
+    if (deviceId !== null) {
+      const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/ticks?skip=${skip}&rows=${rows}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${window.localStorage.token}`,
+        },
+      });
+      if (response.status === 200) {
+        return response.json();
+      }
+      if (response.status === 401) {
+        throw new UnauthorizedException();
+      }
+    }
+    return [];
+  }
+
   async getStatesCount(deviceId: string) {
     if (deviceId !== null) {
       const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/states?count=true`, {
