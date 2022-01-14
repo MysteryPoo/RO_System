@@ -6,20 +6,9 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const JwtStrategy = require('passport-jwt').Strategy;
 const ExtractJWT = require('passport-jwt').ExtractJwt;
-const { MongoClient } = require('mongodb');
 const bcrypt = require('bcrypt');
-
-const connectionString = process.env.MONGODB_URI ?? 'localhost';
-const databaseName = process.env.MONGODB_DB_NAME ?? 'test';
-
-const mongo = new MongoClient(`mongodb://${connectionString}?retryWrites=true`, {
-    useUnifiedTopology: true,
-});
-mongo.connect();
-const database = mongo.db(databaseName);
-database.collection('configuration').createIndex({'deviceId': 1}, {unique: true});
-database.collection('status').createIndex({'deviceId': 1}, {unique: true});
-database.collection('users').createIndex({'username': 1}, {unique: true});
+// Mongo DB Interface
+const { database } = require('./db/connection');
 
 passport.use(
   'signup',

@@ -3,10 +3,12 @@ require('dotenv').config();
 const Particle = require('particle-api-js');
 const { MongoClient } = require('mongodb');
 
-const connectionString = process.env.MONGODB_URI ?? 'localhost';
 const databaseName = process.env.MONGODB_DB_NAME ?? 'test';
+const username = process.env.MONGODB_USERNAME ?? 'admin';
+const password = process.env.MONGODB_PASSWORD ?? 'admin';
+const connectionString = process.env.MONGODB_URI ?? 'localhost';
 
-const mongo = new MongoClient(`mongodb://${connectionString}?retryWrites=true`, {
+const mongo = new MongoClient(`mongodb://${username}:${password}@${connectionString}?retryWrites=true&authSource=admin`, {
     useUnifiedTopology: true,
 });
 mongo.connect();

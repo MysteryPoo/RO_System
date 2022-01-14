@@ -6,6 +6,8 @@ services:
     restart: always
     environment:
       - MONGODB_DB_NAME=${MONGODB_DB_NAME}
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD}
     volumes:
       - romcon_mongo_volume:/data/db
 #    ports:
