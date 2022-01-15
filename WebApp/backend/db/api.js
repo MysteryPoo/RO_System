@@ -3,6 +3,11 @@ const { database, configCollection, statusCollection } = require('./connection')
 const { ObjectId } = require('mongodb');
 const particle = require('./particle');
 
+class DeviceRequiredException {
+    code = 422;
+    message = "No device provided";
+}
+
 const eventSchema = Joi.object().keys({
     component: Joi.string().required(),
     datetime: Joi.date().required(),
@@ -42,31 +47,31 @@ async function getConfiguration(device) {
 }
 
 async function setConfiguration(device, data) {
-    if(device) {
-        const query = {
-            deviceId: device,
-        };
-        const update = {
-            $set: {
-                deviceId: device,
-                enabled: data.enabled,
-                fillDistances: {
-                    start: data.fillDistances.start,
-                    stop: data.fillDistances.stop,
-                },
-                sonicHeight: data.sonicHeight,
-                floatHeight: data.floatHeight,
-                diameter: data.diameter,
-                pumpCooldown: data.pumpCooldown,
-                tickRate: data.tickRate,
-            },
-        };
-        const options = {
-            upsert: true,
-        };
-        return configCollection.updateOne(query, update, options);
+    if(device === null) {
+        throw new DeviceRequiredException();
     }
-    return Promise.reject(Error("Invalid device selected."));
+    const query = {
+        deviceId: device,
+    };
+    const update = {
+        $set: {
+            deviceId: device,
+            enabled: data.enabled,
+            fillDistances: {
+                start: data.fillDistances.start,
+                stop: data.fillDistances.stop,
+            },
+            sonicHeight: data.sonicHeight,
+            floatHeight: data.floatHeight,
+            diameter: data.diameter,
+            pumpCooldown: data.pumpCooldown,
+            tickRate: data.tickRate,
+        },
+    };
+    const options = {
+        upsert: true,
+    };
+    return configCollection.updateOne(query, update, options);
 }
 
 async function getTicks(
