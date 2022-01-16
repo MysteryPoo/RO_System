@@ -111,6 +111,8 @@ void ROSystem::requestState(ROSystem::State state, String requestReason)
     String error;
     String message;
 
+    bool isAlreadyInState = state == this->state;
+
     JSONBufferWriter jsonMessage = SystemLog::createBuffer(2048);
     jsonMessage.beginObject();
     jsonMessage.name("event").value("state-request");
@@ -128,7 +130,6 @@ void ROSystem::requestState(ROSystem::State state, String requestReason)
                 error = "Failed to deactivate the pump.";
             }
             jsonMessage.name("state").value("IDLE");
-            jsonMessage.name("success").value(this->state == ROSystem::State::IDLE);
             break;
         case ROSystem::FLUSH:
             error = "";
@@ -150,7 +151,6 @@ void ROSystem::requestState(ROSystem::State state, String requestReason)
                 error = "System is currently disabled.";
             }
             jsonMessage.name("state").value("FLUSH");
-            jsonMessage.name("success").value(this->state == ROSystem::State::FLUSH);
             break;
         case ROSystem::FILL:
             error = "";
@@ -170,13 +170,18 @@ void ROSystem::requestState(ROSystem::State state, String requestReason)
                 error = "System is currently disabled.";
             }
             jsonMessage.name("state").value("FILL");
-            jsonMessage.name("success").value(this->state == ROSystem::State::FILL);
             break;
         default:
             logger.error("ROSystem was requested to enter an invalid state!");
             jsonMessage.name("state").value(this->getStateString());
             jsonMessage.name("success").value(false);
     }
+
+    if (isAlreadyInState)
+    {
+        error = "System attempted to change into state it was already in.";
+    }
+    jsonMessage.name("success").value(!isAlreadyInState && this->state == state);
     jsonMessage.name("requestReason").value(requestReason);
     jsonMessage.name("failureReason").value(error);
     jsonMessage.endObject();
