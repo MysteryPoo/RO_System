@@ -1,10 +1,10 @@
 
-class UnauthorizedException {
+export class UnauthorizedException extends Error {
   code = 401;
   message = "Unauthorized";
 }
 
-class DeviceRequiredException {
+export class DeviceRequiredException extends Error {
   code = 422;
   message = "No device provided";
 }
@@ -19,8 +19,8 @@ class DevicesApi {
     return [];
   }
 
-  async getStatus(deviceId: string) {
-    if (deviceId === null) {
+  async getStatus(deviceId: string | undefined) {
+    if (deviceId === undefined) {
       throw new DeviceRequiredException();
     }
     const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/status`, {
@@ -37,8 +37,8 @@ class DevicesApi {
     }
   }
 
-  async getTicks(deviceId: string, skip = 0, rows = 1) {
-    if (deviceId === null) {
+  async getTicks(deviceId: string | undefined, skip = 0, rows = 1) {
+    if (deviceId === undefined) {
       return [];
     }
     const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/ticks?skip=${skip}&rows=${rows}`, {
@@ -55,8 +55,8 @@ class DevicesApi {
     }
   }
 
-  async getStatesCount(deviceId: string) {
-    if (deviceId === null) {
+  async getStatesCount(deviceId: string | undefined) {
+    if (deviceId === undefined) {
       return 0;
     }
     const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/states?count=true`, {
@@ -73,8 +73,8 @@ class DevicesApi {
     }
   }
 
-  async getStates(deviceId: string, skip = 0, rows = 10, stateFilter = ['IDLE', 'FILL', 'FLUSH']) {
-    if (deviceId === null) {
+  async getStates(deviceId: string | undefined, skip = 0, rows = 10, stateFilter = ['IDLE', 'FILL', 'FLUSH']) {
+    if (deviceId === undefined) {
       throw new DeviceRequiredException();
     }
     const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/states?states=${JSON.stringify(stateFilter)}&skip=${skip}&rows=${rows}`, {
@@ -91,8 +91,8 @@ class DevicesApi {
     }
   }
 
-  async getLogsCount(deviceId: string) {
-    if (deviceId === null) {
+  async getLogsCount(deviceId: string | undefined) {
+    if (deviceId === undefined) {
       return 0;
     }
     const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/logs?count=true`, {
@@ -109,8 +109,8 @@ class DevicesApi {
     }
   }
 
-  async getLogs(deviceId: string, skip = 0) {
-    if (deviceId === null) {
+  async getLogs(deviceId: string | undefined, skip = 0) {
+    if (deviceId === undefined) {
       throw new DeviceRequiredException();
     }
     const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/logs?skip=${skip}`, {
@@ -127,8 +127,8 @@ class DevicesApi {
     }
   }
 
-  async clearLog(deviceId: string, logId: string) {
-    if (deviceId === null) {
+  async clearLog(deviceId: string | undefined, logId: string) {
+    if (deviceId === undefined) {
       throw new DeviceRequiredException();
     }
     const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/logs/${logId}`, {
@@ -143,8 +143,8 @@ class DevicesApi {
     return response;
   }
 
-  async getRestarts(deviceId: string) {
-    if (deviceId === null) {
+  async getRestarts(deviceId: string | undefined) {
+    if (deviceId === undefined) {
       throw new DeviceRequiredException();
     }
     const request = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/restart`, {

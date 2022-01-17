@@ -30,7 +30,7 @@ const store = useStore();
 const deviceId = ref('');
 const averageFillTime = ref(0);
 
-const onDeviceSelected = (_deviceId) => {
+const onDeviceSelected = (_deviceId : string) => {
   deviceId.value = _deviceId;
 };
 
@@ -40,7 +40,7 @@ onMounted( () => {
   }
 });
 
-const onAverageFillTime = (data) => {
+const onAverageFillTime = (data : number) => {
   averageFillTime.value = data * 60;
 }
 </script>

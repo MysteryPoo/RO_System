@@ -11,10 +11,10 @@
     </div>
 </template>
 
-<script setup>
-import { ref, defineProps, watch, computed } from 'vue';
+<script setup lang="ts">
+import { ref, Ref, defineProps, watch, computed } from 'vue';
 import Card from 'primevue/card';
-import { useDevicesApi } from '@/services/devices.ts';
+import { useDevicesApi } from '@/services/devices';
 
 const props = defineProps({
     show: Boolean,
@@ -23,21 +23,21 @@ const props = defineProps({
 
 const api = useDevicesApi();
 
-const lastFlush = ref(null);
+const lastFlush : Ref<Date | null> = ref(null);
 
 const lastFlushDisplay = computed( () => {
-    if (lastFlush.value !== null) {
-        return lastFlush.value.toLocaleString('en-US', {
-            day: 'numeric',
-            month: 'short',
-            hour: 'numeric',
-            minute: '2-digit'
-        });
+    if (lastFlush.value === null) {
+      return 'Unknown';
     }
-    return 'Unknown';
+    return lastFlush.value.toLocaleString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        hour: 'numeric',
+        minute: '2-digit'
+    });
 });
 
-const getTimeOfLastFlush = async (deviceId) => {
+const getTimeOfLastFlush = async (deviceId : string | undefined) => {
   try {
     const response = await api.getStates(deviceId, 0, 1, ['FLUSH']);
     if (response.length > 0) {

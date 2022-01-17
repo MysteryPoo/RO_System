@@ -40,13 +40,13 @@
         <div class="p-field">
           <label for="name" class="block text-900 font-medium mb-2" :class="{'p-error':v$.name.$invalid && submitted}">Username</label>
           <InputText id="name" type="text" class="w-full mb-3" v-model="v$.name.$model" :class="{'p-invalid':v$.name.$invalid && submitted}"/>
-          <small v-if="(v$.name.$invalid && submitted) || v$.name.$pending.$loginRequest" class="p-error">{{v$.name.required.$message.replace('Value', 'Name')}}</small>
+          <small v-if="(v$.name.$invalid && submitted) || v$.name.$pending" class="p-error">{{v$.name.required.$message.replace('Value', 'Name')}}</small>
         </div>
 
         <div class="p-field">
           <label for="password" class="block text-900 font-medium mb-2" :class="{'p-error':v$.password.$invalid && submitted}">Password</label>
           <Password id="password" class="w-full mb-3" v-model="v$.password.$model" :class="{'p-invalid':v$.password.$invalid && submitted}" toggleMask/>
-          <small v-if="(v$.password.$invalid && submitted) || v$.password.$pending.$loginRequest" class="p-error">{{v$.password.required.$message.replace('Value', 'Password')}}</small>
+          <small v-if="(v$.password.$invalid && submitted) || v$.password.$pending" class="p-error">{{v$.password.required.$message.replace('Value', 'Password')}}</small>
         </div>
 
         <Button type="submit" label="Sign In" icon="pi pi-user" class="w-full"></Button>
@@ -55,12 +55,12 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 import useVuelidate from '@vuelidate/core';
-import { required } from '@vuelidate/validators';
+import { required, alphaNum } from '@vuelidate/validators';
 import InputText from 'primevue/inputtext';
 import Password from 'primevue/password';
 import Button from 'primevue/button';
@@ -72,7 +72,7 @@ const state = reactive({
 });
 
 const rules = {
-    name: { required },
+    name: { required, alphaNum },
     password: { required },
 };
 
@@ -85,7 +85,7 @@ const showSuccess = ref(false);
 const showError = ref(false);
 const errorMessage = ref('');
 
-const handleSubmit = async (isFormValid) => {
+const handleSubmit = async (isFormValid : boolean) => {
   submitted.value = true;
   if(!isFormValid) {
     return;
@@ -133,7 +133,7 @@ const login = () => {
     });
 };
 
-const displayError = (message) => {
+const displayError = (message : string) => {
   errorMessage.value = message;
   window.localStorage.token = undefined;
   store.commit('set_token', undefined);

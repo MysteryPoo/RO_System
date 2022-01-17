@@ -19,7 +19,23 @@ import { ref, defineProps, defineEmits, computed, watch, toRaw } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
-import { useDevicesApi } from '@/services/devices.ts';
+import { useDevicesApi } from '@/services/devices';
+
+interface IDisplayState {
+  datetime: string;
+  state: string;
+}
+
+interface ISystemState {
+  datetime: number,
+  data: {
+    state: string,
+  }
+}
+
+interface IPageEvent {
+  first? : number;
+}
 
 const props = defineProps({
   show: Boolean,
@@ -39,8 +55,8 @@ const columns = ref([
 ]);
 
 const states = computed( () => {
-  const stateList = [];
-  deviceStates.value.forEach( (state) => {
+  const stateList : IDisplayState[] = [];
+  deviceStates.value.forEach( (state : ISystemState) => {
     stateList.push({
       datetime: new Date(state.datetime).toLocaleString('en-US', {
             day: 'numeric',
@@ -58,7 +74,7 @@ const averageFillTime = computed( () => {
   let sum = 0;
   let count = 0;
   let average = 0;
-  let stateList = [];
+  let stateList : ISystemState[] = [];
   deviceStates.value.forEach( (state) => {
     stateList.push(toRaw(state));
   });
@@ -68,7 +84,7 @@ const averageFillTime = computed( () => {
       if (stateList[index].data.state === 'FILL' && 
           stateList[index - 1].data.state === 'IDLE') {
         count += 1;
-        sum += new Date(stateList[index - 1].datetime) - new Date(stateList[index].datetime);
+        sum += (new Date(stateList[index - 1].datetime)).getTime() - (new Date(stateList[index].datetime)).getTime();
       }
     }
   }
@@ -87,7 +103,7 @@ const refresh = async () => {
   loading.value = false;
 };
 
-const onPage = async (event) => {
+const onPage = async (event : IPageEvent) => {
   deviceStates.value = await api.getStates(props.deviceId, event.first);
 }
 

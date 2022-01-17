@@ -14,10 +14,10 @@
     </div>
 </template>
 
-<script setup>
-import { ref, defineProps, watch, computed } from 'vue';
+<script setup lang="ts">
+import { ref, Ref, defineProps, watch, computed } from 'vue';
 import Card from 'primevue/card';
-import { useDevicesApi } from '@/services/devices.ts';
+import { useDevicesApi } from '@/services/devices';
 
 const props = defineProps({
     show: Boolean,
@@ -25,21 +25,21 @@ const props = defineProps({
 });
 
 const api = useDevicesApi();
-const lastRestart = ref(null);
+const lastRestart : Ref<Date | null> = ref(null);
 const lastRestartDisplay = computed( () => {
-    if (lastRestart.value !== null) {
-        return lastRestart.value.toLocaleString('en-US', {
-            day: 'numeric',
-            month: 'short',
-            hour: 'numeric',
-            minute: '2-digit'
-        });
+    if (lastRestart.value === null) {
+      return 'Unknown';
     }
-    return 'Unknown';
+    return lastRestart.value.toLocaleString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        hour: 'numeric',
+        minute: '2-digit'
+    });
 });
 const lastRestartReason = ref('');
 
-const getTimeOfLastRestart = async (deviceId) => {
+const getTimeOfLastRestart = async (deviceId : string | undefined) => {
   const restarts = await api.getRestarts(deviceId);
   if (restarts.length > 0) {
     const restartEvent = restarts[0];

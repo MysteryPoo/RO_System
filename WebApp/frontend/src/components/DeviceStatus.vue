@@ -14,12 +14,12 @@
     </div>
 </template>
 
-<script setup>
-import { ref, defineProps, watch } from 'vue';
+<script setup lang="ts">
+import { ref, Ref, defineProps, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import Card from 'primevue/card';
 import RemainingTime from '@/components/RemainingTime.vue';
-import { useDevicesApi } from '@/services/devices.ts';
+import { useDevicesApi, UnauthorizedException } from '@/services/devices';
 
 const router = useRouter();
 const api = useDevicesApi();
@@ -30,7 +30,7 @@ const props = defineProps({
 });
 const deviceStatus = ref(false);
 const currentState = ref("Unknown");
-const stateStartTime = ref(null);
+const stateStartTime : Ref<Date | undefined> = ref(undefined);
 const version = ref('');
 const enabled = ref(true);
 
@@ -45,7 +45,7 @@ watch( () => props.deviceId, async (newDeviceId) => {
       version.value = ticks[0].data.version;
       enabled.value = ticks[0].data.enabled;
     } catch( e ) {
-        if (e.code === 401) {
+        if (e instanceof UnauthorizedException && e.code === 401) {
           router.replace('/login');
         }
     }

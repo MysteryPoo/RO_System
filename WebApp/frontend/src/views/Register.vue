@@ -70,7 +70,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import useVuelidate from '@vuelidate/core';
@@ -99,7 +99,7 @@ const submitted = ref(false);
 const showSuccess = ref(false);
 const showError = ref(false);
 
-const handleSubmit = async (isFormValid) => {
+const handleSubmit = async (isFormValid : boolean) => {
     submitted.value = true;
     if(!isFormValid) {
         return;

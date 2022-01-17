@@ -5,16 +5,27 @@
   </div>
 </template>
 
-<script setup>
-import { ref, defineProps, onMounted, onBeforeUnmount } from 'vue';
+<script setup lang="ts">
+import { Ref, ref, defineProps, onMounted, onBeforeUnmount } from 'vue';
 import ProgressBar from 'primevue/progressbar';
 
+interface ITimeProgress {
+  asPercent: number,
+  asTime: string,
+}
+
 const props = defineProps({
-  startTime: Date,
-  estimatedElapsedSeconds: Number,
+  startTime: {
+    type: Date,
+    required: false,
+  },
+  estimatedElapsedSeconds: {
+    type: Number,
+    required: false,
+  },
 });
 
-const interval = ref(null);
+const interval : Ref<number | undefined> = ref(undefined);
 const percent = ref(0);
 const remainingTime = ref('unknown');
 
@@ -29,7 +40,7 @@ onBeforeUnmount( () => {
 const startProgress = () => {
   if (interval.value === null) {
     interval.value = setInterval( () => {
-      const { asPercent, asTime } = calculateTimeProgress();
+      const { asPercent, asTime } : ITimeProgress = calculateTimeProgress();
       percent.value = asPercent;
       remainingTime.value = asTime;
     }, 1000);
@@ -37,19 +48,25 @@ const startProgress = () => {
 };
 
 const endProgress = () => {
-  if (interval.value !== null) {
+  if (interval.value !== undefined) {
     clearInterval(interval.value);
-    interval.value = null;
+    interval.value = undefined;
   }
 }
 
 const calculateTimeProgress = () => {
+  if (undefined === props.startTime || undefined === props.estimatedElapsedSeconds) {
+    return {
+      asPercent: 0,
+      asTime: '',
+    };
+  }
   const now = new Date();
   let estimatedCompletionTime = new Date(props.startTime);
   estimatedCompletionTime.setSeconds(props.startTime.getSeconds() + props.estimatedElapsedSeconds);
-  const totalTime = estimatedCompletionTime - props.startTime;
-  const currentElapsedTime = now - props.startTime;
-  const remainingTime = estimatedCompletionTime - now;
+  const totalTime : number = estimatedCompletionTime.getTime() - props.startTime.getTime();
+  const currentElapsedTime = now.getTime() - props.startTime.getTime();
+  const remainingTime = estimatedCompletionTime.getTime() - now.getTime();
   const minutesRemaining = Math.round(remainingTime / 1000 / 60);
   const secondsRemaining = Math.round(remainingTime / 1000);
   return {
