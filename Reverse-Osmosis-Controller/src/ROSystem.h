@@ -41,6 +41,7 @@ public:
 
     void shutdown();
 
+    State getState() { return this->state; };
     String getStateString();
 
     int enable(String setEnable); // Deprecated

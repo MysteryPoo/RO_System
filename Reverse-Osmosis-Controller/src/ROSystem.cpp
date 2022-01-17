@@ -83,7 +83,14 @@ void ROSystem::update(bool tankFull, unsigned short distance)
             if(!this->enabled || tankFull || curMillis > this->flushStartedTime + this->flushDuration)
             {
                 this->flushedToday = true;
-                this->requestState(ROSystem::State::IDLE, this->enabled ? "Flush complete." : "System has been disabled.");
+                if (!tankFull)
+                {
+                    this->requestState(ROSystem::State::FILL, this->enabled ? "Filling post flush." : "System has been disabled.");
+                }
+                else
+                {
+                    this->requestState(ROSystem::State::IDLE, this->enabled ? "Flush complete." : "System has been disabled.");
+                }
                 lastAttempt = curMillis;
             }
             break;
@@ -193,7 +200,7 @@ bool ROSystem::activatePump()
     unsigned long curMillis = millis();
     static unsigned long lastWarning = curMillis;
     
-    if(this->firstPump || this->lastPumpTime + this->pumpCooldown < curMillis)
+    if(this->pump.get() == Relay::State::OFF || this->firstPump || this->lastPumpTime + this->pumpCooldown < curMillis)
     {
         SINGLE_THREADED_BLOCK()
         {
@@ -207,6 +214,10 @@ bool ROSystem::activatePump()
         }
         ++this->totalPumpRuns;
         this->firstPump = false;
+        return true;
+    }
+    else if(Relay::State::ON == this->pump.get() && Relay::State::ON == this->inlet.get())
+    {
         return true;
     }
     else

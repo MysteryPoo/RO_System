@@ -47,6 +47,11 @@ SYSTEM_THREAD(ENABLED)
 #define ONE_HOUR_MS 3600000
 #define RESTART_DELAY 10000 // Delay before attempting to restart after manual request
 
+enum UserReason
+{
+    DAILY,
+};
+
 ApplicationWatchdog *watchDog;
 
 time32_t timeToRestart;
@@ -111,7 +116,7 @@ void setup()
     JSONBufferWriter message = SystemLog::createBuffer(2048);
     message.beginObject();
     message.name("event").value("restart");
-    message.name("reason").value(getResetReason());
+    message.name("reason").value(getResetReason(resetData));
     message.name("data").value(resetData);
     message.endObject();
 
@@ -122,7 +127,7 @@ void loop()
 {
     if(Time.now() > timeToRestart)
     {
-        sysRestart("Daily restart commencing.");
+        sysRestart();
     }
     
     syslog.publishLog();
@@ -140,15 +145,8 @@ void loop()
     lastFloatSwitch = fs.isActive();
 }
 
-int sysRestart(String data)
+int sysRestart()
 {
-    JSONBufferWriter message = SystemLog::createBuffer(2048);
-    message.beginObject();
-    message.name("event").value("restart");
-    message.name("reason").value(data);
-    message.endObject();
-    ro.shutdown();
-    syslog.pushMessage("system/restart", message.buffer());
     syslog.enabled = false;
     restartSystem.start();
     timeToRestart = Time.now() + SECONDS_PER_DAY;
@@ -216,9 +214,9 @@ int Configuration(String config)
 
 void sysRestart_Helper()
 {
-    if(syslog.isEmpty())
+    if(syslog.isEmpty() && ROSystem::State::IDLE == ro.getState())
     {
-        System.reset();
+        System.reset(UserReason::DAILY);
     }
     else
     {
@@ -246,7 +244,7 @@ void watchDogHandler(void)
     System.reset(1, RESET_NO_WAIT);
 }
 
-String getResetReason()
+String getResetReason(uint32_t data)
 {
     int resetReason = System.resetReason();
     switch(resetReason)
@@ -274,13 +272,24 @@ String getResetReason()
         case RESET_REASON_PANIC:
             return "System panicked!";
         case RESET_REASON_USER:
-            return "User requested a reset.";
+            return getUserReason(data);
         case RESET_REASON_UNKNOWN:
             return "Unknown reset reason.";
         case RESET_REASON_NONE:
             return "Reset information unavailable.";
         default:
             return "Reset reason fell-through switch.";
+    }
+}
+
+String getUserReason(int code)
+{
+    switch(code)
+    {
+        case 0:
+            return "Daily restart.";
+        default:
+            return "Unknown reason.";
     }
 }
 
