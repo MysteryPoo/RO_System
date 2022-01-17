@@ -85,6 +85,8 @@ Timer tickTimer(THIRTY_SECONDS_MS, sendTick, false);
 void setup()
 {
     System.enableFeature(FEATURE_RESET_INFO);
+    System.on(reset_pending, onResetPending);
+    System.disableReset();
     watchDog = new ApplicationWatchdog(60000, watchDogHandler, 1536);
     timeToRestart = Time.now() + SECONDS_PER_DAY;
     
@@ -104,18 +106,16 @@ void setup()
     //componentsToUpdate.push_back(&us);
     componentsToUpdate.push_back(&ro);
 
-    if (System.resetReason() == RESET_REASON_USER)
-    {
-        uint32_t resetData = System.resetReasonData();
+    uint32_t resetData = System.resetReasonData();
 
-        JSONBufferWriter message = SystemLog::createBuffer(2048);
-        message.beginObject();
-        message.name("event").value("reset");
-        message.name("reason").value(resetData);
-        message.endObject();
+    JSONBufferWriter message = SystemLog::createBuffer(2048);
+    message.beginObject();
+    message.name("event").value("restart");
+    message.name("reason").value(getResetReason());
+    message.name("data").value(resetData);
+    message.endObject();
 
-        syslog.pushMessage("system/reset", message.buffer());
-    }
+    syslog.pushMessage("system/restart", message.buffer());
 }
 
 void loop()
@@ -244,4 +244,48 @@ void sendTick()
 void watchDogHandler(void)
 {
     System.reset(1, RESET_NO_WAIT);
+}
+
+String getResetReason()
+{
+    int resetReason = System.resetReason();
+    switch(resetReason)
+    {
+        case RESET_REASON_PIN_RESET:
+            return "Pin Reset";
+        case RESET_REASON_POWER_MANAGEMENT:
+            return "Low Power Management";
+        case RESET_REASON_POWER_DOWN:
+            return "Power Down Reset";
+        case RESET_REASON_POWER_BROWNOUT:
+            return "Power Brownout";
+        case RESET_REASON_WATCHDOG:
+            return "Watchdog Reset";
+        case RESET_REASON_UPDATE:
+            return "Firmware Updated";
+        case RESET_REASON_UPDATE_TIMEOUT:
+            return "Firmware update timed out.";
+        case RESET_REASON_FACTORY_RESET:
+            return "Factory reset requested.";
+        case RESET_REASON_SAFE_MODE:
+            return "Safe mode requested.";
+        case RESET_REASON_DFU_MODE:
+            return "DFU mode requested.";
+        case RESET_REASON_PANIC:
+            return "System panicked!";
+        case RESET_REASON_USER:
+            return "User requested a reset.";
+        case RESET_REASON_UNKNOWN:
+            return "Unknown reset reason.";
+        case RESET_REASON_NONE:
+            return "Reset information unavailable.";
+        default:
+            return "Reset reason fell-through switch.";
+    }
+}
+
+void onResetPending()
+{
+    ro.shutdown();
+    System.enableReset();
 }
