@@ -127,7 +127,7 @@ void loop()
 {
     if(Time.now() > timeToRestart)
     {
-        sysRestart();
+        sysRestart("");
     }
     
     syslog.publishLog();
@@ -145,7 +145,7 @@ void loop()
     lastFloatSwitch = fs.isActive();
 }
 
-int sysRestart()
+int sysRestart(String data)
 {
     syslog.enabled = false;
     restartSystem.start();
