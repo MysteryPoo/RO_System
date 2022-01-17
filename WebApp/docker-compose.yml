@@ -2,7 +2,7 @@ version: '3.9'
 services:
   mongo:
     container_name: romcon_mongo
-    image: mongo
+    image: mongo:4.4.11
     restart: always
     environment:
       - MONGODB_DB_NAME=${MONGODB_DB_NAME}
