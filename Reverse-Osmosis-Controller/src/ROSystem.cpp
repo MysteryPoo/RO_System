@@ -224,7 +224,7 @@ bool ROSystem::activatePump()
     {
         if(curMillis > lastWarning + WARNING_DELAY)
         {
-            this->logger.warning("Attempting to activate the pump too frequently.");
+            this->logger.warning("Attempted to activate the pump too frequently.");
             lastWarning = curMillis;
         }
         return false;
@@ -250,16 +250,16 @@ bool ROSystem::deactivatePump()
 
         return true;
     }
-    else if(curMillis > lastWarning + WARNING_DELAY)
+    else if(Relay::State::OFF == this->pump.get())
     {
-        this->logger.warning("Attempting to deactivate the pump when it is already off.");
-        lastWarning = curMillis;
-        return false;
+        if(curMillis > lastWarning + WARNING_DELAY)
+        {
+            this->logger.warning("Attempted to deactivate the pump when it is already off.");
+            lastWarning = curMillis;
+        }
+        return true;
     }
-    else
-    {
-        return false;
-    }
+    return false;
 }
 
 void ROSystem::shutdown()
