@@ -107,18 +107,18 @@ void ROSystem::update(bool tankFull, unsigned short distance)
     }
 }
 
-void ROSystem::requestState(ROSystem::State state, const char* requestReason)
+void ROSystem::requestState(ROSystem::State newState, const char* requestReason)
 {
     String reason = String(requestReason);
-    this->requestState(state, reason);
+    this->requestState(newState, reason);
 }
 
-void ROSystem::requestState(ROSystem::State state, String requestReason)
+void ROSystem::requestState(ROSystem::State newState, String requestReason)
 {
     String error;
     String message;
 
-    bool isAlreadyInState = state == this->state;
+    bool isAlreadyInState = newState == this->state;
 
     JSONBufferWriter jsonMessage = SystemLog::createBuffer(2048);
     jsonMessage.beginObject();
@@ -188,7 +188,7 @@ void ROSystem::requestState(ROSystem::State state, String requestReason)
     {
         error = "System attempted to change into state it was already in.";
     }
-    jsonMessage.name("success").value(!isAlreadyInState && this->state == state);
+    jsonMessage.name("success").value(!isAlreadyInState && this->state == newState);
     jsonMessage.name("requestReason").value(requestReason);
     jsonMessage.name("failureReason").value(error);
     jsonMessage.endObject();
