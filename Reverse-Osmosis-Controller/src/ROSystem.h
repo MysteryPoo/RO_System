@@ -27,6 +27,7 @@ namespace spark
 class ROSystem : public ICloud, public IComponent {
 public:
     enum State {
+        BOOT,
         IDLE,
         FLUSH,
         FILL

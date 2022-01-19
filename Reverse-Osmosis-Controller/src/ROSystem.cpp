@@ -15,7 +15,7 @@
 #define WARNING_DELAY 60000
 
 ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, FloatSwitch &floatSwitch, UltraSonic &ultraSonic, SystemLog &logger) :
-    state(ROSystem::IDLE),
+    state(ROSystem::BOOT),
     pump(pump),
     inlet(inlet),
     flush(flush),
@@ -58,6 +58,9 @@ void ROSystem::update(bool tankFull, unsigned short distance)
 
     switch(this->state)
     {
+        case ROSystem::BOOT:
+            requestState(ROSystem::State::IDLE, "Initial boot.");
+            break;
         case ROSystem::IDLE:
             if(curMillis < lastAttempt + WARNING_DELAY)
             {
@@ -85,7 +88,7 @@ void ROSystem::update(bool tankFull, unsigned short distance)
                 this->flushedToday = true;
                 if (!tankFull)
                 {
-                    this->requestState(ROSystem::State::FILL, this->enabled ? "Filling post flush." : "System has been disabled.");
+                    this->requestState(ROSystem::State::FILL, this->enabled ? "Flush complete. Completing fill." : "System has been disabled.");
                 }
                 else
                 {
@@ -123,7 +126,7 @@ void ROSystem::requestState(ROSystem::State newState, String requestReason)
     JSONBufferWriter jsonMessage = SystemLog::createBuffer(2048);
     jsonMessage.beginObject();
     jsonMessage.name("event").value("state-request");
-    switch(state)
+    switch(newState)
     {
         case ROSystem::IDLE:
             error = "";
@@ -247,19 +250,8 @@ bool ROSystem::deactivatePump()
             delay(PUMP_INLET_DELAY_MS);
             this->inlet.set(Relay::State::OFF);
         }
-
-        return true;
     }
-    else if(Relay::State::OFF == this->pump.get())
-    {
-        if(curMillis > lastWarning + WARNING_DELAY)
-        {
-            this->logger.warning("Attempted to deactivate the pump when it is already off.");
-            lastWarning = curMillis;
-        }
-        return true;
-    }
-    return false;
+    return true;
 }
 
 void ROSystem::shutdown()
