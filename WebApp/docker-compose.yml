@@ -10,8 +10,8 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD}
     volumes:
       - romcon_mongo_volume:/data/db
-#    ports:
-#      - "27017:27017"
+    ports:
+      - "27017:27017"
   
   stream:
     container_name: romcon_stream
