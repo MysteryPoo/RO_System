@@ -24,13 +24,19 @@ import { useDevicesApi } from '@/services/devices';
 interface IDisplayState {
   datetime: string;
   state: string;
+  reason: string;
+  success: boolean;
+  error: string;
 }
 
 interface ISystemState {
-  datetime: number,
+  datetime: number;
   data: {
-    state: string,
-  }
+    state: string;
+    requestReason: string;
+    failureReason: string;
+    success: boolean;
+  };
 }
 
 interface IPageEvent {
@@ -51,7 +57,10 @@ const deviceStatesCount = ref(0);
 
 const columns = ref([
   {field: 'datetime', header: 'Date/Time'},
-  {field: 'state', header: 'State'}
+  {field: 'state', header: 'State'},
+  {field: 'reason', header: 'Reason'},
+  {field: 'success', header: 'Success'},
+  {field: 'error', header: 'Error'},
 ]);
 
 const states = computed( () => {
@@ -65,6 +74,9 @@ const states = computed( () => {
             minute: '2-digit'
       }),
       state: state.data.state,
+      reason: state.data.requestReason,
+      error: state.data.failureReason,
+      success: state.data.success,
     });
   });
   return stateList;

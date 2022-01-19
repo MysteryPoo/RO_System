@@ -195,7 +195,7 @@ async function getSystemStates(device, include = ['IDLE', 'FILL', 'FLUSH'], proj
     const collection = database.collection(device);
     const query = {
         component: 'system/state-request',
-        'data.success': true,
+        //'data.success': true,
         'data.state': {
             $in: include
         },
