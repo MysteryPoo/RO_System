@@ -51,7 +51,7 @@ services:
     container_name: romcon_frontend
     depends_on:
       - backend
-    build: ./frontend_vite
+    build: ./frontend
     image: ${DOCKER_USERNAME}/romcon-frontend
     restart: always
     ports:
