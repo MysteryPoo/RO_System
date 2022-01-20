@@ -25,6 +25,8 @@ services:
       - PARTICLE_PASSWORD=${PARTICLE_PASSWORD}
       - MONGODB_URI=romcon_mongo
       - MONGODB_DB_NAME=${MONGODB_DB_NAME}
+      - MONGODB_USERNAME=${MONGODB_USERNAME}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD}
   
   backend:
     container_name: romcon_backend
@@ -41,6 +43,8 @@ services:
       - PARTICLE_PASSWORD=${PARTICLE_PASSWORD}
       - MONGODB_URI=romcon_mongo
       - MONGODB_DB_NAME=${MONGODB_DB_NAME}
+      - MONGODB_USERNAME=${MONGODB_USERNAME}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD}
       - API_SECRET=${API_SECRET}
   
   frontend:
