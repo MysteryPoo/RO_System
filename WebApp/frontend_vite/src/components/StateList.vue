@@ -115,7 +115,9 @@ const averageFillTime = computed( () => {
     const state = stateList[index];
     if (state) {
       if (stateList[index].data.state === 'FILL' && 
-          stateList[index - 1].data.state === 'IDLE') {
+          stateList[index - 1].data.state === 'IDLE' &&
+          stateList[index].data.success === true &&
+          stateList[index - 1].data.success === true) {
         count += 1;
         sum += (new Date(stateList[index - 1].datetime)).getTime() - (new Date(stateList[index].datetime)).getTime();
       }
