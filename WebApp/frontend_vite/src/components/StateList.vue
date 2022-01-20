@@ -1,6 +1,6 @@
 <template>
   <div v-if="show" class="flex flex-column">
-    <Card style="background: #091930;">
+    <Card>
       <template #title>
         State List
       </template>
