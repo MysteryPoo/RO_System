@@ -1,21 +1,44 @@
 <template>
   <div v-if="show" class="flex flex-column">
-    <DataTable :value="states" :lazy="true" responsiveLayout="scroll" :paginator="true" :rows="10" stripedRows
-      :totalRecords="deviceStatesCount" @page="onPage($event)" :loading="loading">
-      <template #header>
-        <div class="table-header">
-          Activity
-          <Button icon="pi pi-refresh" @click="refresh" />
-        </div>
+    <Card style="background: #091930;">
+      <template #title>
+        State List
       </template>
-      <Column v-for="col of columns" :field="col.field" :header="col.header" :key="col.field"></Column>
-    </DataTable>
-    <p>Average fill time: About {{ averageFillTime }} minutes</p>
+      <template #content>
+        <DataTable :value="states" :lazy="true" responsiveLayout="scroll" :paginator="true" :rows="10" stripedRows
+        :totalRecords="deviceStatesCount" @page="onPage($event)" :loading="loading">
+        <template #header>
+          <div class="table-header">
+            Activity
+            <Button icon="pi pi-refresh" @click="refresh" />
+          </div>
+        </template>
+        <template #empty>
+          No state data found.
+        </template>
+        <template #loading>
+          Loading state data. Please wait.
+        </template>
+        <Column v-for="col of columns" :field="col.field" :header="col.header" :key="col.field"></Column>
+        <Column header="Result">
+          <template #body="slotProps">
+            <span v-if="slotProps.data.success" class="pi pi-check-circle" style="color: green;"></span>
+            <span v-else class="pi pi-info-circle" style="color: yellow;" />
+            {{ slotProps.data.failureReason }}
+          </template>
+        </Column>
+      </DataTable>
+      </template>
+      <template #footer>
+        <p>Average fill time: About {{ averageFillTime }} minutes</p>
+      </template>
+    </Card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, defineProps, defineEmits, computed, watch, toRaw } from 'vue';
+import Card from 'primevue/card';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
@@ -25,8 +48,8 @@ interface IDisplayState {
   datetime: string;
   state: string;
   reason: string;
+  failureReason: string;
   success: boolean;
-  error: string;
 }
 
 interface ISystemState {
@@ -59,8 +82,6 @@ const columns = ref([
   {field: 'datetime', header: 'Date/Time'},
   {field: 'state', header: 'State'},
   {field: 'reason', header: 'Reason'},
-  {field: 'success', header: 'Success'},
-  {field: 'error', header: 'Error'},
 ]);
 
 const states = computed( () => {
@@ -75,7 +96,7 @@ const states = computed( () => {
       }),
       state: state.data.state,
       reason: state.data.requestReason,
-      error: state.data.failureReason,
+      failureReason: state.data.failureReason,
       success: state.data.success,
     });
   });

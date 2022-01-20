@@ -1,6 +1,6 @@
 <template>
     <div>
-      <Card v-if="show" style="width: 25rem; margin-bottom: 2em">
+      <Card v-if="show" style="width: 25rem; margin-bottom: 2em; background: linear-gradient(to bottom right, rgb(27, 34, 99), rgb(17, 20, 48))">
         <template #title>
           Last Restart
         </template>

@@ -1,6 +1,6 @@
 <template>
     <div v-if="show">
-      <Card style="width: 25rem; margin-bottom: 2em">
+      <Card style="width: 25rem; margin-bottom: 2em; background: linear-gradient(to bottom right, rgb(27, 34, 99), rgb(17, 20, 48));">
         <template #title>
           Current State
         </template>
