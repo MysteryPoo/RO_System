@@ -66,8 +66,12 @@ const callApi = async (deviceId : string | undefined) => {
 };
 
 const initializeRefreshInterval = (deviceId : string | undefined) => {
-    if (undefined === deviceId || undefined !== refreshInterval.value) {
+    if (undefined === deviceId) {
         return;
+    }
+    if (refreshInterval.value !== undefined) {
+      clearInterval(refreshInterval.value);
+      refreshInterval.value = undefined;
     }
     refreshInterval.value = setInterval( () => {
       callApi(deviceId);
@@ -75,6 +79,7 @@ const initializeRefreshInterval = (deviceId : string | undefined) => {
 };
 
 watch( () => props.deviceId, (newDeviceId) => {
+  initializeRefreshInterval(newDeviceId);
   callApi(newDeviceId);
 });
 

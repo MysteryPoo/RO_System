@@ -36,8 +36,12 @@ const enabled = ref(true);
 const refreshInterval : Ref<number | undefined> = ref(undefined);
 
 const initializeRefreshInterval = (deviceId : string | undefined) => {
-    if (undefined === deviceId || undefined !== refreshInterval.value) {
+    if (undefined === deviceId) {
         return;
+    }
+    if (refreshInterval.value !== undefined) {
+      clearInterval(refreshInterval.value);
+      refreshInterval.value = undefined;
     }
     refreshInterval.value = setInterval( () => {
       callApi(deviceId);
@@ -77,7 +81,12 @@ onBeforeUnmount( () => {
 });
 
 watch( () => props.deviceId, (newDeviceId) => {
-    callApi(newDeviceId);
+  callApi(newDeviceId);
+  initializeRefreshInterval(newDeviceId);
+});
+
+watch( () => props.averageFillTime, (newTime) => {
+  console.log(newTime);
 });
 
 </script>
