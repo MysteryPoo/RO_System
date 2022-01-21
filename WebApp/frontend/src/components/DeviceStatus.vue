@@ -85,8 +85,4 @@ watch( () => props.deviceId, (newDeviceId) => {
   initializeRefreshInterval(newDeviceId);
 });
 
-watch( () => props.averageFillTime, (newTime) => {
-  console.log(newTime);
-});
-
 </script>

@@ -106,8 +106,6 @@ const handleSubmit = async (isFormValid : boolean) => {
     }
     const registerRequest = await register();
     if(registerRequest.status === 200) {
-        const response = await registerRequest.json();
-        console.log(response);
         toggleDialog();
     } else {
         toggleError();
