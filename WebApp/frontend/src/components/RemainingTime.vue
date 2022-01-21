@@ -38,7 +38,7 @@ onBeforeUnmount( () => {
 });
 
 const startProgress = () => {
-  if (interval.value === null) {
+  if (interval.value === undefined) {
     interval.value = setInterval( () => {
       const { asPercent, asTime } : ITimeProgress = calculateTimeProgress();
       percent.value = asPercent;
@@ -74,4 +74,5 @@ const calculateTimeProgress = () => {
     asTime: minutesRemaining > 0 ? `${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''}` : `${Math.max(0, secondsRemaining)} second${secondsRemaining !== 1 ? 's' : ''}`,
   };
 };
+
 </script>
