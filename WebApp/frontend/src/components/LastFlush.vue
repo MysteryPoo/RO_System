@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, Ref, defineProps, watch, computed } from 'vue';
+import { ref, Ref, onBeforeUnmount, onMounted, watch, computed } from 'vue';
 import Card from 'primevue/card';
 import { useDevicesApi } from '@/services/devices';
 
@@ -24,6 +24,7 @@ const props = defineProps({
 const api = useDevicesApi();
 
 const lastFlush : Ref<Date | null> = ref(null);
+const refreshInterval : Ref<number | undefined> = ref(undefined);
 
 const lastFlushDisplay = computed( () => {
     if (lastFlush.value === null) {
@@ -52,12 +53,38 @@ const getTimeOfLastFlush = async (deviceId : string | undefined) => {
   return null;
 };
 
-watch( () => props.deviceId, async (newDeviceId) => {
-    try {
-        const flushEventTime = await getTimeOfLastFlush(newDeviceId);
-        lastFlush.value = flushEventTime ? new Date(flushEventTime) : null;
-    } catch (err) {
-        console.log(err);
+const callApi = async (deviceId : string | undefined) => {
+  try {
+    const flushEventTime = await getTimeOfLastFlush(deviceId);
+    lastFlush.value = flushEventTime ? new Date(flushEventTime) : null;
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+const initializeRefreshInterval = (deviceId : string | undefined) => {
+    if (undefined === deviceId || undefined !== refreshInterval.value) {
+        return;
     }
+    refreshInterval.value = setInterval( () => {
+      callApi(deviceId);
+    }, 10000);
+};
+
+watch( () => props.deviceId, (newDeviceId) => {
+  callApi(newDeviceId);
 });
+
+onMounted( () => {
+  initializeRefreshInterval(props.deviceId);
+});
+
+onBeforeUnmount( () => {
+  if (refreshInterval.value === undefined) {
+    return;
+  }
+  clearInterval(refreshInterval.value);
+  refreshInterval.value = undefined;
+});
+
 </script>

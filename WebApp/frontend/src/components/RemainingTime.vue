@@ -6,7 +6,7 @@
 </template>
 
 <script setup lang="ts">
-import { Ref, ref, defineProps, onMounted, onBeforeUnmount } from 'vue';
+import { Ref, ref, onMounted, onBeforeUnmount } from 'vue';
 import ProgressBar from 'primevue/progressbar';
 
 interface ITimeProgress {

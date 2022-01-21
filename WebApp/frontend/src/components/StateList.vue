@@ -37,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps, defineEmits, computed, watch, toRaw } from 'vue';
+import { ref, computed, watch, toRaw } from 'vue';
 import Card from 'primevue/card';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';

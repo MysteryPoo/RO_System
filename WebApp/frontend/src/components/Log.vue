@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, Ref, defineProps, computed, watch } from 'vue';
+import { ref, Ref, computed, watch } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';

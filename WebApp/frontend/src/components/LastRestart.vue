@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, Ref, defineProps, watch, computed } from 'vue';
+import { ref, Ref, onMounted, onBeforeUnmount, watch, computed } from 'vue';
 import Card from 'primevue/card';
 import { useDevicesApi } from '@/services/devices';
 
@@ -38,6 +38,7 @@ const lastRestartDisplay = computed( () => {
     });
 });
 const lastRestartReason = ref('');
+const refreshInterval : Ref<number | undefined> = ref(undefined);
 
 const getTimeOfLastRestart = async (deviceId : string | undefined) => {
   const restarts = await api.getRestarts(deviceId);
@@ -49,9 +50,9 @@ const getTimeOfLastRestart = async (deviceId : string | undefined) => {
   }
 };
 
-watch( () => props.deviceId, async (newDeviceId) => {
+const callApi = async (deviceId : string | undefined) => {
   try {
-    const restartEvent = await getTimeOfLastRestart(newDeviceId);
+    const restartEvent = await getTimeOfLastRestart(deviceId);
     if (restartEvent) {
       lastRestart.value = new Date(restartEvent.datetime);
       lastRestartReason.value = restartEvent.data.reason;
@@ -62,5 +63,31 @@ watch( () => props.deviceId, async (newDeviceId) => {
   } catch (err) {
     console.log(err);
   }
+};
+
+const initializeRefreshInterval = (deviceId : string | undefined) => {
+    if (undefined === deviceId || undefined !== refreshInterval.value) {
+        return;
+    }
+    refreshInterval.value = setInterval( () => {
+      callApi(deviceId);
+    }, 10000);
+};
+
+watch( () => props.deviceId, (newDeviceId) => {
+  callApi(newDeviceId);
 });
+
+onMounted( () => {
+  initializeRefreshInterval(props.deviceId);
+});
+
+onBeforeUnmount( () => {
+  if (refreshInterval.value === undefined) {
+    return;
+  }
+  clearInterval(refreshInterval.value);
+  refreshInterval.value = undefined;
+});
+
 </script>
