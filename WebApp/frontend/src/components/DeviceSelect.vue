@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineEmits, onMounted, Ref } from 'vue';
+import { ref, onBeforeUnmount, onMounted, Ref } from 'vue';
 import Dropdown from 'primevue/dropdown';
 import { useDevicesApi } from '@/services/devices';
 
@@ -25,11 +25,18 @@ const api = useDevicesApi();
 const deviceList : Ref<IDevice[]> = ref([]);
 const deviceId = ref(null);
 const selectedDevice : Ref<IDevice | undefined> = ref(undefined);
+const refreshInterval : Ref<number | undefined> = ref(undefined);
 
 const onDeviceSelected = (event : IDropdownEvent) => {
     window.localStorage.deviceId = event.value.id;
     emit('deviceSelected', event.value.id);
+    initializeRefreshInterval(event.value.id);
 };
+
+onBeforeUnmount( () => {
+    clearInterval(refreshInterval.value);
+    refreshInterval.value = undefined;
+});
 
 onMounted( async () => {
     deviceId.value = window.localStorage.deviceId;
@@ -38,6 +45,17 @@ onMounted( async () => {
     if(deviceId.value) {
         selectedDevice.value = deviceList.value.find( element => element.id === deviceId.value);
         emit('deviceSelected', deviceId.value);
+        initializeRefreshInterval(deviceId.value);
     }
 });
+
+const initializeRefreshInterval = (deviceId : string | undefined) => {
+    if (undefined === deviceId || undefined !== refreshInterval.value) {
+        return;
+    }
+    refreshInterval.value = setInterval( () => {
+        emit('deviceSelected', deviceId);
+    }, 10000);
+};
+
 </script>
