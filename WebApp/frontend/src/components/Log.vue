@@ -9,9 +9,9 @@
         </div>
       </template>
       <Column field="datetime" header="Date/Time"></Column>
-      <Column field="criticality" header="Criticality">
+      <Column field="severity" header="Severity">
         <template #body="slotProps">
-          <Badge class="p-mr-2" :severity="slotProps.data.colorization">{{ slotProps.data.criticality }}</Badge>
+          <Badge class="p-mr-2" :severity="slotProps.data.colorization">{{ slotProps.data.severity }}</Badge>
         </template>
       </Column>
       <Column field="message" header="Message"></Column>
@@ -40,7 +40,7 @@ interface Log {
     message? : string;
   }
   datetime : string;
-  criticality : string;
+  severity : string;
   message : string | undefined;
   colorization : string;
 }
@@ -62,6 +62,10 @@ const deviceLogs : Ref<Log[]> = ref([]);
 const logs = computed( () => {
   const logs : Log[] = [];
   deviceLogs.value.forEach((log) => {
+    // TODO : Process configuration logs
+    if (log.component === 'system/configuration') {
+      return;
+    }
     let colorization = '';
     if (log.component === 'INFO') {
       colorization = 'info';
@@ -70,7 +74,7 @@ const logs = computed( () => {
     } else if (log.component === 'ERROR') {
       colorization = 'danger';
     }
-    const criticality = log.component === 'system/restart' ? 'Restart' : log.component;
+    const severity = log.component === 'system/restart' ? 'Restart' : log.component;
     const message = log.component === 'system/restart' ? log.data.reason : log.data.message;
     logs.push({
       _id: log._id,
@@ -81,7 +85,7 @@ const logs = computed( () => {
             hour: 'numeric',
             minute: '2-digit'
       }),
-      criticality,
+      severity,
       message,
       colorization,
       data: log.data,
