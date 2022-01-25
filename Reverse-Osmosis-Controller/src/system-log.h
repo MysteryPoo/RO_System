@@ -15,6 +15,7 @@
 #include "application.h"
 #include "message.h"
 #include "IComponent.h"
+#include <queue>
 
 #define SYSTEMLOG_MESSAGEBUFFERSIZE 32
 
@@ -28,8 +29,8 @@ public:
     void error(String message);
     void pushMessage(String component, String data);
     void pushMessage(String component, char* data);
-    boolean isEmpty() { return currentMessageIndex == 0; }
-    int messageQueueSize() { return currentMessageIndex; }
+    boolean isEmpty() { return messageQueueSize() == 0; }
+    int messageQueueSize() { return messageQueue.size(); }
     static JSONBufferWriter createBuffer(int size);
     virtual void Update() override;
 
@@ -37,11 +38,11 @@ public:
     
 private:
     byte currentMessageIndex;
-    Message messages[SYSTEMLOG_MESSAGEBUFFERSIZE];
+    std::queue<Message*> messageQueue;
     unsigned long lastBurst;
     
     void publishLog();
-    boolean isFull() { return currentMessageIndex == SYSTEMLOG_MESSAGEBUFFERSIZE; }
+    boolean isFull() { return messageQueueSize() == SYSTEMLOG_MESSAGEBUFFERSIZE; }
     void simpleMessage(String label, String message);
 
 };

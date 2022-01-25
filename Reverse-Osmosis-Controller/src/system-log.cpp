@@ -16,12 +16,13 @@ void SystemLog::pushMessage(String component, String data)
 {
     if(this->enabled)
     {
-        if(this->currentMessageIndex < SYSTEMLOG_MESSAGEBUFFERSIZE)
+        if(this->messageQueue.size() < SYSTEMLOG_MESSAGEBUFFERSIZE)
         {
-            Message* msg = &this->messages[this->currentMessageIndex++];
+            Message* msg = new Message();
             msg->component = component;
             msg->data = data;
             msg->datetime = Particle.connected() ? Time.now() : 0;
+            this->messageQueue.push(msg);
         }
     }
 }
@@ -47,9 +48,12 @@ void SystemLog::publishLog()
             Particle.publish("romcon/logger", "Logger message queue full. Potential telemetry data loss.", 60, PRIVATE);
         }
 
-        Message* msg = &this->messages[--currentMessageIndex];
+        Message* msg = this->messageQueue.front();
         
         Particle.publish("romcon/" + msg->component, msg->toJSON(), 60, PRIVATE);
+
+        this->messageQueue.pop();
+        delete msg;
         
         this->lastBurst = curMillis;
     }
