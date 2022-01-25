@@ -31,6 +31,11 @@ void SystemLog::pushMessage(String component, char* data)
     this->pushMessage(component, String(data));
     delete[] data;
 }
+
+void SystemLog::Update()
+{
+    this->publishLog();
+}
         
 void SystemLog::publishLog()
 {

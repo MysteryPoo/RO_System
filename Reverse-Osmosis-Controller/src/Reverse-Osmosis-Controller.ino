@@ -107,6 +107,7 @@ void setup()
 #endif
     tickTimer.start();
 
+    componentsToUpdate.push_back(&syslog);
     componentsToUpdate.push_back(&fs);
     //componentsToUpdate.push_back(&us);
     componentsToUpdate.push_back(&ro);
@@ -129,8 +130,6 @@ void loop()
     {
         sysRestart("");
     }
-    
-    syslog.publishLog();
 
     for(IComponent* component : componentsToUpdate)
     {

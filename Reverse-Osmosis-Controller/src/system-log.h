@@ -14,14 +14,14 @@
 
 #include "application.h"
 #include "message.h"
+#include "IComponent.h"
 
 #define SYSTEMLOG_MESSAGEBUFFERSIZE 32
 
-class SystemLog
+class SystemLog : public IComponent
 {
 public:
     SystemLog();
-    void publishLog();
     void trace(String message);
     void information(String message);
     void warning(String message);
@@ -31,6 +31,7 @@ public:
     boolean isEmpty() { return currentMessageIndex == 0; }
     int messageQueueSize() { return currentMessageIndex; }
     static JSONBufferWriter createBuffer(int size);
+    virtual void Update() override;
 
     boolean enabled;
     
@@ -39,6 +40,7 @@ private:
     Message messages[SYSTEMLOG_MESSAGEBUFFERSIZE];
     unsigned long lastBurst;
     
+    void publishLog();
     boolean isFull() { return currentMessageIndex == SYSTEMLOG_MESSAGEBUFFERSIZE; }
     void simpleMessage(String label, String message);
 
