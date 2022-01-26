@@ -62,7 +62,6 @@ async function sendConfiguration(deviceId) {
   if (configuration != {}) {
     try {
       const response = await particle.callFunction({ deviceId: deviceId, name: 'configuration', argument: JSON.stringify(configuration), auth: token });
-      console.log(response);
       return response;
     } catch(err) {
       console.log(err);
@@ -103,13 +102,11 @@ async function UpdateDeviceStatus(device) {
   // Setup each device
   Object.keys(getDevices.body).forEach(async (key) => {
     const device = getDevices.body[key];
-    console.log(`Found device: ${device.name}`);
     UpdateDeviceStatus(device);
     // Setup Status stream
     const statusStream = await particle.getEventStream({ deviceId: device.id, name: "spark/status", auth: token });
     statusStream.on('event', async function (event) {
       const status = event.data === 'online';
-      console.log(`Device {${device.name}}(${event.coreid}) registered as '${event.data}'`);
       UpdateDeviceStatus({id: device.id, online: status});
     });
     // Setup Logger stream

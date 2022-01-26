@@ -1,3 +1,5 @@
+// TODO : Maybe this API should take a token as a parameter rather than grabbing it from the localStorage itself?
+
 
 export class UnauthorizedException extends Error {
   code = 401;
@@ -17,6 +19,49 @@ class DevicesApi {
       return response.json();
     }
     return [];
+  }
+
+  async getConfiguration(deviceId: string | undefined) {
+    if (deviceId === undefined) {
+      throw new DeviceRequiredException();
+    }
+    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/configuration`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${window.localStorage.token}`,
+      },
+    });
+    if (response.status === 200) {
+      return response.json();
+    }
+    if (response.status === 401) {
+      throw new UnauthorizedException();
+    }
+  }
+
+  async setConfiguration(deviceId: string | undefined, configuration : any) {
+    if (deviceId === undefined) {
+      throw new DeviceRequiredException();
+    }
+    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/configuration`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${window.localStorage.token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(configuration),
+    });
+    if (response.status === 200) {
+      return response.json();
+    }
+    if (response.status === 401) {
+      throw new UnauthorizedException();
+    }
+    return {
+      success: false,
+      code: response.status,
+    };
   }
 
   async getStatus(deviceId: string | undefined) {

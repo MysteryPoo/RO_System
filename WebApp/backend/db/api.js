@@ -3,6 +3,8 @@ const { database, configCollection, statusCollection } = require('./connection')
 const { ObjectId } = require('mongodb');
 const particle = require('./particle');
 
+// TODO : getDeviceList should not contact Particle. The Stream service should populate the database with this information and backend pulls from database.
+
 class DeviceRequiredException {
     code = 422;
     message = "No device provided";
@@ -42,13 +44,18 @@ async function getConfiguration(device) {
     const query = {
         deviceId: device,
     };
-    const configuration = configCollection.findOne(query);
-    return configuration;
+    const configuration = await configCollection.findOne(query);
+    return configuration?.configuration;
 }
 
 async function setConfiguration(device, data) {
     if(device === null) {
         throw new DeviceRequiredException();
+    }
+    const previousConfiguration = await getConfiguration(device);
+    let newConfiguration = previousConfiguration || {};
+    for (key in data) {
+        newConfiguration[key] = data[key];
     }
     const query = {
         deviceId: device,
@@ -56,16 +63,7 @@ async function setConfiguration(device, data) {
     const update = {
         $set: {
             deviceId: device,
-            enabled: data.enabled,
-            fillDistances: {
-                start: data.fillDistances.start,
-                stop: data.fillDistances.stop,
-            },
-            sonicHeight: data.sonicHeight,
-            floatHeight: data.floatHeight,
-            diameter: data.diameter,
-            pumpCooldown: data.pumpCooldown,
-            tickRate: data.tickRate,
+            configuration: newConfiguration,
         },
     };
     const options = {
@@ -141,6 +139,7 @@ async function getLog(device, projectionOnly = false, rowCount = 10, skip = 0) {
                 'INFO',
                 'WARN',
                 'system/restart',
+                'system/configuration',
             ],
         },
     };

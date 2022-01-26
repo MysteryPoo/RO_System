@@ -52,11 +52,9 @@ router.get(
 
 router.get(
   '/:deviceId/configuration',
-  (req, res) => {
-    api.getConfiguration(req.params.deviceId).then( (data) => {
-        res.json(data);
-    })
-    .catch(err => {console.log(err)});;
+  async (req, res) => {
+    const configuration = await api.getConfiguration(req.params.deviceId);
+    res.json(configuration || {});
   }
 );
 
@@ -65,7 +63,7 @@ router.post(
   (req, res) => {
     api.setConfiguration(req.params.deviceId, req.body);
     try {
-      particle.sendConfiguration(req.params.deviceId, req.body);
+      //particle.sendConfiguration(req.params.deviceId, req.body);
       res.json({
         success: true,
         configuration: req.body,
