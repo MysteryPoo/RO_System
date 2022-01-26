@@ -187,6 +187,10 @@ int Configuration(String config)
         {
             ro.ConfigurePumpCooldown(iter.value().toInt());
         }
+        if(iter.name() == "flushDuration")
+        {
+            ro.ConfigureFlushDuration(iter.value().toInt());
+        }
 #ifdef TESTING
         if(iter.name() == "forceState")
         {
@@ -200,10 +204,6 @@ int Configuration(String config)
         if(iter.name() == "ultraSonic")
         {
             us.setDistance(iter.value().toInt());
-        }
-        if(iter.name() == "flushDuration")
-        {
-            ro.ConfigureFlushDuration(iter.value().toInt());
         }
 #endif
     }
