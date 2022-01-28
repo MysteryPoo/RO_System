@@ -1,14 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { Collection, Db, MongoClient } from 'mongodb';
 import { databaseConstants } from './constants';
+import { IDeviceStatus } from './interfaces';
 
 @Injectable()
 export class DatabaseService {
+  public database: Db;
+  public configCollection: Collection;
+  public statusCollection: Collection;
+  public userCollection: Collection;
+
   private mongo: MongoClient;
-  private database: Db;
-  private configCollection: Collection;
-  private statusCollection: Collection;
-  private userCollection: Collection;
 
   constructor() {
     // Create connection
@@ -31,11 +33,14 @@ export class DatabaseService {
     this.userCollection.createIndex({ username: 1 }, { unique: true });
   }
 
-  public async findUser(username: string): Promise<any> {
-    const collection = this.userCollection;
+  async getDeviceStatus(deviceId: string): Promise<{ online: boolean }> {
     const query = {
-      username,
+      deviceId,
     };
-    return collection.findOne(query);
+    const status: IDeviceStatus =
+      await this.statusCollection.findOne<IDeviceStatus>(query);
+    return {
+      online: status.online,
+    };
   }
 }
