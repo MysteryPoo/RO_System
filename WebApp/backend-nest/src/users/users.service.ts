@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from 'src/database/database.service';
+import { UsersService as DatabaseUsersService } from 'src/database/users/users.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private databaseService: DatabaseService) {}
+  constructor(private usersService: DatabaseUsersService) {}
 
   async findOne(username: string): Promise<any> {
-    return this.databaseService.findUser(username);
+    return this.usersService.findUser(username);
   }
 }
