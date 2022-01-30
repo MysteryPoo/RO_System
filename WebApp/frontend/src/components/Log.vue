@@ -17,7 +17,7 @@
       <Column field="message" header="Message"></Column>
       <Column field="actions" header="Actions">
         <template #body="slotProps">
-          <Button v-if="slotProps.data.criticality !== 'Restart'" icon="pi pi-trash" @click="clearLog(props.deviceId, slotProps.data._id)" />
+          <Button v-if="slotProps.data.severity !== 'Restart'" icon="pi pi-trash" @click="clearLog(props.deviceId, slotProps.data._id)" />
         </template>
       </Column>
     </DataTable>
@@ -26,6 +26,7 @@
 
 <script setup lang="ts">
 import { ref, Ref, computed, watch } from 'vue';
+import { useToast } from 'primevue/usetoast';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
@@ -54,6 +55,7 @@ const props = defineProps({
   deviceId: String,
 });
 
+const toast = useToast();
 const api = useDevicesApi();
 const loading = ref(true);
 const deviceLogsCount = ref(0);
@@ -98,10 +100,12 @@ const clearLog = async (deviceId : string | undefined, logId : string) => {
   try {
     const response = await api.clearLog(deviceId, logId);
     if (response.status === 200) {
+      toast.add({severity:'success', summary: 'Log entry removed', detail: `The selected log entry has been removed.`, life: 3000});
       refresh();
     }
   } catch (e) {
-    console.log(e);
+    console.error(e);
+    toast.add({severity:'error', summary: 'Log removal failed', detail: `Unable to remove the selected log entry.`, life: 3000});
   }
 };
 
