@@ -91,12 +91,12 @@ const handleSubmit = async (isFormValid : boolean) => {
     return;
   }
   const loginRequest = await login();
-  if(loginRequest.status === 200) {
+  if(loginRequest.status === 201) {
     const response = await loginRequest.json();
-    if(response.token) {
+    if(response.access_token) {
       toggleDialog();
-      window.localStorage.token = response.token;
-      store.commit('set_token', response.token);
+      window.localStorage.token = response.access_token;
+      store.commit('set_token', response.access_token);
     } else if(response.message) {
       displayError(response.message);
     } else {
