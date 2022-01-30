@@ -67,7 +67,6 @@ export class ParticleService {
   async getDeviceList(): Promise<Array<any>> {
     const token = await this.login();
     const request = await this.particle.listDevices({ auth: token });
-    console.log(request);
     const deviceList = [];
     Object.keys(request.body).forEach((key) => {
       const device = request.body[key];

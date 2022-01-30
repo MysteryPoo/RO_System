@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Collection, FindOptions } from 'mongodb';
+import { Collection, FindOptions, ObjectId } from 'mongodb';
 import { DatabaseService } from '../database.service';
 
 @Injectable()
@@ -26,7 +26,7 @@ export class LogsService {
         ],
       },
     };
-    const options: FindOptions<Document> = {
+    const options: FindOptions = {
       sort: {
         datetime: -1,
       },
@@ -40,5 +40,14 @@ export class LogsService {
       const cursor = collection.find(query, options);
       return await cursor.toArray();
     }
+  }
+
+  async deleteLog(deviceId: string, logId: string) {
+    const collection: Collection =
+      this.databaseService.database.collection(deviceId);
+    const query = {
+      _id: new ObjectId(logId),
+    };
+    return collection.deleteOne(query);
   }
 }

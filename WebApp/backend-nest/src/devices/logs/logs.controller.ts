@@ -1,4 +1,11 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LogsService } from 'src/database/logs/logs.service';
 
@@ -20,5 +27,14 @@ export class LogsController {
       rowCount,
       skipParam,
     );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':logId')
+  async deleteLog(
+    @Param('deviceId') deviceId: string,
+    @Param('logId') logId: string,
+  ) {
+    return this.logsService.deleteLog(deviceId, logId);
   }
 }

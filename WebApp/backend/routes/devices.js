@@ -111,7 +111,7 @@ router.get(
     try {
       statesToGet = req.query.states ? JSON.parse(req.query.states) : ['IDLE', 'FILL', 'FLUSH'];
     } catch (e) {
-      console.log(e);
+      console.error(e);
     }
     const skipParam = req.query.skip ? Number(req.query.skip) : undefined;
     const rowCount = req.query.rows ? Number(req.query.rows) : undefined;

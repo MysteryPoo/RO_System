@@ -5,7 +5,7 @@ import { ParticleService } from './particle/particle.service';
 export class AppController {
   constructor(private particleService: ParticleService) {}
 
-  @Get('devices')
+  @Get(['devices', 'deviceList'])
   getDevices() {
     return this.particleService.getDeviceList();
   }
