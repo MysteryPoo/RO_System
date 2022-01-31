@@ -52,7 +52,7 @@ class DevicesApi {
       },
       body: JSON.stringify(configuration),
     });
-    if (response.status === 200) {
+    if (response.status === 201) {
       return response.json();
     }
     if (response.status === 401) {

@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onBeforeUnmount, onMounted, Ref } from 'vue';
+import { ref, onMounted, Ref } from 'vue';
 import Dropdown from 'primevue/dropdown';
 import { useDevicesApi } from '@/services/devices';
 
