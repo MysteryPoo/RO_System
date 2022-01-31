@@ -9,4 +9,9 @@ export class AppController {
   getDevices() {
     return this.particleService.getDeviceList();
   }
+
+  @Get('version')
+  getVersion() {
+    return process.env.npm_package_version;
+  }
 }
