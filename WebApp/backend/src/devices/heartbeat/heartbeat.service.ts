@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Collection, Filter, FindOptions } from 'mongodb';
-import { DatabaseService } from '../database.service';
+import { Collection, FindOptions } from 'mongodb';
+import { DatabaseService } from 'src/database/database.service';
 
 @Injectable()
 export class HeartbeatService {

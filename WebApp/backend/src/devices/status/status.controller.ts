@@ -1,6 +1,6 @@
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { HeartbeatService } from 'src/database/heartbeat/heartbeat.service';
+import { HeartbeatService } from 'src/devices/heartbeat/heartbeat.service';
 
 @Controller('devices/:deviceId/status')
 export class StatusController {
