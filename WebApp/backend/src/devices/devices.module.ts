@@ -8,12 +8,18 @@ import { HeartbeatService } from './heartbeat/heartbeat.service';
 import { LogsController } from './logs/logs.controller';
 import { LogsService } from './logs/logs.service';
 import { RestartController } from './restart/restart.controller';
+import { RestartService } from './restart/restart.service';
 import { StatesController } from './states/states.controller';
 import { StatusController } from './status/status.controller';
 
 @Module({
   imports: [DatabaseModule],
-  providers: [ConfigurationService, HeartbeatService, LogsService],
+  providers: [
+    ConfigurationService,
+    HeartbeatService,
+    LogsService,
+    RestartService,
+  ],
   controllers: [
     DevicesController,
     DevicesConfigurationController,
