@@ -32,7 +32,7 @@ services:
     container_name: romcon_backend
     depends_on:
       - mongo
-    build: ./backend-nest
+    build: ./backend
     image: ${DOCKER_USERNAME}/romcon-backend
     restart: always
     ports: 
