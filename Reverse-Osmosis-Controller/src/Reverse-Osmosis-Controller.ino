@@ -27,6 +27,7 @@
         D4: Input - Float Switch ( On: HIGH; Off; LOW )
         A3: Output - Distance Sensor Trigger
         A4: Input - Distance Sensor Echo
+        A5: Input - Float Meter
         
 */
 
@@ -37,7 +38,7 @@ SYSTEM_THREAD(ENABLED)
 #include "ultra-sonic.h"
 #include "relay.h"
 #include "float-switch.h"
-#include "ultra-sonic.h"
+#include "float-meter.h"
 #include "ROSystem.h"
 #include <vector>
 
@@ -64,6 +65,7 @@ Relay flush(Relay::Name::COMPONENT_FLUSHVALVE, syslog, D5, true);
 
 UltraSonic us(A3, A4, syslog);
 FloatSwitch fs(D4, syslog);
+FloatMeter fm(A5, syslog);
 
 ROSystem ro(pump, inlet, flush, fs, us, syslog);
 
@@ -109,6 +111,7 @@ void setup()
 
     componentsToUpdate.push_back(&syslog);
     componentsToUpdate.push_back(&fs);
+    componentsToUpdate.push_back(&fm);
     //componentsToUpdate.push_back(&us);
     componentsToUpdate.push_back(&ro);
 
@@ -231,6 +234,7 @@ void sendTick()
     message.name("messageQueueSize").value(syslog.messageQueueSize());
     message.name("version").value(VERSION_STRING);
     message.name("floatSwitch").value(fs.isActive());
+    message.name("float-meter").value(fm.voltage());
     message.name("ultra-sonic").value(us.getDistance());
     message.name("enabled").value(ro.getEnabled());
     message.endObject();
