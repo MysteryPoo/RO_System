@@ -9,7 +9,7 @@ export class DevicesConfigurationController {
   @UseGuards(JwtAuthGuard)
   @Get()
   async getConfiguration(@Param('deviceId') deviceId: string): Promise<any> {
-    return this.configurationService.getConfiguration(deviceId) || {};
+    return (await this.configurationService.getConfiguration(deviceId)) || {};
   }
 
   @UseGuards(JwtAuthGuard)
