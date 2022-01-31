@@ -7,7 +7,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { LogsService } from 'src/devices/logs/logs.service';
+import { LogsService } from './logs.service';
 
 @Controller('devices/:deviceId/logs')
 export class LogsController {
