@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { ConfigurationService } from 'src/database/configuration/configuration.service';
+import { ConfigurationService } from 'src/devices/configuration/configuration.service';
 
 @Controller('devices/:deviceId/configuration')
 export class DevicesConfigurationController {

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from 'src/database/database.module';
 import { DevicesConfigurationController } from './configuration/configuration.controller';
+import { ConfigurationService } from './configuration/configuration.service';
 import { DevicesController } from './devices.controller';
 import { HeartbeatController } from './heartbeat/heartbeat.controller';
 import { LogsController } from './logs/logs.controller';
@@ -10,6 +11,7 @@ import { StatusController } from './status/status.controller';
 
 @Module({
   imports: [DatabaseModule],
+  providers: [ConfigurationService],
   controllers: [
     DevicesController,
     DevicesConfigurationController,
