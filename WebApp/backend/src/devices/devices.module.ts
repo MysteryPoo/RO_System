@@ -10,6 +10,7 @@ import { LogsService } from './logs/logs.service';
 import { RestartController } from './restart/restart.controller';
 import { RestartService } from './restart/restart.service';
 import { StatesController } from './states/states.controller';
+import { StatesService } from './states/states.service';
 import { StatusController } from './status/status.controller';
 
 @Module({
@@ -19,6 +20,7 @@ import { StatusController } from './status/status.controller';
     HeartbeatService,
     LogsService,
     RestartService,
+    StatesService,
   ],
   controllers: [
     DevicesController,

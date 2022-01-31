@@ -1,6 +1,6 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { StatesService } from 'src/database/states/states.service';
+import { StatesService } from './states.service';
 
 @Controller('devices/:deviceId/states')
 export class StatesController {
