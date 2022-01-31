@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Collection, FindOptions, ObjectId } from 'mongodb';
-import { DatabaseService } from '../database.service';
+import { DatabaseService } from 'src/database/database.service';
 
 @Injectable()
 export class LogsService {
