@@ -12,6 +12,8 @@ FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
     status(false),
     lastStable(millis()),
     stable(false),
+    firedWarning(false),
+    isReliable(true),
     logger(logger)
 {
 #ifndef TESTING
@@ -28,11 +30,22 @@ void FloatSwitch::cloudSetup()
 void FloatSwitch::Update()
 {
     this->sample();
+    // Notify if the float switch was triggered.
+    if(this->isFull() && !this->firedWarning)
+    {
+        logger.warning("Float Switch has been triggered!");
+        this->firedWarning = true;
+    }
+    // Reset warning
+    if (this->stable && !this->status)
+    {
+        this->firedWarning = false;
+    }
 }
 
-bool FloatSwitch::isActive()
+bool FloatSwitch::isFull()
 {
-    return this->stable && this->status;
+    return (this->stable && this->status) || !isReliable;
 }
 
 void FloatSwitch::sample()
@@ -50,7 +63,8 @@ void FloatSwitch::sample()
         // If unstable for a long period of time (constant flip/flop), we have a problem.
         if(curMillis > this->lastStable + TIME_CONSIDERED_UNSTABLE_MS)
         {
-            this->logger.error("Float switch is highly unstable.");
+            this->isReliable = false;
+            this->logger.error("Float switch is highly unstable. System shutdown.");
         }
     }
     else if(curMillis > this->stableTimer)

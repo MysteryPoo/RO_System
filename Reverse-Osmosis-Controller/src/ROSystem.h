@@ -13,6 +13,8 @@
 
 #include "ICloud.h"
 #include "IComponent.h"
+#include "ISensor.h"
+#include <vector>
 
 class Relay;
 class SystemLog;
@@ -33,10 +35,11 @@ public:
         FILL
     };
     
-    ROSystem(Relay &pump, Relay &inlet, Relay &flush, FloatSwitch &floatSwitch, UltraSonic &ultraSonic, SystemLog &logger);
+    ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger);
+
+    void AddSensor(ISensor* sensor);
 
     virtual void Update() override;
-    void update(bool tankFull, unsigned short distance);
 
     virtual void cloudSetup() override;
 
@@ -45,8 +48,7 @@ public:
     State getState() { return this->state; };
     String getStateString();
 
-    int enable(String setEnable); // Deprecated
-    void setEnable(bool enable);
+    void setEnable(bool enable) { this->enabled = enable; };
     int setFillDistances(String csvFill);
     bool getEnabled() { return this->enabled; }
 
@@ -62,17 +64,16 @@ private:
     Relay &pump;
     Relay &inlet;
     Relay &flush;
-    FloatSwitch &floatSwitch;
-    UltraSonic &ultraSonic;
     SystemLog &logger;
     bool flushedToday;
-    unsigned long totalPumpTime;
+    unsigned long totalPumpTime; // Deprecated
     unsigned long totalPumpRuns;
     unsigned long lastPumpTime;
     unsigned long flushStartedTime;
     unsigned int flushDuration;
-    unsigned long pumpRunTime;
+    unsigned long pumpRunTime; // Deprecated
     bool firstPump;
+    std::vector<ISensor*> sensors;
 
     // Configuration
     bool enabled;
@@ -80,6 +81,7 @@ private:
     unsigned short fillStopDistance; // Centimeters
     unsigned int pumpCooldown; // Time between turning off and then on again
     
+    void update(bool tankFull);
     void requestState(ROSystem::State state, const char* requestReason);
     void requestState(ROSystem::State state, String requestReason);
     bool activatePump();

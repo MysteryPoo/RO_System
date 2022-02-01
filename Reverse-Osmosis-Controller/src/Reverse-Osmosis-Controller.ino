@@ -35,10 +35,16 @@ SYSTEM_THREAD(ENABLED)
 
 #include "global-defines.h"
 #include "system-log.h"
-#include "ultra-sonic.h"
 #include "relay.h"
+#ifdef FEATURE_ULTRASONIC
+#include "ultra-sonic.h"
+#endif
+#ifdef FEATURE_FLOATSWITCH
 #include "float-switch.h"
+#endif
+#ifdef FEATURE_FLOATMETER
 #include "float-meter.h"
+#endif
 #include "ROSystem.h"
 #include <vector>
 
@@ -56,18 +62,23 @@ enum UserReason
 ApplicationWatchdog *watchDog;
 
 time32_t timeToRestart;
-bool lastFloatSwitch = false;
 
 SystemLog syslog;
 Relay pump(Relay::Name::COMPONENT_PUMP, syslog, D7, true);
 Relay inlet(Relay::Name::COMPONENT_INLETVALVE, syslog, D6, true);
 Relay flush(Relay::Name::COMPONENT_FLUSHVALVE, syslog, D5, true);
 
+#ifdef FEATURE_ULTRASONIC
 UltraSonic us(A3, A4, syslog);
+#endif
+#ifdef FEATURE_FLOATSWITCH
 FloatSwitch fs(D4, syslog);
+#endif
+#ifdef FEATURE_FLOATMETER
 FloatMeter fm(A5, syslog);
+#endif
 
-ROSystem ro(pump, inlet, flush, fs, us, syslog);
+ROSystem ro(pump, inlet, flush, syslog);
 
 std::vector<IComponent*> componentsToUpdate;
 
@@ -77,9 +88,12 @@ Timer restartSystem(RESTART_DELAY, sysRestart_Helper, true);
 bool testIsFull = false;
 void simulateFull()
 {
+#ifdef FEATURE_FLOATSWITCH
     fs.setStatus(testIsFull);
+#endif
+#ifdef FEATURE_ULTRASONIC
     us.setDistance(testIsFull ? 10 : 150);
-
+#endif
     testIsFull = !testIsFull;
 }
 Timer runTestTimer(TEN_MINUTES_MS, simulateFull, false);
@@ -99,9 +113,23 @@ void setup()
     
     Particle.function("reset", sysRestart);
     Particle.function("configuration", Configuration);
-    fs.cloudSetup();
-    us.cloudSetup();
     ro.cloudSetup();
+
+#ifdef FEATURE_FLOATSWITCH
+    fs.cloudSetup();
+    ro.AddSensor(&fs);
+    componentsToUpdate.push_back(&fs);
+#endif
+
+#ifdef FEATURE_ULTRASONIC
+    us.cloudSetup();
+    componentsToUpdate.push_back(&us);
+#endif
+
+#ifdef FEATURE_FLOATMETER
+    ro.AddSensor(&fm);
+    componentsToUpdate.push_back(&fm);
+#endif
 
 #ifdef TESTING
     syslog.information("TEST MODE ENABLED");
@@ -110,9 +138,6 @@ void setup()
     tickTimer.start();
 
     componentsToUpdate.push_back(&syslog);
-    componentsToUpdate.push_back(&fs);
-    componentsToUpdate.push_back(&fm);
-    //componentsToUpdate.push_back(&us);
     componentsToUpdate.push_back(&ro);
 
     uint32_t resetData = System.resetReasonData();
@@ -138,13 +163,6 @@ void loop()
     {
         component->Update();
     }
-
-    // Notify if the float switch was triggered.
-    if(fs.isActive() && !lastFloatSwitch)
-    {
-        syslog.warning("Float Switch has been triggered!");
-    }
-    lastFloatSwitch = fs.isActive();
 }
 
 int sysRestart(String data)
@@ -200,14 +218,18 @@ int Configuration(String config)
             String state = iter.value().toString().data();
             ro.cloudRequestState(state);
         }
+#ifdef FEATURE_FLOATSWITCH
         if(iter.name() == "float")
         {
             fs.setStatus(iter.value().toBool());
         }
+#endif
+#ifdef FEATURE_ULTRASONIC
         if(iter.name() == "ultraSonic")
         {
             us.setDistance(iter.value().toInt());
         }
+#endif
 #endif
     }
 
@@ -233,9 +255,15 @@ void sendTick()
     message.name("event").value("tick");
     message.name("messageQueueSize").value(syslog.messageQueueSize());
     message.name("version").value(VERSION_STRING);
-    message.name("floatSwitch").value(fs.isActive());
+#ifdef FEATURE_FLOATSWITCH
+    message.name("floatSwitch").value(fs.isFull());
+#endif
+#ifdef FEATURE_FLOATMETER
     message.name("float-meter").value(fm.voltage());
+#endif
+#ifdef FEATURE_ULTRASONIC
     message.name("ultra-sonic").value(us.getDistance());
+#endif
     message.name("enabled").value(ro.getEnabled());
     message.endObject();
 
@@ -289,7 +317,7 @@ String getUserReason(int code)
 {
     switch(code)
     {
-        case 0:
+        case UserReason::DAILY:
             return "Daily restart.";
         default:
             return "Unknown reason.";

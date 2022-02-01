@@ -15,16 +15,20 @@
 #include "ICloud.h"
 #include "IComponent.h"
 #include "IConfigurable.h"
+#include "ISensor.h"
 
 class SystemLog;
 
-class FloatSwitch : public ICloud, public IComponent, IConfigurable {
+class FloatSwitch : public ICloud, public IComponent, public ISensor, IConfigurable {
 public:
     FloatSwitch(int pin, SystemLog &logger);
-    virtual bool isActive();
 
+    // ICloud
     virtual void cloudSetup() override;
+    // IComponent
     virtual void Update() override;
+    // ISensor
+    virtual bool isFull() override;
 #ifdef TESTING
     void setStatus(bool status);
 #endif
@@ -35,8 +39,11 @@ private:
     bool status;
     unsigned long lastStable;
     bool stable;
+    bool firedWarning;
+    bool isReliable;
 
     virtual void sample();
+    // IConfigurable
     virtual void fireConfigurationMessage() const override;
 
 protected:
