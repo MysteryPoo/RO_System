@@ -241,7 +241,6 @@ bool ROSystem::activatePump()
 bool ROSystem::deactivatePump()
 {
     unsigned long curMillis = millis();
-    static unsigned long lastWarning = curMillis - WARNING_DELAY;
 
     if(Relay::State::ON == pump.get())
     {
@@ -279,6 +278,11 @@ int ROSystem::cloudRequestState(String newState)
     }
 
     return 0;
+}
+
+void ROSystem::reportHeartbeat(JSONBufferWriter& writer) const
+{
+    writer.name("enabled").value(getEnabled());
 }
 
 String ROSystem::getStateString()

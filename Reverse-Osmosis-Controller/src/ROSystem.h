@@ -13,7 +13,8 @@
 
 #include "ICloud.h"
 #include "IComponent.h"
-#include "ISensor.h"
+#include "Sensors/ISensor.h"
+#include "IHeartbeatReporter.h"
 #include <vector>
 
 class Relay;
@@ -26,7 +27,7 @@ namespace spark
     class JSONValue;
 }
 
-class ROSystem : public ICloud, public IComponent {
+class ROSystem : public ICloud, public IComponent, public IHeartbeatReporter {
 public:
     enum State {
         BOOT,
@@ -39,9 +40,12 @@ public:
 
     void AddSensor(ISensor* sensor);
 
+    // IComponent
     virtual void Update() override;
-
+    // ICloud
     virtual void cloudSetup() override;
+    // IHeartbeatReporter
+    virtual void reportHeartbeat(JSONBufferWriter& writer) const;
 
     void shutdown();
 
@@ -50,7 +54,7 @@ public:
 
     void setEnable(bool enable) { this->enabled = enable; };
     int setFillDistances(String csvFill);
-    bool getEnabled() { return this->enabled; }
+    bool getEnabled() const { return this->enabled; }
 
     int cloudRequestState(String newState);
 
