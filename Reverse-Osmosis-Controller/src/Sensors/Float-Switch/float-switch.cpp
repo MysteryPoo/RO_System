@@ -23,9 +23,10 @@ FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
     this->fireConfigurationMessage();
 }
 
-void FloatSwitch::ResetReliableFlag()
+int FloatSwitch::ResetReliableFlag(String reset)
 {
     this->isReliable = true;
+    return 0;
 }
 
 void FloatSwitch::cloudSetup()

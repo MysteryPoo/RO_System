@@ -23,7 +23,7 @@ class SystemLog;
 class FloatSwitch : public ICloud, public IComponent, public ISensor, public IHeartbeatReporter, IConfigurable {
 public:
     FloatSwitch(int pin, SystemLog &logger);
-    void ResetReliableFlag();
+    int ResetReliableFlag(String reset);
 
     // ICloud
     virtual void cloudSetup() override;
