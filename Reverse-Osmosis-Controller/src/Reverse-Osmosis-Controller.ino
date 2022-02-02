@@ -197,7 +197,7 @@ int Configuration(String config)
             int rawTickRate = iter.value().toInt();
             if(rawTickRate > 0)
             {
-                //tickTimer.changePeriod((unsigned int)rawTickRate); // TODO: HeartbeatManager configurable
+                heartbeatManager.SetPeriod((unsigned long)rawTickRate);
             }
         }
         if(iter.name() == "pumpCooldown")

@@ -14,6 +14,7 @@ class HeartbeatManager: public IComponent
 public:
   HeartbeatManager(SystemLog& logger);
   void RegisterReporter(String name, IHeartbeatReporter*);
+  void SetPeriod(unsigned long newPeriod) { this->updatePeriod = newPeriod; }
 
   // IComponent
   virtual void Update() override;
