@@ -55,6 +55,31 @@ void ROSystem::Update()
     this->update(tankIsFull);
 }
 
+void ROSystem::Configure(JSONValue json)
+{
+    JSONObjectIterator jsonIt(json);
+    while(jsonIt.next())
+    {
+        if(jsonIt.name() == "enabled")
+        {
+            this->enabled = jsonIt.value().toBool();
+        }
+        if(jsonIt.name() == "fillDistances")
+        {
+            JSONValue distances = jsonIt.value();
+            this->configureFillDistances(distances);
+        }
+        if(jsonIt.name() == "pumpCooldown")
+        {
+            this->configurePumpCooldown(jsonIt.value().toInt());
+        }
+        if(jsonIt.name() == "flushDuration")
+        {
+            this->configureFlushDuration(jsonIt.value().toInt());
+        }
+    }
+}
+
 void ROSystem::update(bool tankFull)
 {
     unsigned long curMillis = millis();
@@ -262,24 +287,6 @@ void ROSystem::shutdown()
     this->requestState(ROSystem::State::IDLE, "Shutdown requested.");
 }
 
-int ROSystem::cloudRequestState(String newState)
-{
-    const String reasonCloud = "DEBUG Cloud Requested.";
-    if(newState.toLowerCase() == "fill")
-    {
-        this->requestState(ROSystem::State::FILL, reasonCloud);
-    }
-    if(newState.toLowerCase() == "flush")
-    {
-        this->requestState(ROSystem::State::FLUSH, reasonCloud);
-    }if(newState.toLowerCase() == "idle")
-    {
-        this->requestState(ROSystem::State::IDLE, reasonCloud);
-    }
-
-    return 0;
-}
-
 void ROSystem::reportHeartbeat(JSONBufferWriter& writer) const
 {
     writer.name("enabled").value(getEnabled());
@@ -305,6 +312,26 @@ String ROSystem::getStateString()
     return stateString;
 }
 
+#ifdef TESTING
+int ROSystem::configureState(String newState)
+{
+    const String reasonCloud = "DEBUG Cloud Requested.";
+    if(newState.toLowerCase() == "fill")
+    {
+        this->requestState(ROSystem::State::FILL, reasonCloud);
+    }
+    if(newState.toLowerCase() == "flush")
+    {
+        this->requestState(ROSystem::State::FLUSH, reasonCloud);
+    }if(newState.toLowerCase() == "idle")
+    {
+        this->requestState(ROSystem::State::IDLE, reasonCloud);
+    }
+
+    return 0;
+}
+#endif
+
 int ROSystem::setFillDistances(String csvFill)
 {
     int indexOfComma = csvFill.indexOf(',');
@@ -329,7 +356,7 @@ int ROSystem::setFillDistances(String csvFill)
     return -1;
 }
 
-int ROSystem::ConfigureFillDistances(spark::JSONValue& distances)
+int ROSystem::configureFillDistances(spark::JSONValue& distances)
 {
     int error = 0;
     if(distances.isObject())
@@ -364,7 +391,7 @@ int ROSystem::ConfigureFillDistances(spark::JSONValue& distances)
     return error;
 }
 
-void ROSystem::ConfigurePumpCooldown(int newPumpCooldown)
+void ROSystem::configurePumpCooldown(int newPumpCooldown)
 {
     if(newPumpCooldown > 0)
     {
@@ -372,7 +399,7 @@ void ROSystem::ConfigurePumpCooldown(int newPumpCooldown)
     }
 }
 
-void ROSystem::ConfigureFlushDuration(int duration)
+void ROSystem::configureFlushDuration(int duration)
 {
     if(duration > 0)
     {

@@ -20,7 +20,7 @@
 
 class SystemLog;
 
-class UltraSonic : public ICloud, public IComponent, public IHeartbeatReporter, IConfigurable {
+class UltraSonic : public ICloud, public IComponent, public IHeartbeatReporter, public IConfigurable {
 public:
     UltraSonic(int trig, int echo, SystemLog &logger);
     ~UltraSonic();
@@ -31,6 +31,8 @@ public:
     virtual void Update() override;
     // IHeartbeatReporter
     virtual void reportHeartbeat(JSONBufferWriter& writer) const override;
+    // IConfigurable
+    virtual void Configure(JSONValue json) override;
 
 #ifdef TESTING
     void setDistance(int distance);
@@ -44,6 +46,8 @@ private:
     LEDStatus* samplingUltraSonicStatus;
 
     virtual void sample();
+
+    // IConfigurable
     virtual void fireConfigurationMessage() const override;
 
 protected:

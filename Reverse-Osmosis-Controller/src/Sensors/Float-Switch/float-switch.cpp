@@ -34,6 +34,20 @@ void FloatSwitch::cloudSetup()
     Particle.function("reset-float-switch", &FloatSwitch::ResetReliableFlag, this);
 }
 
+void FloatSwitch::Configure(JSONValue json)
+{
+    JSONObjectIterator jsonIt(json);
+    while(jsonIt.next())
+    {
+#ifdef TESTING
+        if(jsonIt.name() == "float")
+        {
+            this->setStatus(jsonIt.value().toBool());
+        }
+#endif
+    }
+}
+
 void FloatSwitch::Update()
 {
     this->sample();

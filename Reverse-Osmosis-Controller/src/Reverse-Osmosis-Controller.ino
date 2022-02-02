@@ -39,6 +39,7 @@ SYSTEM_THREAD(ENABLED)
 #include "relay.h"
 #include "ROSystem.h"
 #include <vector>
+#include <map>
 #ifdef FEATURE_ULTRASONIC
 #include "Sensors/Ultra-Sonic/ultra-sonic.h"
 #endif
@@ -65,6 +66,7 @@ ApplicationWatchdog *watchDog;
 time32_t timeToRestart;
 Timer restartSystem(RESTART_DELAY, sysRestart_Helper, true);
 
+std::map<String, IConfigurable*> configurables;
 std::vector<IComponent*> componentsToUpdate;
 SystemLog syslog;
 HeartbeatManager heartbeatManager(syslog);
@@ -83,22 +85,6 @@ FloatSwitch fs(D4, syslog);
 FloatMeter fm(A5, syslog);
 #endif
 
-#ifdef TESTING
-bool testIsFull = false;
-void simulateFull()
-{
-#ifdef FEATURE_FLOATSWITCH
-    fs.setStatus(testIsFull);
-#endif
-#ifdef FEATURE_ULTRASONIC
-    us.setDistance(testIsFull ? 10 : 150);
-#endif
-    testIsFull = !testIsFull;
-}
-Timer runTestTimer(TEN_MINUTES_MS, simulateFull, false);
-#endif
-
-
 void setup()
 {
     System.enableFeature(FEATURE_RESET_INFO);
@@ -115,26 +101,31 @@ void setup()
     fs.cloudSetup();
     ro.AddSensor(&fs);
     componentsToUpdate.push_back(&fs);
+    configurables["float-switch"] = &fs;
 #endif
 
 #ifdef FEATURE_ULTRASONIC
     us.cloudSetup();
     componentsToUpdate.push_back(&us);
+    configurables["ultra-sonic"] = &us;
 #endif
 
 #ifdef FEATURE_FLOATMETER
     ro.AddSensor(&fm);
     componentsToUpdate.push_back(&fm);
+    configurables["float-meter"] = &fm;
 #endif
 
 #ifdef TESTING
     syslog.information("TEST MODE ENABLED");
-    runTestTimer.start();
 #endif
 
     componentsToUpdate.push_back(&syslog);
     componentsToUpdate.push_back(&heartbeatManager);
     componentsToUpdate.push_back(&ro);
+
+    configurables["heartbeat-manager"] = &heartbeatManager;
+    configurables["ro-system"] = &ro;
 
     uint32_t resetData = System.resetReasonData();
 
@@ -183,50 +174,12 @@ int Configuration(String config)
     JSONObjectIterator iter(configuration);
     while(iter.next())
     {
-        if(iter.name() == "enabled")
+        std::map<String, IConfigurable*>::iterator it;
+        it = configurables.find(iter.name().data());
+        if (it != configurables.end())
         {
-            ro.setEnable(iter.value().toBool());
+            it->second->Configure(iter.value());
         }
-        if(iter.name() == "fillDistances")
-        {
-            JSONValue distances = iter.value();
-            error += ro.ConfigureFillDistances(distances);
-        }
-        if(iter.name() == "tickRate")
-        {
-            int rawTickRate = iter.value().toInt();
-            if(rawTickRate > 0)
-            {
-                heartbeatManager.SetPeriod((unsigned long)rawTickRate);
-            }
-        }
-        if(iter.name() == "pumpCooldown")
-        {
-            ro.ConfigurePumpCooldown(iter.value().toInt());
-        }
-        if(iter.name() == "flushDuration")
-        {
-            ro.ConfigureFlushDuration(iter.value().toInt());
-        }
-#ifdef TESTING
-        if(iter.name() == "forceState")
-        {
-            String state = iter.value().toString().data();
-            ro.cloudRequestState(state);
-        }
-#ifdef FEATURE_FLOATSWITCH
-        if(iter.name() == "float")
-        {
-            fs.setStatus(iter.value().toBool());
-        }
-#endif
-#ifdef FEATURE_ULTRASONIC
-        if(iter.name() == "ultraSonic")
-        {
-            us.setDistance(iter.value().toInt());
-        }
-#endif
-#endif
     }
 
     return error;

@@ -20,7 +20,7 @@
 
 class SystemLog;
 
-class FloatSwitch : public ICloud, public IComponent, public ISensor, public IHeartbeatReporter, IConfigurable {
+class FloatSwitch : public ICloud, public IComponent, public ISensor, public IHeartbeatReporter, public IConfigurable {
 public:
     FloatSwitch(int pin, SystemLog &logger);
     int ResetReliableFlag(String reset);
@@ -33,9 +33,9 @@ public:
     virtual bool isFull() const override;
     // IHeartbeatReporter
     virtual void reportHeartbeat(JSONBufferWriter&) const override;
-#ifdef TESTING
-    void setStatus(bool status);
-#endif
+    // IConfigurable
+    virtual void Configure(JSONValue json) override;
+
 private:
     int pin;
     unsigned long stableTimer;
@@ -47,6 +47,9 @@ private:
     bool isReliable;
 
     virtual void sample();
+#ifdef TESTING
+    void setStatus(bool status);
+#endif
     // IConfigurable
     virtual void fireConfigurationMessage() const override;
 

@@ -6,10 +6,11 @@
 #include "system-log.h"
 #include "IComponent.h"
 #include "IHeartbeatReporter.h"
+#include "IConfigurable.h"
 #include <vector>
 
 
-class HeartbeatManager: public IComponent
+class HeartbeatManager: public IComponent, public IConfigurable
 {
 public:
   HeartbeatManager(SystemLog& logger);
@@ -18,12 +19,17 @@ public:
 
   // IComponent
   virtual void Update() override;
+  // IConfigurable
+  virtual void Configure(JSONValue json) override;
 
 private:
   SystemLog& logger;
   unsigned long updatePeriod;
 
   std::vector<IHeartbeatReporter*> reporters;
+
+  // IConfigurable
+  virtual void fireConfigurationMessage() const override {};
 };
 
 #endif

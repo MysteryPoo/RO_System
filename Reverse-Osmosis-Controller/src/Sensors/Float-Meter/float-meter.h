@@ -19,7 +19,7 @@
 // Foward delcaration
 class SystemLog;
 
-class FloatMeter : public IComponent, public ISensor, public IHeartbeatReporter, IConfigurable {
+class FloatMeter : public IComponent, public ISensor, public IHeartbeatReporter, public IConfigurable {
 
 public:
   FloatMeter(int pin, SystemLog &logger);
@@ -32,6 +32,8 @@ public:
   virtual bool isFull() const override;
   // IHeartbeatReporter
   virtual void reportHeartbeat(JSONBufferWriter&) const override;
+  // IConfigurable
+  virtual void Configure(JSONValue json) override;
 
 #ifdef TESTING
   void setValue(int newValue);
@@ -40,6 +42,7 @@ public:
 private:
   int pin;
   int input;
+  int fullValue;
 
   // IConfigurable
   virtual void fireConfigurationMessage() const override;

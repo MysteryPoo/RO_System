@@ -3,10 +3,15 @@
 #include "heartbeat-manager.h"
 
 #define THIRTY_SECONDS_MS 30000
+#define ONE_MINUTE_MS 60000
 
 HeartbeatManager::HeartbeatManager(SystemLog& logger) :
   logger(logger),
+#ifndef TESTING
+  updatePeriod(ONE_MINUTE_MS * 10)
+#else
   updatePeriod(THIRTY_SECONDS_MS)
+#endif
 {}
 
 
@@ -57,5 +62,21 @@ void HeartbeatManager::Update()
 
     logger.pushMessage("system/tick", errorMessage.buffer());
     logger.pushMessage("system/heartbeat", errorMessage.buffer());
+  }
+}
+
+void HeartbeatManager::Configure(JSONValue json)
+{
+  JSONObjectIterator jsonIt(json);
+  while(jsonIt.next())
+  {
+    if (jsonIt.name() == "rate")
+    {
+      int rawRate = jsonIt.value().toInt();
+      if (rawRate > 0)
+      {
+        this->SetPeriod((unsigned long)rawRate);
+      }
+    }
   }
 }

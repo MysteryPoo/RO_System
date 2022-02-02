@@ -3,12 +3,13 @@
 #include "system-log.h"
 
 #define FLOAT_METER_RESOLUTION 4096.f
-#define DEFAULT_FULL_VALUE 3.3f
+#define DEFAULT_FULL_VALUE 4096
 #define COMPONENT_NAME "float-meter"
 
 FloatMeter::FloatMeter(int pin, SystemLog &logger) :
   pin(pin),
   input(0),
+  fullValue(DEFAULT_FULL_VALUE),
 #ifdef TESTING
   simulatedValue(0),
 #endif
@@ -26,9 +27,24 @@ void FloatMeter::Update()
 #endif
 }
 
+void FloatMeter::Configure(JSONValue json)
+{
+  JSONObjectIterator jsonIt(json);
+  while(jsonIt.next())
+  {
+#ifdef TESTING
+    if (jsonIt.name() == "voltage")
+    {
+      int newValue = (int)(jsonIt.value().toDouble() / 3.3 * 4096.);
+      this->setValue(newValue);
+    }
+#endif
+  }
+}
+
 bool FloatMeter::isFull() const
 {
-  return voltage() >= DEFAULT_FULL_VALUE;
+  return this->input >= this->fullValue;
 }
 
 void FloatMeter::fireConfigurationMessage() const

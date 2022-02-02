@@ -11,10 +11,12 @@
 #ifndef _ROSYSTEM_
 #define _ROSYSTEM_
 
+#include "global-defines.h"
 #include "ICloud.h"
 #include "IComponent.h"
 #include "Sensors/ISensor.h"
 #include "IHeartbeatReporter.h"
+#include "IConfigurable.h"
 #include <vector>
 
 class Relay;
@@ -27,7 +29,7 @@ namespace spark
     class JSONValue;
 }
 
-class ROSystem : public ICloud, public IComponent, public IHeartbeatReporter {
+class ROSystem : public ICloud, public IComponent, public IHeartbeatReporter, public IConfigurable {
 public:
     enum State {
         BOOT,
@@ -46,21 +48,15 @@ public:
     virtual void cloudSetup() override;
     // IHeartbeatReporter
     virtual void reportHeartbeat(JSONBufferWriter& writer) const;
+    // IConfigurable
+    virtual void Configure(JSONValue json) override;
 
     void shutdown();
 
     State getState() { return this->state; };
     String getStateString();
 
-    void setEnable(bool enable) { this->enabled = enable; };
-    int setFillDistances(String csvFill);
     bool getEnabled() const { return this->enabled; }
-
-    int cloudRequestState(String newState);
-
-    int ConfigureFillDistances(spark::JSONValue& distances);
-    void ConfigurePumpCooldown(int newCooldown);
-    void ConfigureFlushDuration(int duration);
     
     
 private:
@@ -90,6 +86,17 @@ private:
     void requestState(ROSystem::State state, String requestReason);
     bool activatePump();
     bool deactivatePump();
+    int setFillDistances(String csvFill);
+
+#ifdef TESTING
+    int configureState(String newState);
+#endif
+    int configureFillDistances(spark::JSONValue& distances);
+    void configurePumpCooldown(int newCooldown);
+    void configureFlushDuration(int duration);
+
+    // IConfigurable
+    virtual void fireConfigurationMessage() const override {};
     
 };
 
