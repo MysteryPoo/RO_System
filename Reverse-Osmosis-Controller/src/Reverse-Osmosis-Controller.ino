@@ -35,18 +35,19 @@ SYSTEM_THREAD(ENABLED)
 
 #include "global-defines.h"
 #include "system-log.h"
+#include "heartbeat-manager.h"
 #include "relay.h"
-#ifdef FEATURE_ULTRASONIC
-#include "ultra-sonic.h"
-#endif
-#ifdef FEATURE_FLOATSWITCH
-#include "float-switch.h"
-#endif
-#ifdef FEATURE_FLOATMETER
-#include "float-meter.h"
-#endif
 #include "ROSystem.h"
 #include <vector>
+#ifdef FEATURE_ULTRASONIC
+#include "Sensors/Ultra-Sonic/ultra-sonic.h"
+#endif
+#ifdef FEATURE_FLOATSWITCH
+#include "Sensors/Float-Switch/float-switch.h"
+#endif
+#ifdef FEATURE_FLOATMETER
+#include "Sensors/Float-Meter/float-meter.h"
+#endif
 
 #define SECONDS_PER_DAY 86400
 #define TEN_MINUTES_MS 600000
@@ -62,11 +63,15 @@ enum UserReason
 ApplicationWatchdog *watchDog;
 
 time32_t timeToRestart;
+Timer restartSystem(RESTART_DELAY, sysRestart_Helper, true);
 
+std::vector<IComponent*> componentsToUpdate;
 SystemLog syslog;
+HeartbeatManager heartbeatManager(syslog);
 Relay pump(Relay::Name::COMPONENT_PUMP, syslog, D7, true);
 Relay inlet(Relay::Name::COMPONENT_INLETVALVE, syslog, D6, true);
 Relay flush(Relay::Name::COMPONENT_FLUSHVALVE, syslog, D5, true);
+ROSystem ro(pump, inlet, flush, syslog);
 
 #ifdef FEATURE_ULTRASONIC
 UltraSonic us(A3, A4, syslog);
@@ -77,12 +82,6 @@ FloatSwitch fs(D4, syslog);
 #ifdef FEATURE_FLOATMETER
 FloatMeter fm(A5, syslog);
 #endif
-
-ROSystem ro(pump, inlet, flush, syslog);
-
-std::vector<IComponent*> componentsToUpdate;
-
-Timer restartSystem(RESTART_DELAY, sysRestart_Helper, true);
 
 #ifdef TESTING
 bool testIsFull = false;
@@ -97,9 +96,6 @@ void simulateFull()
     testIsFull = !testIsFull;
 }
 Timer runTestTimer(TEN_MINUTES_MS, simulateFull, false);
-Timer tickTimer(THIRTY_SECONDS_MS, sendTick, false);
-#else
-Timer tickTimer(THIRTY_SECONDS_MS, sendTick, false);
 #endif
 
 
@@ -135,9 +131,9 @@ void setup()
     syslog.information("TEST MODE ENABLED");
     runTestTimer.start();
 #endif
-    tickTimer.start();
 
     componentsToUpdate.push_back(&syslog);
+    componentsToUpdate.push_back(&heartbeatManager);
     componentsToUpdate.push_back(&ro);
 
     uint32_t resetData = System.resetReasonData();
@@ -201,7 +197,7 @@ int Configuration(String config)
             int rawTickRate = iter.value().toInt();
             if(rawTickRate > 0)
             {
-                tickTimer.changePeriod((unsigned int)rawTickRate);
+                //tickTimer.changePeriod((unsigned int)rawTickRate); // TODO: HeartbeatManager configurable
             }
         }
         if(iter.name() == "pumpCooldown")
@@ -246,28 +242,6 @@ void sysRestart_Helper()
     {
         restartSystem.reset();
     }
-}
-
-void sendTick()
-{
-    JSONBufferWriter message = SystemLog::createBuffer(2048);
-    message.beginObject();
-    message.name("event").value("tick");
-    message.name("messageQueueSize").value(syslog.messageQueueSize());
-    message.name("version").value(VERSION_STRING);
-#ifdef FEATURE_FLOATSWITCH
-    message.name("floatSwitch").value(fs.isFull());
-#endif
-#ifdef FEATURE_FLOATMETER
-    message.name("float-meter").value(fm.voltage());
-#endif
-#ifdef FEATURE_ULTRASONIC
-    message.name("ultra-sonic").value(us.getDistance());
-#endif
-    message.name("enabled").value(ro.getEnabled());
-    message.endObject();
-
-    syslog.pushMessage("system/tick", message.buffer());
 }
 
 void watchDogHandler(void)
