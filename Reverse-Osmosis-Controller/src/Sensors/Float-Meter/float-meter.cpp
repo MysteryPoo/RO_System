@@ -9,6 +9,9 @@
 FloatMeter::FloatMeter(int pin, SystemLog &logger) :
   pin(pin),
   input(0),
+#ifdef TESTING
+  simulatedValue(0),
+#endif
   logger(logger)
 {
     this->fireConfigurationMessage();
@@ -16,7 +19,11 @@ FloatMeter::FloatMeter(int pin, SystemLog &logger) :
 
 void FloatMeter::Update()
 {
+#ifndef TESTING
   input = analogRead(pin);
+#else
+  input = simulatedValue;
+#endif
 }
 
 bool FloatMeter::isFull() const
@@ -26,10 +33,15 @@ bool FloatMeter::isFull() const
 
 void FloatMeter::fireConfigurationMessage() const
 {
+#ifndef TESTING
+  int pinValue = this->pin;
+#else
+  String pinValue("Simulated");
+#endif
   JSONBufferWriter writer = SystemLog::createBuffer(256);
   writer.beginObject();
   writer.name("event").value("configuration");
-  writer.name("pin").value(this->pin);
+  writer.name("pin").value(pinValue);
   writer.endObject();
   this->logger.pushMessage(COMPONENT_NAME, writer.buffer());
 }
@@ -43,3 +55,10 @@ void FloatMeter::reportHeartbeat(JSONBufferWriter& writer) const
 {
   writer.name(COMPONENT_NAME).value((double)this->voltage());
 }
+
+#ifdef TESTING
+void FloatMeter::setValue(int newValue)
+{
+  this->simulatedValue = newValue;
+}
+#endif

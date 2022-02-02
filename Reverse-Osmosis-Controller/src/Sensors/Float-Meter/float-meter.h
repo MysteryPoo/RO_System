@@ -33,12 +33,20 @@ public:
   // IHeartbeatReporter
   virtual void reportHeartbeat(JSONBufferWriter&) const override;
 
+#ifdef TESTING
+  void setValue(int newValue);
+#endif
+
 private:
   int pin;
   int input;
 
   // IConfigurable
   virtual void fireConfigurationMessage() const override;
+
+#ifdef TESTING
+  int simulatedValue;
+#endif
 
 protected:
   SystemLog &logger;
