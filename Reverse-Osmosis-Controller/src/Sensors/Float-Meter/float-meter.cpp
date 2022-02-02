@@ -4,6 +4,7 @@
 
 #define FLOAT_METER_RESOLUTION 4096.f
 #define DEFAULT_FULL_VALUE 3.3f
+#define COMPONENT_NAME "float-meter"
 
 FloatMeter::FloatMeter(int pin, SystemLog &logger) :
   pin(pin),
@@ -18,7 +19,7 @@ void FloatMeter::Update()
   input = analogRead(pin);
 }
 
-bool FloatMeter::isFull()
+bool FloatMeter::isFull() const
 {
   return voltage() >= DEFAULT_FULL_VALUE;
 }
@@ -30,10 +31,15 @@ void FloatMeter::fireConfigurationMessage() const
   writer.name("event").value("configuration");
   writer.name("pin").value(this->pin);
   writer.endObject();
-  this->logger.pushMessage("float-meter", writer.buffer());
+  this->logger.pushMessage(COMPONENT_NAME, writer.buffer());
 }
 
 float FloatMeter::voltage() const
 {
   return (float)input / FLOAT_METER_RESOLUTION * 3.3f;
+}
+
+void FloatMeter::reportHeartbeat(JSONBufferWriter& writer) const
+{
+  writer.name(COMPONENT_NAME).value((double)this->voltage());
 }

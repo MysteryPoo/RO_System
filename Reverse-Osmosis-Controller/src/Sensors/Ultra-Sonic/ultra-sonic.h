@@ -16,10 +16,11 @@
 #include "ICloud.h"
 #include "IComponent.h"
 #include "IConfigurable.h"
+#include "IHeartbeatReporter.h"
 
 class SystemLog;
 
-class UltraSonic : public ICloud, public IComponent, IConfigurable {
+class UltraSonic : public ICloud, public IComponent, public IHeartbeatReporter, IConfigurable {
 public:
     UltraSonic(int trig, int echo, SystemLog &logger);
     ~UltraSonic();
@@ -28,6 +29,8 @@ public:
 
     virtual void cloudSetup() override;
     virtual void Update() override;
+    // IHeartbeatReporter
+    virtual void reportHeartbeat(JSONBufferWriter& writer) const override;
 
 #ifdef TESTING
     void setDistance(int distance);

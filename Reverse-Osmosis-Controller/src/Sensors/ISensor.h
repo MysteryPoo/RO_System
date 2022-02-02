@@ -10,7 +10,7 @@
 class ISensor
 {
 public:
-  virtual bool isFull() = 0;
+  virtual bool isFull() const = 0;
 };
 
 #endif

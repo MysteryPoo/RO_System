@@ -4,6 +4,7 @@
 
 #define TIME_CONSIDERED_STABLE_MS 1000
 #define TIME_CONSIDERED_UNSTABLE_MS 10000
+#define COMPONENT_NAME "float-switch"
 
 FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
     pin(pin),
@@ -22,9 +23,14 @@ FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
     this->fireConfigurationMessage();
 }
 
+void FloatSwitch::ResetReliableFlag()
+{
+    this->isReliable = true;
+}
+
 void FloatSwitch::cloudSetup()
 {
-    Particle.variable("Float-Status", this->status);
+    Particle.function("reset-float-switch", &FloatSwitch::ResetReliableFlag, this);
 }
 
 void FloatSwitch::Update()
@@ -43,7 +49,7 @@ void FloatSwitch::Update()
     }
 }
 
-bool FloatSwitch::isFull()
+bool FloatSwitch::isFull() const
 {
     return (this->stable && this->status) || !isReliable;
 }
@@ -89,7 +95,12 @@ void FloatSwitch::fireConfigurationMessage() const
     writer.name("event").value("configuration");
     writer.name("pin").value(pinValue);
     writer.endObject();
-    this->logger.pushMessage("float-switch", writer.buffer());
+    this->logger.pushMessage(COMPONENT_NAME, writer.buffer());
+}
+
+void FloatSwitch::reportHeartbeat(JSONBufferWriter& writer) const
+{
+    writer.name(COMPONENT_NAME).value(this->isFull());
 }
 
 #ifdef TESTING
