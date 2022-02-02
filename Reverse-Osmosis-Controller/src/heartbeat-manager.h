@@ -20,6 +20,7 @@ public:
 
 private:
   SystemLog& logger;
+  unsigned long updatePeriod;
 
   std::vector<IHeartbeatReporter*> reporters;
 };
