@@ -12,6 +12,18 @@ services:
       - romcon_mongo_volume:/data/db
     ports:
       - "27017:27017"
+
+  rabbitmq:
+    container_name: romcon_rabbitmq
+    restart: always
+    build: ./rabbitmq
+    image: ${DOCKER_USERNAME}/romcon-rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=password
+    ports:
+      - "5672:5672"
+      - "15672:15672"
   
   stream:
     container_name: romcon_stream
