@@ -96,24 +96,28 @@ void setup()
     Particle.function("reset", sysRestart);
     Particle.function("configuration", Configuration);
     ro.cloudSetup();
+    heartbeatManager.RegisterReporter("ro-system", &ro);
 
 #ifdef FEATURE_FLOATSWITCH
     fs.cloudSetup();
     ro.AddSensor(&fs);
     componentsToUpdate.push_back(&fs);
     configurables["float-switch"] = &fs;
+    heartbeatManager.RegisterReporter("float-switch", &fs);
 #endif
 
 #ifdef FEATURE_ULTRASONIC
     us.cloudSetup();
     componentsToUpdate.push_back(&us);
     configurables["ultra-sonic"] = &us;
+    heartbeatManager.RegisterReporter("ultra-sonic", &us);
 #endif
 
 #ifdef FEATURE_FLOATMETER
     ro.AddSensor(&fm);
     componentsToUpdate.push_back(&fm);
     configurables["float-meter"] = &fm;
+    heartbeatManager.RegisterReporter("float-meter", &fm);
 #endif
 
 #ifdef TESTING
@@ -168,9 +172,7 @@ int Configuration(String config)
     {
         return 1;
     }
-
     syslog.pushMessage("system/configuration", config);
-
     JSONObjectIterator iter(configuration);
     while(iter.next())
     {

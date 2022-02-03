@@ -45,7 +45,6 @@ void HeartbeatManager::Update()
   const int dataSize = message.dataSize();
   if (bufferSize >= dataSize)
   {
-    logger.pushMessage("system/tick", message.buffer());
     logger.pushMessage("system/heartbeat", message.buffer());
   }
   else
@@ -60,7 +59,6 @@ void HeartbeatManager::Update()
     message.name("data-size").value(dataSize);
     message.endObject();
 
-    logger.pushMessage("system/tick", errorMessage.buffer());
     logger.pushMessage("system/heartbeat", errorMessage.buffer());
   }
 }

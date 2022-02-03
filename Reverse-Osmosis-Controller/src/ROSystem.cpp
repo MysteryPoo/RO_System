@@ -36,8 +36,7 @@ ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger) :
 
 void ROSystem::cloudSetup()
 {
-    Particle.variable("Pump-Runs", this->totalPumpRuns);
-    Particle.variable("Pump-Time", this->totalPumpTime);
+    
 }
 
 void ROSystem::AddSensor(ISensor* sensor)

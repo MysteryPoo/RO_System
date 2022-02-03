@@ -5,6 +5,6 @@
 #define FEATURE_FLOATSWITCH
 //#define FEATURE_ULTRASONIC
 //#define FEATURE_FLOATMETER
-#define TESTING 1
+//#define TESTING 1
 
 #endif
