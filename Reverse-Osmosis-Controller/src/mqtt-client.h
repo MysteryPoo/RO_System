@@ -5,13 +5,16 @@
 #include "MQTT/MQTT.h"
 #include "IComponent.h"
 #include "MQTT/ISubCallback.h"
-#include "system-log.h"
+#include <vector>
 
 class MQTTClient: public IComponent, public ISubCallback
 {
 public:
-  MQTTClient(SystemLog& logger);
-  void Publish();
+  MQTTClient();
+  void Publish(const char* topic, const String payload);
+  bool isConnected() { return this->client.isConnected(); }
+  void RegisterCallbackListener(ISubCallback* listener);
+  void Subscribe(const char* topic, MQTT::EMQTT_QOS);
 
   // IComponent
   virtual void Update() override;
@@ -21,8 +24,7 @@ private:
   MQTT client;
   const uint8_t ipAddress[4] = {192, 168, 0, 165};
   const short port = 1883;
-
-  SystemLog& logger;
+  std::vector<ISubCallback*> listeners;
 };
 
 #endif
