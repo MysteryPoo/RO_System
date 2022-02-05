@@ -16,6 +16,7 @@ public:
   HeartbeatManager(SystemLog& logger);
   void RegisterReporter(String name, IHeartbeatReporter*);
   void SetPeriod(unsigned long newPeriod) { this->updatePeriod = newPeriod; }
+  void ForceHeartbeat(); // TODO : Make this const
 
   // IComponent
   virtual void Update() override;
@@ -27,6 +28,8 @@ private:
   unsigned long updatePeriod;
 
   std::vector<IHeartbeatReporter*> reporters;
+
+  void sendHeartbeat();
 
   // IConfigurable
   virtual void fireConfigurationMessage() const override {};
