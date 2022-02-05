@@ -41,7 +41,7 @@ void MQTTClient::Update()
   }
   else
   {
-    bool connectionSuccess = this->client.connect("sparkclient_" + String(Time.now()), "user", "password");
+    bool connectionSuccess = this->client.connect("sparkclient_" + String(Time.now()), USERNAME, PASSWORD);
     if (this->client.isConnected())
     {
         this->client.publish("from/" + System.deviceID() + "/status", "online");
