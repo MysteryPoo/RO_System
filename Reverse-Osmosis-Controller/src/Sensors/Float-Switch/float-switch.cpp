@@ -1,6 +1,7 @@
 
 #include "float-switch.h"
 #include "system-log.h"
+#include "mqtt-client.h"
 
 #define TIME_CONSIDERED_STABLE_MS 1000
 #define TIME_CONSIDERED_UNSTABLE_MS 10000
@@ -23,15 +24,18 @@ FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
     this->fireConfigurationMessage();
 }
 
+FloatSwitch::FloatSwitch(int pin, SystemLog &logger, MQTTClient* mqtt) : FloatSwitch(pin, logger)
+{
+    if (nullptr != mqtt)
+    {
+        mqtt->RegisterCallbackListener(this);
+    }
+}
+
 int FloatSwitch::ResetReliableFlag(String reset)
 {
     this->isReliable = true;
     return 0;
-}
-
-void FloatSwitch::cloudSetup()
-{
-    Particle.function("reset-float-switch", &FloatSwitch::ResetReliableFlag, this);
 }
 
 void FloatSwitch::Configure(JSONValue json)
@@ -45,6 +49,43 @@ void FloatSwitch::Configure(JSONValue json)
             this->setStatus(jsonIt.value().toBool());
         }
 #endif
+    }
+}
+
+void FloatSwitch::Callback(char* topic, uint8_t* payload, unsigned int length)
+{
+    char p[length + 1];
+    memcpy(p, payload, length);
+    p[length] = '\0';
+
+    if (strcmp(topic, "to/" + System.deviceID() + "/float-switch"))
+    {
+        return;
+    }
+
+    JSONValue configuration = JSONValue::parseCopy(String(p));
+    if (!configuration.isValid())
+    {
+        return;
+    }
+    JSONObjectIterator it(configuration);
+    while(it.next())
+    {
+#ifdef TESTING
+        if(it.name() == "float")
+        {
+            this->setStatus(it.value().toBool());
+        }
+#endif
+    }
+
+}
+
+void FloatSwitch::OnConnect(bool success, MQTTClient* mqtt)
+{
+    if (nullptr != mqtt)
+    {
+        mqtt->Subscribe("to/" + System.deviceID() + "/float-switch/#", MQTT::EMQTT_QOS::QOS1);
     }
 }
 

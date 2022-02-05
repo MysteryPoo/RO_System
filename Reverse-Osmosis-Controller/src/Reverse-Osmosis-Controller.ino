@@ -38,6 +38,7 @@ SYSTEM_THREAD(ENABLED)
 #include "heartbeat-manager.h"
 #include "relay.h"
 #include "ROSystem.h"
+#include "mqtt-client.h"
 #include <vector>
 #include <map>
 #ifdef FEATURE_ULTRASONIC
@@ -68,7 +69,8 @@ Timer restartSystem(RESTART_DELAY, sysRestart_Helper, true);
 
 std::map<String, IConfigurable*> configurables;
 std::vector<IComponent*> componentsToUpdate;
-SystemLog syslog;
+MQTTClient mqttClient;
+SystemLog syslog(mqttClient);
 HeartbeatManager heartbeatManager(syslog);
 Relay pump(Relay::Name::COMPONENT_PUMP, syslog, D7, true);
 Relay inlet(Relay::Name::COMPONENT_INLETVALVE, syslog, D6, true);
@@ -79,7 +81,7 @@ ROSystem ro(pump, inlet, flush, syslog);
 UltraSonic us(A3, A4, syslog);
 #endif
 #ifdef FEATURE_FLOATSWITCH
-FloatSwitch fs(D4, syslog);
+FloatSwitch fs(D4, syslog, &mqttClient);
 #endif
 #ifdef FEATURE_FLOATMETER
 FloatMeter fm(A5, syslog);
@@ -95,14 +97,12 @@ void setup()
     
     Particle.function("reset", sysRestart);
     Particle.function("configuration", Configuration);
-    ro.cloudSetup();
     heartbeatManager.RegisterReporter("ro-system", &ro);
 
 #ifdef FEATURE_FLOATSWITCH
-    fs.cloudSetup();
     ro.AddSensor(&fs);
     componentsToUpdate.push_back(&fs);
-    configurables["float-switch"] = &fs;
+    //configurables["float-switch"] = &fs;
     heartbeatManager.RegisterReporter("float-switch", &fs);
 #endif
 
@@ -124,6 +124,7 @@ void setup()
     syslog.information("TEST MODE ENABLED");
 #endif
 
+    componentsToUpdate.push_back(&mqttClient);
     componentsToUpdate.push_back(&syslog);
     componentsToUpdate.push_back(&heartbeatManager);
     componentsToUpdate.push_back(&ro);
@@ -141,6 +142,8 @@ void setup()
     message.endObject();
 
     syslog.pushMessage("system/restart", message.buffer());
+
+    heartbeatManager.ForceHeartbeat();
 }
 
 void loop()

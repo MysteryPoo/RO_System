@@ -17,16 +17,17 @@
 #include "IConfigurable.h"
 #include "Sensors/ISensor.h"
 #include "IHeartbeatReporter.h"
+#include "MQTT/ISubCallback.h"
 
 class SystemLog;
+class MQTTClient;
 
-class FloatSwitch : public ICloud, public IComponent, public ISensor, public IHeartbeatReporter, public IConfigurable {
+class FloatSwitch : public IComponent, public ISensor, public IHeartbeatReporter, public IConfigurable, public ISubCallback {
 public:
     FloatSwitch(int pin, SystemLog &logger);
+    FloatSwitch(int pin, SystemLog &logger, MQTTClient* mqtt);
     int ResetReliableFlag(String reset);
 
-    // ICloud
-    virtual void cloudSetup() override;
     // IComponent
     virtual void Update() override;
     // ISensor
@@ -35,6 +36,9 @@ public:
     virtual void reportHeartbeat(JSONBufferWriter&) const override;
     // IConfigurable
     virtual void Configure(JSONValue json) override;
+    // ISubCallback
+    virtual void Callback(char* topic, uint8_t* payload, unsigned int length) override;
+    virtual void OnConnect(bool connectSuccess, MQTTClient* mqtt) override;
 
 private:
     int pin;
