@@ -143,6 +143,7 @@ void setup()
 
     syslog.pushMessage("system/restart", message.buffer());
 
+    announceFeatures();
     heartbeatManager.ForceHeartbeat();
 }
 
@@ -157,6 +158,27 @@ void loop()
     {
         component->Update();
     }
+}
+
+void announceFeatures()
+{
+    JSONBufferWriter message = SystemLog::createBuffer(512);
+    message.beginObject();
+    message.name("event").value("feature-list");
+    message.name("features").beginArray()
+#ifdef FEATURE_FLOATSWITCH
+    .value("Float Switch")
+#endif
+#ifdef FEATURE_ULTRASONIC
+    .value("Ultra Sonic")
+#endif
+#ifdef FEATURE_FLOATMETER
+    .value("Float Meter")
+#endif
+    .endArray();
+    message.endObject();
+
+    syslog.pushMessage("system/feature-list", message.buffer());
 }
 
 int sysRestart(String data)
