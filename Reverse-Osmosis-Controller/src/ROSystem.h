@@ -29,7 +29,7 @@ namespace spark
     class JSONValue;
 }
 
-class ROSystem : public ICloud, public IComponent, public IHeartbeatReporter, public IConfigurable {
+class ROSystem : public IComponent, public IHeartbeatReporter, public IConfigurable {
 public:
     enum State {
         BOOT,
@@ -44,8 +44,6 @@ public:
 
     // IComponent
     virtual void Update() override;
-    // ICloud
-    virtual void cloudSetup() override;
     // IHeartbeatReporter
     virtual void reportHeartbeat(JSONBufferWriter& writer) const;
     // IConfigurable

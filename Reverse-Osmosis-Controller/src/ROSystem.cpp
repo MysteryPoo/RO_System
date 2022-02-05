@@ -34,11 +34,6 @@ ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger) :
     
 }
 
-void ROSystem::cloudSetup()
-{
-    
-}
-
 void ROSystem::AddSensor(ISensor* sensor)
 {
     sensors.push_back(sensor);
