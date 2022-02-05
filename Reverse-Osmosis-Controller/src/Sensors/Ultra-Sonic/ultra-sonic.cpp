@@ -31,11 +31,6 @@ UltraSonic::~UltraSonic()
     delete samplingUltraSonicStatus;
 }
 
-void UltraSonic::cloudSetup()
-{
-    Particle.variable("Ultra-Sonic-Distance", this->distance);
-}
-
 void UltraSonic::Update()
 {
     this->sample();

@@ -20,14 +20,13 @@
 
 class SystemLog;
 
-class UltraSonic : public ICloud, public IComponent, public IHeartbeatReporter, public IConfigurable {
+class UltraSonic : public IComponent, public IHeartbeatReporter, public IConfigurable {
 public:
     UltraSonic(int trig, int echo, SystemLog &logger);
     ~UltraSonic();
     
     virtual int getDistance();
 
-    virtual void cloudSetup() override;
     virtual void Update() override;
     // IHeartbeatReporter
     virtual void reportHeartbeat(JSONBufferWriter& writer) const override;
