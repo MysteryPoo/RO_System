@@ -26,7 +26,6 @@ class FloatSwitch : public IComponent, public ISensor, public IHeartbeatReporter
 public:
     FloatSwitch(int pin, SystemLog &logger);
     FloatSwitch(int pin, SystemLog &logger, MQTTClient* mqtt);
-    int ResetReliableFlag(String reset);
 
     // IComponent
     virtual void Update() override;

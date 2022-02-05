@@ -32,12 +32,6 @@ FloatSwitch::FloatSwitch(int pin, SystemLog &logger, MQTTClient* mqtt) : FloatSw
     }
 }
 
-int FloatSwitch::ResetReliableFlag(String reset)
-{
-    this->isReliable = true;
-    return 0;
-}
-
 void FloatSwitch::Configure(JSONValue json)
 {
     JSONObjectIterator jsonIt(json);
@@ -72,11 +66,16 @@ void FloatSwitch::Callback(char* topic, uint8_t* payload, unsigned int length)
     while(it.next())
     {
 #ifdef TESTING
-        if(it.name() == "float")
+        if (it.name() == "float")
         {
             this->setStatus(it.value().toBool());
         }
 #endif
+        if (it.name() == "reset")
+        {
+            this->isReliable = it.value().toBool();
+            logger.trace("Float Switch Reliable flag reset!");
+        }
     }
 
 }
