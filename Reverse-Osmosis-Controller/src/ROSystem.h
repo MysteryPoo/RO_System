@@ -11,8 +11,13 @@
 #ifndef _ROSYSTEM_
 #define _ROSYSTEM_
 
+#include "global-defines.h"
 #include "ICloud.h"
 #include "IComponent.h"
+#include "Sensors/ISensor.h"
+#include "IHeartbeatReporter.h"
+#include "IConfigurable.h"
+#include <vector>
 
 class Relay;
 class SystemLog;
@@ -24,7 +29,7 @@ namespace spark
     class JSONValue;
 }
 
-class ROSystem : public ICloud, public IComponent {
+class ROSystem : public ICloud, public IComponent, public IHeartbeatReporter, public IConfigurable {
 public:
     enum State {
         BOOT,
@@ -33,28 +38,25 @@ public:
         FILL
     };
     
-    ROSystem(Relay &pump, Relay &inlet, Relay &flush, FloatSwitch &floatSwitch, UltraSonic &ultraSonic, SystemLog &logger);
+    ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger);
 
+    void AddSensor(ISensor* sensor);
+
+    // IComponent
     virtual void Update() override;
-    void update(bool tankFull, unsigned short distance);
-
+    // ICloud
     virtual void cloudSetup() override;
+    // IHeartbeatReporter
+    virtual void reportHeartbeat(JSONBufferWriter& writer) const;
+    // IConfigurable
+    virtual void Configure(JSONValue json) override;
 
     void shutdown();
 
     State getState() { return this->state; };
     String getStateString();
 
-    int enable(String setEnable); // Deprecated
-    void setEnable(bool enable);
-    int setFillDistances(String csvFill);
-    bool getEnabled() { return this->enabled; }
-
-    int cloudRequestState(String newState);
-
-    int ConfigureFillDistances(spark::JSONValue& distances);
-    void ConfigurePumpCooldown(int newCooldown);
-    void ConfigureFlushDuration(int duration);
+    bool getEnabled() const { return this->enabled; }
     
     
 private:
@@ -62,17 +64,16 @@ private:
     Relay &pump;
     Relay &inlet;
     Relay &flush;
-    FloatSwitch &floatSwitch;
-    UltraSonic &ultraSonic;
     SystemLog &logger;
     bool flushedToday;
-    unsigned long totalPumpTime;
+    unsigned long totalPumpTime; // Deprecated
     unsigned long totalPumpRuns;
     unsigned long lastPumpTime;
     unsigned long flushStartedTime;
     unsigned int flushDuration;
-    unsigned long pumpRunTime;
+    unsigned long pumpRunTime; // Deprecated
     bool firstPump;
+    std::vector<ISensor*> sensors;
 
     // Configuration
     bool enabled;
@@ -80,10 +81,22 @@ private:
     unsigned short fillStopDistance; // Centimeters
     unsigned int pumpCooldown; // Time between turning off and then on again
     
+    void update(bool tankFull);
     void requestState(ROSystem::State state, const char* requestReason);
     void requestState(ROSystem::State state, String requestReason);
     bool activatePump();
     bool deactivatePump();
+    int setFillDistances(String csvFill);
+
+#ifdef TESTING
+    int configureState(String newState);
+#endif
+    int configureFillDistances(spark::JSONValue& distances);
+    void configurePumpCooldown(int newCooldown);
+    void configureFlushDuration(int duration);
+
+    // IConfigurable
+    virtual void fireConfigurationMessage() const override {};
     
 };
 

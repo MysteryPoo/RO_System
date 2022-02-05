@@ -13,11 +13,13 @@
 #include "ICloud.h"
 #include "IComponent.h"
 #include "IConfigurable.h"
+#include "Sensors/ISensor.h"
+#include "IHeartbeatReporter.h"
 
 // Foward delcaration
 class SystemLog;
 
-class FloatMeter : public IComponent, IConfigurable {
+class FloatMeter : public IComponent, public ISensor, public IHeartbeatReporter, public IConfigurable {
 
 public:
   FloatMeter(int pin, SystemLog &logger);
@@ -26,13 +28,28 @@ public:
   
   // IComponent
   virtual void Update() override;
+  // ISensor
+  virtual bool isFull() const override;
+  // IHeartbeatReporter
+  virtual void reportHeartbeat(JSONBufferWriter&) const override;
+  // IConfigurable
+  virtual void Configure(JSONValue json) override;
+
+#ifdef TESTING
+  void setValue(int newValue);
+#endif
 
 private:
   int pin;
   int input;
+  int fullValue;
 
   // IConfigurable
   virtual void fireConfigurationMessage() const override;
+
+#ifdef TESTING
+  int simulatedValue;
+#endif
 
 protected:
   SystemLog &logger;

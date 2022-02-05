@@ -35,12 +35,20 @@ SYSTEM_THREAD(ENABLED)
 
 #include "global-defines.h"
 #include "system-log.h"
-#include "ultra-sonic.h"
+#include "heartbeat-manager.h"
 #include "relay.h"
-#include "float-switch.h"
-#include "float-meter.h"
 #include "ROSystem.h"
 #include <vector>
+#include <map>
+#ifdef FEATURE_ULTRASONIC
+#include "Sensors/Ultra-Sonic/ultra-sonic.h"
+#endif
+#ifdef FEATURE_FLOATSWITCH
+#include "Sensors/Float-Switch/float-switch.h"
+#endif
+#ifdef FEATURE_FLOATMETER
+#include "Sensors/Float-Meter/float-meter.h"
+#endif
 
 #define SECONDS_PER_DAY 86400
 #define TEN_MINUTES_MS 600000
@@ -56,38 +64,26 @@ enum UserReason
 ApplicationWatchdog *watchDog;
 
 time32_t timeToRestart;
-bool lastFloatSwitch = false;
+Timer restartSystem(RESTART_DELAY, sysRestart_Helper, true);
 
+std::map<String, IConfigurable*> configurables;
+std::vector<IComponent*> componentsToUpdate;
 SystemLog syslog;
+HeartbeatManager heartbeatManager(syslog);
 Relay pump(Relay::Name::COMPONENT_PUMP, syslog, D7, true);
 Relay inlet(Relay::Name::COMPONENT_INLETVALVE, syslog, D6, true);
 Relay flush(Relay::Name::COMPONENT_FLUSHVALVE, syslog, D5, true);
+ROSystem ro(pump, inlet, flush, syslog);
 
+#ifdef FEATURE_ULTRASONIC
 UltraSonic us(A3, A4, syslog);
-FloatSwitch fs(D4, syslog);
-FloatMeter fm(A5, syslog);
-
-ROSystem ro(pump, inlet, flush, fs, us, syslog);
-
-std::vector<IComponent*> componentsToUpdate;
-
-Timer restartSystem(RESTART_DELAY, sysRestart_Helper, true);
-
-#ifdef TESTING
-bool testIsFull = false;
-void simulateFull()
-{
-    fs.setStatus(testIsFull);
-    us.setDistance(testIsFull ? 10 : 150);
-
-    testIsFull = !testIsFull;
-}
-Timer runTestTimer(TEN_MINUTES_MS, simulateFull, false);
-Timer tickTimer(THIRTY_SECONDS_MS, sendTick, false);
-#else
-Timer tickTimer(THIRTY_SECONDS_MS, sendTick, false);
 #endif
-
+#ifdef FEATURE_FLOATSWITCH
+FloatSwitch fs(D4, syslog);
+#endif
+#ifdef FEATURE_FLOATMETER
+FloatMeter fm(A5, syslog);
+#endif
 
 void setup()
 {
@@ -99,21 +95,41 @@ void setup()
     
     Particle.function("reset", sysRestart);
     Particle.function("configuration", Configuration);
-    fs.cloudSetup();
-    us.cloudSetup();
     ro.cloudSetup();
+    heartbeatManager.RegisterReporter("ro-system", &ro);
+
+#ifdef FEATURE_FLOATSWITCH
+    fs.cloudSetup();
+    ro.AddSensor(&fs);
+    componentsToUpdate.push_back(&fs);
+    configurables["float-switch"] = &fs;
+    heartbeatManager.RegisterReporter("float-switch", &fs);
+#endif
+
+#ifdef FEATURE_ULTRASONIC
+    us.cloudSetup();
+    componentsToUpdate.push_back(&us);
+    configurables["ultra-sonic"] = &us;
+    heartbeatManager.RegisterReporter("ultra-sonic", &us);
+#endif
+
+#ifdef FEATURE_FLOATMETER
+    ro.AddSensor(&fm);
+    componentsToUpdate.push_back(&fm);
+    configurables["float-meter"] = &fm;
+    heartbeatManager.RegisterReporter("float-meter", &fm);
+#endif
 
 #ifdef TESTING
     syslog.information("TEST MODE ENABLED");
-    runTestTimer.start();
 #endif
-    tickTimer.start();
 
     componentsToUpdate.push_back(&syslog);
-    componentsToUpdate.push_back(&fs);
-    componentsToUpdate.push_back(&fm);
-    //componentsToUpdate.push_back(&us);
+    componentsToUpdate.push_back(&heartbeatManager);
     componentsToUpdate.push_back(&ro);
+
+    configurables["heartbeat-manager"] = &heartbeatManager;
+    configurables["ro-system"] = &ro;
 
     uint32_t resetData = System.resetReasonData();
 
@@ -138,13 +154,6 @@ void loop()
     {
         component->Update();
     }
-
-    // Notify if the float switch was triggered.
-    if(fs.isActive() && !lastFloatSwitch)
-    {
-        syslog.warning("Float Switch has been triggered!");
-    }
-    lastFloatSwitch = fs.isActive();
 }
 
 int sysRestart(String data)
@@ -163,52 +172,16 @@ int Configuration(String config)
     {
         return 1;
     }
-
     syslog.pushMessage("system/configuration", config);
-
     JSONObjectIterator iter(configuration);
     while(iter.next())
     {
-        if(iter.name() == "enabled")
+        std::map<String, IConfigurable*>::iterator it;
+        it = configurables.find(iter.name().data());
+        if (it != configurables.end())
         {
-            ro.setEnable(iter.value().toBool());
+            it->second->Configure(iter.value());
         }
-        if(iter.name() == "fillDistances")
-        {
-            JSONValue distances = iter.value();
-            error += ro.ConfigureFillDistances(distances);
-        }
-        if(iter.name() == "tickRate")
-        {
-            int rawTickRate = iter.value().toInt();
-            if(rawTickRate > 0)
-            {
-                tickTimer.changePeriod((unsigned int)rawTickRate);
-            }
-        }
-        if(iter.name() == "pumpCooldown")
-        {
-            ro.ConfigurePumpCooldown(iter.value().toInt());
-        }
-        if(iter.name() == "flushDuration")
-        {
-            ro.ConfigureFlushDuration(iter.value().toInt());
-        }
-#ifdef TESTING
-        if(iter.name() == "forceState")
-        {
-            String state = iter.value().toString().data();
-            ro.cloudRequestState(state);
-        }
-        if(iter.name() == "float")
-        {
-            fs.setStatus(iter.value().toBool());
-        }
-        if(iter.name() == "ultraSonic")
-        {
-            us.setDistance(iter.value().toInt());
-        }
-#endif
     }
 
     return error;
@@ -224,22 +197,6 @@ void sysRestart_Helper()
     {
         restartSystem.reset();
     }
-}
-
-void sendTick()
-{
-    JSONBufferWriter message = SystemLog::createBuffer(2048);
-    message.beginObject();
-    message.name("event").value("tick");
-    message.name("messageQueueSize").value(syslog.messageQueueSize());
-    message.name("version").value(VERSION_STRING);
-    message.name("floatSwitch").value(fs.isActive());
-    message.name("float-meter").value(fm.voltage());
-    message.name("ultra-sonic").value(us.getDistance());
-    message.name("enabled").value(ro.getEnabled());
-    message.endObject();
-
-    syslog.pushMessage("system/tick", message.buffer());
 }
 
 void watchDogHandler(void)
@@ -289,7 +246,7 @@ String getUserReason(int code)
 {
     switch(code)
     {
-        case 0:
+        case UserReason::DAILY:
             return "Daily restart.";
         default:
             return "Unknown reason.";

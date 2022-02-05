@@ -41,6 +41,20 @@ void UltraSonic::Update()
     this->sample();
 }
 
+void UltraSonic::Configure(JSONValue json)
+{
+    JSONObjectIterator jsonIt(json);
+    while(jsonIt.next())
+    {
+#ifdef TESTING
+        if(jsonIt.name() == "distance")
+        {
+            this->setDistance(jsonIt.value().toInt());
+        }
+#endif
+    }
+}
+
 void UltraSonic::sample()
 {
 #ifndef TESTING
@@ -111,6 +125,11 @@ void UltraSonic::fireConfigurationMessage() const
     writer.endObject();
 
     this->logger.pushMessage("ultra-sonic", writer.buffer());
+}
+
+void UltraSonic::reportHeartbeat(JSONBufferWriter& writer) const
+{
+    writer.name("ultra-sonic").value(this->distance);
 }
 
 #ifdef TESTING

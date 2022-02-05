@@ -15,19 +15,27 @@
 #include "ICloud.h"
 #include "IComponent.h"
 #include "IConfigurable.h"
+#include "Sensors/ISensor.h"
+#include "IHeartbeatReporter.h"
 
 class SystemLog;
 
-class FloatSwitch : public ICloud, public IComponent, IConfigurable {
+class FloatSwitch : public ICloud, public IComponent, public ISensor, public IHeartbeatReporter, public IConfigurable {
 public:
     FloatSwitch(int pin, SystemLog &logger);
-    virtual bool isActive();
+    int ResetReliableFlag(String reset);
 
+    // ICloud
     virtual void cloudSetup() override;
+    // IComponent
     virtual void Update() override;
-#ifdef TESTING
-    void setStatus(bool status);
-#endif
+    // ISensor
+    virtual bool isFull() const override;
+    // IHeartbeatReporter
+    virtual void reportHeartbeat(JSONBufferWriter&) const override;
+    // IConfigurable
+    virtual void Configure(JSONValue json) override;
+
 private:
     int pin;
     unsigned long stableTimer;
@@ -35,8 +43,14 @@ private:
     bool status;
     unsigned long lastStable;
     bool stable;
+    bool firedWarning;
+    bool isReliable;
 
     virtual void sample();
+#ifdef TESTING
+    void setStatus(bool status);
+#endif
+    // IConfigurable
     virtual void fireConfigurationMessage() const override;
 
 protected:

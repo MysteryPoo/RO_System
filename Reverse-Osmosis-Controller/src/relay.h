@@ -22,7 +22,7 @@
 
 class SystemLog;
 
-class Relay : IConfigurable
+class Relay : public IConfigurable
 {
 public:
     enum Name
@@ -40,6 +40,9 @@ public:
     void set(const Relay::State state);
     const Relay::State get() const {return this->state;}
 
+    // IConfigurable
+    virtual void Configure(JSONValue json) override {};
+
 private:
     Name name;
     int pin;
@@ -48,6 +51,8 @@ private:
     State state;
 
     const String toString() const;
+
+    // IConfigurable
     virtual void fireConfigurationMessage() const override;
         
         

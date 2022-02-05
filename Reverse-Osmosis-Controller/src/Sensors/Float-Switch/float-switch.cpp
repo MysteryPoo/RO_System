@@ -4,6 +4,7 @@
 
 #define TIME_CONSIDERED_STABLE_MS 1000
 #define TIME_CONSIDERED_UNSTABLE_MS 10000
+#define COMPONENT_NAME "float-switch"
 
 FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
     pin(pin),
@@ -12,6 +13,8 @@ FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
     status(false),
     lastStable(millis()),
     stable(false),
+    firedWarning(false),
+    isReliable(true),
     logger(logger)
 {
 #ifndef TESTING
@@ -20,19 +23,50 @@ FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
     this->fireConfigurationMessage();
 }
 
+int FloatSwitch::ResetReliableFlag(String reset)
+{
+    this->isReliable = true;
+    return 0;
+}
+
 void FloatSwitch::cloudSetup()
 {
-    Particle.variable("Float-Status", this->status);
+    Particle.function("reset-float-switch", &FloatSwitch::ResetReliableFlag, this);
+}
+
+void FloatSwitch::Configure(JSONValue json)
+{
+    JSONObjectIterator jsonIt(json);
+    while(jsonIt.next())
+    {
+#ifdef TESTING
+        if(jsonIt.name() == "float")
+        {
+            this->setStatus(jsonIt.value().toBool());
+        }
+#endif
+    }
 }
 
 void FloatSwitch::Update()
 {
     this->sample();
+    // Notify if the float switch was triggered.
+    if(this->isFull() && !this->firedWarning)
+    {
+        logger.warning("Float Switch has been triggered!");
+        this->firedWarning = true;
+    }
+    // Reset warning
+    if (this->stable && !this->status)
+    {
+        this->firedWarning = false;
+    }
 }
 
-bool FloatSwitch::isActive()
+bool FloatSwitch::isFull() const
 {
-    return this->stable && this->status;
+    return (this->stable && this->status) || !isReliable;
 }
 
 void FloatSwitch::sample()
@@ -50,7 +84,8 @@ void FloatSwitch::sample()
         // If unstable for a long period of time (constant flip/flop), we have a problem.
         if(curMillis > this->lastStable + TIME_CONSIDERED_UNSTABLE_MS)
         {
-            this->logger.error("Float switch is highly unstable.");
+            this->isReliable = false;
+            this->logger.error("Float switch is highly unstable. System shutdown.");
         }
     }
     else if(curMillis > this->stableTimer)
@@ -75,7 +110,12 @@ void FloatSwitch::fireConfigurationMessage() const
     writer.name("event").value("configuration");
     writer.name("pin").value(pinValue);
     writer.endObject();
-    this->logger.pushMessage("float-switch", writer.buffer());
+    this->logger.pushMessage(COMPONENT_NAME, writer.buffer());
+}
+
+void FloatSwitch::reportHeartbeat(JSONBufferWriter& writer) const
+{
+    writer.name(COMPONENT_NAME).value(this->isFull());
 }
 
 #ifdef TESTING

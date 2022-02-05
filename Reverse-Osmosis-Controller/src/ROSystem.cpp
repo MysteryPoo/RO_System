@@ -2,8 +2,6 @@
 #include "ROSystem.h"
 #include "application.h"
 #include "relay.h"
-#include "float-switch.h"
-#include "ultra-sonic.h"
 #include "system-log.h"
 
 #define FLUSH_TIMER_MS 300000
@@ -14,13 +12,11 @@
 #define PUMP_RUN_MIN_TO_FLUSH 2
 #define WARNING_DELAY 60000
 
-ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, FloatSwitch &floatSwitch, UltraSonic &ultraSonic, SystemLog &logger) :
+ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger) :
     state(ROSystem::BOOT),
     pump(pump),
     inlet(inlet),
     flush(flush),
-    floatSwitch(floatSwitch),
-    ultraSonic(ultraSonic),
     logger(logger),
     flushedToday(false),
     totalPumpTime(0),
@@ -40,18 +36,50 @@ ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, FloatSwitch &floatSw
 
 void ROSystem::cloudSetup()
 {
-    Particle.variable("Pump-Runs", this->totalPumpRuns);
-    Particle.variable("Pump-Time", this->totalPumpTime);
+    
+}
+
+void ROSystem::AddSensor(ISensor* sensor)
+{
+    sensors.push_back(sensor);
 }
 
 void ROSystem::Update()
 {
-    //this->update(this->floatSwitch.isActive(), this->ultraSonic.getDistance());
-    // Temporary until Ultra-Sonic issue is fixed
-    this->update(this->floatSwitch.isActive(), this->fillStartDistance + 1);
+    bool tankIsFull = false;
+    for (ISensor* sensor : sensors)
+    {
+        tankIsFull |= sensor->isFull();
+    }
+    this->update(tankIsFull);
 }
 
-void ROSystem::update(bool tankFull, unsigned short distance)
+void ROSystem::Configure(JSONValue json)
+{
+    JSONObjectIterator jsonIt(json);
+    while(jsonIt.next())
+    {
+        if(jsonIt.name() == "enabled")
+        {
+            this->enabled = jsonIt.value().toBool();
+        }
+        if(jsonIt.name() == "fillDistances")
+        {
+            JSONValue distances = jsonIt.value();
+            this->configureFillDistances(distances);
+        }
+        if(jsonIt.name() == "pumpCooldown")
+        {
+            this->configurePumpCooldown(jsonIt.value().toInt());
+        }
+        if(jsonIt.name() == "flushDuration")
+        {
+            this->configureFlushDuration(jsonIt.value().toInt());
+        }
+    }
+}
+
+void ROSystem::update(bool tankFull)
 {
     unsigned long curMillis = millis();
     static unsigned long lastAttempt = curMillis;
@@ -66,8 +94,8 @@ void ROSystem::update(bool tankFull, unsigned short distance)
             {
                 return; // Bail out early if we're checking inside Idle too often.
             }
-            // Check if the tank is considered not-full and it has plenty of room to fill some
-            if(!tankFull && distance > this->fillStartDistance)
+            // Check if the tank is considered not-full
+            if(!tankFull)
             {
                 // Only flush if we've ran the pump a few times
                 if(flushedToday || this->totalPumpRuns < PUMP_RUN_MIN_TO_FLUSH)
@@ -99,7 +127,7 @@ void ROSystem::update(bool tankFull, unsigned short distance)
             break;
         case ROSystem::FILL:
             // Cutoff fill routine once full
-            if(!this->enabled || tankFull || distance < this->fillStopDistance)
+            if(!this->enabled || tankFull)
             {
                 this->requestState(ROSystem::State::IDLE, this->enabled ? "Tank is full." : "System has been disabled.");
                 lastAttempt = curMillis;
@@ -237,7 +265,6 @@ bool ROSystem::activatePump()
 bool ROSystem::deactivatePump()
 {
     unsigned long curMillis = millis();
-    static unsigned long lastWarning = curMillis - WARNING_DELAY;
 
     if(Relay::State::ON == pump.get())
     {
@@ -259,22 +286,9 @@ void ROSystem::shutdown()
     this->requestState(ROSystem::State::IDLE, "Shutdown requested.");
 }
 
-int ROSystem::cloudRequestState(String newState)
+void ROSystem::reportHeartbeat(JSONBufferWriter& writer) const
 {
-    const String reasonCloud = "DEBUG Cloud Requested.";
-    if(newState.toLowerCase() == "fill")
-    {
-        this->requestState(ROSystem::State::FILL, reasonCloud);
-    }
-    if(newState.toLowerCase() == "flush")
-    {
-        this->requestState(ROSystem::State::FLUSH, reasonCloud);
-    }if(newState.toLowerCase() == "idle")
-    {
-        this->requestState(ROSystem::State::IDLE, reasonCloud);
-    }
-
-    return 0;
+    writer.name("enabled").value(getEnabled());
 }
 
 String ROSystem::getStateString()
@@ -297,27 +311,25 @@ String ROSystem::getStateString()
     return stateString;
 }
 
-int ROSystem::enable(String setEnabled)
+#ifdef TESTING
+int ROSystem::configureState(String newState)
 {
-    if(setEnabled.toUpperCase() == "TRUE")
+    const String reasonCloud = "DEBUG Cloud Requested.";
+    if(newState.toLowerCase() == "fill")
     {
-        this->enabled = true;
+        this->requestState(ROSystem::State::FILL, reasonCloud);
     }
-    else if(setEnabled.toUpperCase() == "FALSE")
+    if(newState.toLowerCase() == "flush")
     {
-        this->enabled = false;
-    }
-    else
+        this->requestState(ROSystem::State::FLUSH, reasonCloud);
+    }if(newState.toLowerCase() == "idle")
     {
-        return -1;
+        this->requestState(ROSystem::State::IDLE, reasonCloud);
     }
+
     return 0;
 }
-
-void ROSystem::setEnable(bool enable)
-{
-    this->enabled = enable;
-}
+#endif
 
 int ROSystem::setFillDistances(String csvFill)
 {
@@ -343,7 +355,7 @@ int ROSystem::setFillDistances(String csvFill)
     return -1;
 }
 
-int ROSystem::ConfigureFillDistances(spark::JSONValue& distances)
+int ROSystem::configureFillDistances(spark::JSONValue& distances)
 {
     int error = 0;
     if(distances.isObject())
@@ -378,7 +390,7 @@ int ROSystem::ConfigureFillDistances(spark::JSONValue& distances)
     return error;
 }
 
-void ROSystem::ConfigurePumpCooldown(int newPumpCooldown)
+void ROSystem::configurePumpCooldown(int newPumpCooldown)
 {
     if(newPumpCooldown > 0)
     {
@@ -386,7 +398,7 @@ void ROSystem::ConfigurePumpCooldown(int newPumpCooldown)
     }
 }
 
-void ROSystem::ConfigureFlushDuration(int duration)
+void ROSystem::configureFlushDuration(int duration)
 {
     if(duration > 0)
     {
