@@ -2,10 +2,11 @@
 #include "mqtt-client.h"
 
 #define MQTTClient_DEFAULT_PERIOD 10000
+#define MQTT_PACKET_SIZE 2048
 
 MQTTClient::MQTTClient()
 {
-  this->client.Initialize(NULL, this->ipAddress, this->port, MQTT_DEFAULT_KEEPALIVE, MQTT_MAX_PACKET_SIZE, NULL, true);
+  this->client.Initialize(NULL, this->ipAddress, this->port, MQTT_DEFAULT_KEEPALIVE, MQTT_PACKET_SIZE, NULL, true);
   this->client.RegisterCallbackListener(this);
 }
 
