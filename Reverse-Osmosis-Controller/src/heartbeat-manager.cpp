@@ -10,7 +10,7 @@ HeartbeatManager::HeartbeatManager(SystemLog& logger) :
 #ifndef TESTING
   updatePeriod(ONE_MINUTE_MS * 10)
 #else
-  updatePeriod(THIRTY_SECONDS_MS * 4)
+  updatePeriod(THIRTY_SECONDS_MS)
 #endif
 {}
 
@@ -56,6 +56,8 @@ void HeartbeatManager::ForceHeartbeat()
 
 void HeartbeatManager::sendHeartbeat()
 {
+  WiFiSignal wifi = WiFi.RSSI();
+
   const int bufferSize = 2048;
   JSONBufferWriter message = SystemLog::createBuffer(bufferSize);
   message.beginObject();
@@ -63,6 +65,10 @@ void HeartbeatManager::sendHeartbeat()
   message.name("messageQueueSize").value(logger.messageQueueSize());
   message.name("version").value(VERSION_STRING);
   message.name("heartbeat-rate").value(this->updatePeriod);
+  message.name("WiFi").beginObject()
+  .name("signal").value(wifi.getStrength())
+  .name("quality").value(wifi.getQuality())
+  .endObject();
   for (IHeartbeatReporter* reporter : this->reporters)
   {
     reporter->reportHeartbeat(message);
