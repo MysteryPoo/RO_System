@@ -13,6 +13,9 @@ server.on('message', (msg, info) => {
 
   if (msg.toString() === 'Looking for MQTT server') {
     console.log('Sending connection information to client.');
+    console.log('Client info:');
+    console.log(`Address: ${info.address}`);
+    console.log(`Port: ${info.port}`);
     server.send(JSON.stringify({
       username: process.env.MQTT_USERNAME,
       password: process.env.MQTT_PASSWORD
