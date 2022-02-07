@@ -56,6 +56,11 @@ void HeartbeatManager::ForceHeartbeat()
 
 void HeartbeatManager::sendHeartbeat()
 {
+  if (!WiFi.ready())
+  {
+    return;
+  }
+
   WiFiSignal wifi = WiFi.RSSI();
 
   const int bufferSize = 2048;
