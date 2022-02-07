@@ -21,7 +21,9 @@ export class HeartbeatService {
     const collection: Collection =
       this.databaseService.database.collection(deviceId);
     const query = {
-      component: 'system/tick',
+      component: {
+        $in: ['system/tick', 'system/heartbeat'],
+      },
     };
     const options: FindOptions = {
       sort: {
@@ -44,7 +46,9 @@ export class HeartbeatService {
     const returnList = [];
     try {
       const query = {
-        component: 'system/tick',
+        component: {
+          $in: ['system/tick', 'system/heartbeat'],
+        },
         datetime: {
           $gt: dateFrom,
           $lt: dateTo,
