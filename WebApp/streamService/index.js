@@ -2,6 +2,7 @@
 require('dotenv').config();
 const Particle = require('particle-api-js');
 const { MongoClient } = require('mongodb');
+const mqtt = require('mqtt');
 
 const databaseName = process.env.MONGODB_DB_NAME ?? 'test';
 const username = process.env.MONGODB_USERNAME ?? 'admin';
@@ -16,6 +17,8 @@ const database = mongo.db(databaseName);
 
 const particle = new Particle();
 
+const deviceTimeouts = {};
+
 const particleAPISession = {
   username: process.env.PARTICLE_USERNAME,
   password: process.env.PARTICLE_PASSWORD,
@@ -23,7 +26,7 @@ const particleAPISession = {
   expires_in: undefined,
   refresh_token: undefined,
   event_stream: {},
-  deviceList: {},
+  deviceList: [],
   keepAliveList: {},
   connected: false,
 };
@@ -90,11 +93,11 @@ async function UpdateDeviceStatus(device) {
   await collection.updateOne(query, update, options);
 
   if (device.online) {
-    sendConfiguration(device.id);
+    //sendConfiguration(device.id);
   }
 }
 
-(async function run() {
+(async function runParticle() {
   // Login
   const token = await login();
   // Get Device List
@@ -122,5 +125,49 @@ async function UpdateDeviceStatus(device) {
       const collection = database.collection(device.id);
       await collection.insertOne(incomingEvent.data);
     });
+  });
+})();
+
+(async function runmqtt() {
+  const options = {
+    clientId: "streamService",
+    username: process.env.MQTT_USERNAME,
+    password: process.env.MQTT_PASSWORD,
+    clean: true,
+  };
+  const client = mqtt.connect("mqtt://localhost", options);
+  client.on('connect', () => {
+    console.log('MQTT: Connected!');
+  });
+  client.subscribe("from/#", {qos: 1});
+  client.on('message', async (topic, message, packet) => {
+    const tokens = topic.split('/');
+    const deviceId = tokens[1]; // TODO: Validate this value against a Particle.getDevices call
+    const subTopic = tokens[2];
+    if (subTopic === 'status') {
+      UpdateDeviceStatus({id: deviceId, online: true});
+    } else if (subTopic === 'romcon') {
+      try {
+        const data = JSON.parse(message);
+        if (data.datetime != 'undefined') {
+          data.datetime = new Date(data.datetime * 1000); // Particle sends time as seconds since 1970, JS expects milliseconds.
+        } else {
+          data.datetime = new Date();
+        }
+        const collection = database.collection(deviceId);
+        await collection.insertOne(data);
+
+        if (deviceTimeouts[deviceId]) {
+          clearTimeout(deviceTimeouts[deviceId]);
+        }
+        deviceTimeouts[deviceId] = setTimeout( () => {
+          UpdateDeviceStatus({id: deviceId, online: false});
+          deviceTimeouts[deviceId] = undefined;
+          delete deviceTimeouts[deviceId];
+        }, 10000);
+      } catch (e) {
+        console.error(`Failed to parse the following as JSON: ${message}`);
+      }
+    }
   });
 })();
