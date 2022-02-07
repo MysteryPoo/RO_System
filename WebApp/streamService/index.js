@@ -97,6 +97,17 @@ async function UpdateDeviceStatus(device) {
   }
 }
 
+function ResetTimer(deviceId) {
+  if (deviceTimeouts[deviceId]) {
+    clearTimeout(deviceTimeouts[deviceId]);
+  }
+  deviceTimeouts[deviceId] = setTimeout( () => {
+    UpdateDeviceStatus({id: deviceId, online: false});
+    deviceTimeouts[deviceId] = undefined;
+    delete deviceTimeouts[deviceId];
+  }, 30000);
+}
+
 (async function runParticle() {
   // Login
   const token = await login();
@@ -145,6 +156,7 @@ async function UpdateDeviceStatus(device) {
     const deviceId = tokens[1]; // TODO: Validate this value against a Particle.getDevices call
     const subTopic = tokens[2];
     if (subTopic === 'status') {
+      ResetTimer(deviceId);
       UpdateDeviceStatus({id: deviceId, online: true});
     } else if (subTopic === 'romcon') {
       try {
@@ -157,14 +169,7 @@ async function UpdateDeviceStatus(device) {
         const collection = database.collection(deviceId);
         await collection.insertOne(data);
 
-        if (deviceTimeouts[deviceId]) {
-          clearTimeout(deviceTimeouts[deviceId]);
-        }
-        deviceTimeouts[deviceId] = setTimeout( () => {
-          UpdateDeviceStatus({id: deviceId, online: false});
-          deviceTimeouts[deviceId] = undefined;
-          delete deviceTimeouts[deviceId];
-        }, 10000);
+        ResetTimer(deviceId);
       } catch (e) {
         console.error(`Failed to parse the following as JSON: ${message}`);
       }
