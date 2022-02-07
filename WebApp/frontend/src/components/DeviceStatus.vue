@@ -6,9 +6,11 @@
         </template>
         <template #content>
           {{ deviceStatus ? currentState : "Offline" }}
-          <RemainingTime v-if="currentState === 'FLUSH' || currentState === 'FILL'" :startTime="stateStartTime" :estimatedElapsedSeconds="currentState === 'FLUSH' ? 300 : props.averageFillTime" />
-          <p>Firmware Version: {{ version }}</p>
-          <p>System is {{ enabled ? "Enabled" : "Disabled" }}</p>
+          <div v-show="deviceStatus">
+            <RemainingTime v-if="currentState === 'FLUSH' || currentState === 'FILL'" :startTime="stateStartTime" :estimatedElapsedSeconds="currentState === 'FLUSH' ? 300 : props.averageFillTime" />
+            <p>Firmware Version: {{ version }}</p>
+            <p>System is {{ enabled ? "Enabled" : "Disabled" }}</p>
+          </div>
         </template>
       </Card>
     </div>
