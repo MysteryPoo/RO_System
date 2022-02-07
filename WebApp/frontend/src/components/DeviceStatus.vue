@@ -10,6 +10,16 @@
             <RemainingTime v-if="currentState === 'FLUSH' || currentState === 'FILL'" :startTime="stateStartTime" :estimatedElapsedSeconds="currentState === 'FLUSH' ? 300 : props.averageFillTime" />
             <p>Firmware Version: {{ version }}</p>
             <p>System is {{ enabled ? "Enabled" : "Disabled" }}</p>
+            <i class="pi pi-wifi" :style=wifiColor>{{ wifiSignal }}%</i>
+            <Accordion>
+              <AccordionTab header="Feature List">
+                <ul>
+                  <li v-for="feature in featureList" :key="feature">
+                    {{ feature }}
+                  </li>
+                </ul>
+              </AccordionTab>
+            </Accordion>
           </div>
         </template>
       </Card>
@@ -17,9 +27,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, Ref, onBeforeUnmount, onMounted, watch } from 'vue';
+import { ref, Ref, onBeforeUnmount, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import Card from 'primevue/card';
+import Accordion from 'primevue/accordion';
+import AccordionTab from 'primevue/accordiontab';
 import RemainingTime from '@/components/RemainingTime.vue';
 import { useDevicesApi, UnauthorizedException } from '@/services/devices';
 
@@ -35,7 +47,19 @@ const currentState = ref("Unknown");
 const stateStartTime : Ref<Date | undefined> = ref(undefined);
 const version = ref('');
 const enabled = ref(true);
+const featureList = ref([]);
+const wifiSignal = ref(0);
+const wifiQuality = ref(0);
 const refreshInterval : Ref<number | undefined> = ref(undefined);
+const wifiColor = computed( () => {
+  if (wifiQuality.value > 75) {
+    return "color: green";
+  } else if (wifiQuality.value > 50) {
+    return "color: yellow";
+  } else {
+    return "color: red";
+  }
+});
 
 const initializeRefreshInterval = (deviceId : string | undefined) => {
     if (undefined === deviceId) {
@@ -60,9 +84,12 @@ const callApi = async (deviceId: string | undefined) => {
       const stateRequest = await api.getStates(deviceId, 0, 1);
       currentState.value = stateRequest[0].data.state;
       stateStartTime.value = new Date(stateRequest[0].datetime);
-      const ticks = await api.getTicks(deviceId);
-      version.value = ticks[0].data.version;
-      enabled.value = ticks[0].data.enabled;
+      const heartbeat : Array<any> = await api.getHeartbeat(deviceId);
+      version.value = heartbeat[0].data.version;
+      enabled.value = heartbeat[0].data.enabled;
+      wifiSignal.value = heartbeat[0].data.WiFi.signal;
+      wifiQuality.value = heartbeat[0].data.WiFi.quality;
+      featureList.value = await api.getFeatureList(deviceId);
     } catch( e ) {
         if (e instanceof UnauthorizedException && e.code === 401) {
           router.replace('/login');

@@ -73,4 +73,20 @@ export class HeartbeatService {
     }
     return returnList.reverse();
   }
+
+  async getFeatureList(deviceId: string): Promise<Array<string>> {
+    const collection = this.databaseService.database.collection(deviceId);
+    const query = {
+      component: 'system/feature-list',
+    };
+    const options: FindOptions = {
+      sort: {
+        datetime: -1,
+        limit: 1,
+      },
+    };
+    const cursor = collection.find(query, options);
+    const documents = await cursor.toArray();
+    return documents[0].data.features;
+  }
 }
