@@ -135,7 +135,7 @@ async function UpdateDeviceStatus(device) {
     password: process.env.MQTT_PASSWORD,
     clean: true,
   };
-  const client = mqtt.connect("mqtt://localhost", options);
+  const client = mqtt.connect("mqtt://rabbitmq", options);
   client.on('connect', () => {
     console.log('MQTT: Connected!');
   });
