@@ -7,10 +7,7 @@
 #include "MQTT/ISubCallback.h"
 #include <vector>
 
-#define IPADDRESS {192, 168, 0, 165}
 #define PORT 1883
-#define USERNAME "user"
-#define PASSWORD "password"
 
 class MQTTClient: public IComponent, public ISubCallback
 {
@@ -27,9 +24,13 @@ public:
   virtual void Callback(char*, uint8_t*, unsigned int) override;
 private:
   MQTT client;
-  const uint8_t ipAddress[4] = IPADDRESS;
+  uint8_t ipAddress[4] = {0, 0, 0, 0};
   const short port = PORT;
   std::vector<ISubCallback*> listeners;
+  UDP udp;
+  bool discovery;
+
+  void discoverMQTT();
 };
 
 #endif

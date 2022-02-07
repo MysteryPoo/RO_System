@@ -3,8 +3,10 @@
 
 #define MQTTClient_DEFAULT_PERIOD 10000
 #define MQTT_PACKET_SIZE 2048
+#define MQTT_UDP_PORT 1882
 
 MQTTClient::MQTTClient()
+: discovery(false)
 {
   this->client.Initialize(NULL, this->ipAddress, this->port, MQTT_DEFAULT_KEEPALIVE, MQTT_PACKET_SIZE, NULL, true);
   this->client.RegisterCallbackListener(this);
@@ -42,14 +44,59 @@ void MQTTClient::Update()
   }
   else
   {
-    bool connectionSuccess = this->client.connect("sparkclient_" + String(Time.now()), USERNAME, PASSWORD);
-    if (this->client.isConnected())
+    if (this->discovery)
     {
-        this->client.publish("from/" + System.deviceID() + "/status", "online");
-        for(ISubCallback* listener : this->listeners)
+      char message[1028];
+      int length = udp.receivePacket((byte*)message, 1028, 0);
+      if (length > 0)
+      {
+        JSONValue json = JSONValue::parseCopy(message);
+        if (!json.isValid())
         {
-          listener->OnConnect(connectionSuccess, this);
+          return;
         }
+        String username;
+        String password;
+        JSONObjectIterator it(json);
+        while(it.next())
+        {
+          if (it.name() == "username")
+          {
+            username = it.value().toString().data();
+          }
+          if (it.name() == "password")
+          {
+            password = it.value().toString().data();
+          }
+        }
+
+        IPAddress remoteIp = udp.remoteIP();
+        for (int i = 0; i < 4; ++i)
+        {
+          this->ipAddress[i] = remoteIp[i];
+        }
+
+        this->client.setBroker(this->ipAddress, this->port);
+        bool connectionSuccess = this->client.connect("sparkclient_" + String(Time.now()), username, password);
+        if (this->client.isConnected())
+        {
+          this->client.publish("from/" + System.deviceID() + "/status", "online");
+          for(ISubCallback* listener : this->listeners)
+          {
+            listener->OnConnect(connectionSuccess, this);
+          }
+          this->discovery = false;
+          udp.stop();
+        }
+        else
+        {
+          discoverMQTT();
+        }
+      }
+    }
+    else
+    {
+      discoverMQTT();
     }
   }
 }
@@ -59,4 +106,14 @@ void MQTTClient::Callback(char* topic, uint8_t* buffer, unsigned int bufferLengt
   char p[bufferLength + 1];
   memcpy(p, buffer, bufferLength);
   p[bufferLength] = '\0';
+}
+
+void MQTTClient::discoverMQTT()
+{
+  udp.begin(MQTT_UDP_PORT);
+  this->discovery = true;
+  IPAddress broadcast(255, 255, 255, 255);
+  udp.beginPacket(broadcast, 1882);
+  udp.write("Looking for MQTT server");
+  udp.endPacket();
 }
