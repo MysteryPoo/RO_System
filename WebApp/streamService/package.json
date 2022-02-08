@@ -1,6 +1,6 @@
 {
   "name": "ro_system_stream_listener",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Simply captures event stream from Particle API and stores in a database",
   "main": "index.js",
   "scripts": {
