@@ -49,23 +49,11 @@ import { useToast } from 'primevue/usetoast';
 import DeviceSelect from '@/components/DeviceSelect.vue';
 import { useDevicesApi, UnauthorizedException } from '@/services/devices';
 
-interface IConfiguration {
-  enabled: boolean;
-  pumpCooldown: number;
-  flushDuration: number;
-  tickRate: number;
-}
-
 interface IFeature {
   deviceId: string;
   component: string;
   display: string;
   options: Array<{name: string, type: string, units?: string, default?: any}>;
-}
-
-enum CONVERSION_MODE {
-  TORAW,
-  TODISPLAY,
 }
 
 const router = useRouter();
@@ -82,6 +70,9 @@ const onDeviceSelected = async (_deviceId : string) : Promise<void> => {
   deviceId.value = _deviceId;
   await getConfigurationFromApi(_deviceId);
   featureList.value = await api.getFeatureList(_deviceId);
+  if (featureList.value.length === 0) {
+    toast.add({severity:'info', summary: 'No Configuration', detail:'This device is not configurable.', life: 10000});
+  }
   for (const feature of toRaw(featureList.value)) {
     if (!(feature.component in configuration.value)) {
       toast.add({severity:'info', summary: `${feature.display}`, detail:'This component is running on default configuration settings.', life: 10000});
