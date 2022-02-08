@@ -10,7 +10,7 @@ const password = process.env.MONGODB_PASSWORD ?? 'admin';
 const connectionString = process.env.MONGODB_URI ?? 'localhost';
 
 const mongo = new MongoClient(`mongodb://${username}:${password}@${connectionString}?retryWrites=true&authSource=admin`, {
-    useUnifiedTopology: true,
+  useUnifiedTopology: true,
 });
 mongo.connect();
 const database = mongo.db(databaseName);
@@ -173,6 +173,24 @@ function ResetTimer(deviceId) {
       } catch (e) {
         console.error(`Failed to parse the following as JSON: ${message}`);
       }
+    } else if (subTopic === 'configuration') {
+      const component = tokens[3];
+      const feature = JSON.parse(message);
+      feature['component'] = component;
+      feature['deviceId'] = deviceId;
+
+      const query = {
+        deviceId,
+        component
+      };
+      const update = {
+        $set: feature
+      };
+      const collection = database.collection('feature');
+      const options = {
+        upsert: true
+      };
+      await collection.updateOne(query, update, options);
     }
   });
 })();
