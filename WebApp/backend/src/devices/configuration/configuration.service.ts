@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Collection } from 'mongodb';
 import { DatabaseService } from 'src/database/database.service';
+import * as mqtt from 'mqtt';
 
 @Injectable()
 export class ConfigurationService {
@@ -37,5 +38,26 @@ export class ConfigurationService {
       upsert: true,
     };
     await this.collection.updateOne(query, update, options);
+  }
+
+  async triggerOption(
+    deviceId: string,
+    component: string,
+    option: string,
+  ): Promise<{ success: boolean }> {
+    const options = {
+      clientId: 'backend',
+      username: process.env.MQTT_USERNAME,
+      password: process.env.MQTT_PASSWORD,
+      clean: true,
+    };
+    const client = mqtt.connect('mqtt://rabbitmq', options);
+    const message = {};
+    message[option] = true;
+    client.publish(
+      `to/${deviceId}/${component}/configuration`,
+      JSON.stringify(message),
+    );
+    return { success: true };
   }
 }

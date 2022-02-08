@@ -21,4 +21,14 @@ export class DevicesConfigurationController {
     await this.configurationService.setConfiguration(deviceId, body);
     return { success: true, configuration: body };
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('trigger/:component/:option')
+  async triggerOption(
+    @Param('deviceId') deviceId: string,
+    @Param('component') component: string,
+    @Param('option') option: string,
+  ): Promise<{ success: boolean }> {
+    return this.configurationService.triggerOption(deviceId, component, option);
+  }
 }
