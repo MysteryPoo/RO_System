@@ -39,7 +39,7 @@ class DevicesApi {
     }
   }
 
-  async setConfiguration(deviceId: string | undefined, configuration : any) {
+  async setConfiguration(deviceId: string | undefined, configuration : any): Promise<{success: boolean, code: number}> {
     if (deviceId === undefined) {
       throw new DeviceRequiredException();
     }
@@ -215,6 +215,21 @@ class DevicesApi {
       throw new DeviceRequiredException();
     }
     const request = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/restart`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${window.localStorage.token}`,
+      },
+    });
+    if (request.status === 200) {
+      return request.json();
+    }
+    if (request.status === 401) {
+      throw new UnauthorizedException();
+    }
+  }
+  
+  async triggerOption(deviceId: string, component: string, option: string) {
+    const request = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/configuration/trigger/${component}/${option}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${window.localStorage.token}`,
