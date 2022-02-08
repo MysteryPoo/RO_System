@@ -17,6 +17,14 @@ HeartbeatManager::HeartbeatManager(SystemLog& logger) :
 #endif
 {}
 
+HeartbeatManager::HeartbeatManager(SystemLog& logger, MQTTClient* mqtt)
+: HeartbeatManager(logger)
+{
+  if (nullptr != mqtt)
+  {
+    mqtt->RegisterCallbackListener(this);
+  }
+}
 
 void HeartbeatManager::RegisterReporter(String name, IHeartbeatReporter* reporter)
 {
@@ -80,7 +88,7 @@ void HeartbeatManager::OnConnect(bool connectSuccess, MQTTClient* mqtt)
 {
   if (nullptr != mqtt)
   {
-    mqtt->Subscribe("heartbeat/#", MQTT::EMQTT_QOS::QOS1);
+    mqtt->Subscribe("configuration/heartbeat/#", MQTT::EMQTT_QOS::QOS1);
     JSONBufferWriter message = SystemLog::createBuffer(512);
     message.beginObject();
     message.name("display").value("Heartbeat Manager");

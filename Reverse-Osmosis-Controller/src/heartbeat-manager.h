@@ -16,6 +16,7 @@ class HeartbeatManager: public IComponent, public IConfigurable, public ISubCall
 {
 public:
   HeartbeatManager(SystemLog& logger);
+  HeartbeatManager(SystemLog& logger, MQTTClient* mqtt);
   
   void RegisterReporter(String name, IHeartbeatReporter*);
   void SetPeriod(unsigned long newPeriod) { this->updatePeriod = newPeriod; }

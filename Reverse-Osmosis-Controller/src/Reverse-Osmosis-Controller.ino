@@ -71,7 +71,7 @@ std::map<String, IConfigurable*> configurables;
 std::vector<IComponent*> componentsToUpdate;
 MQTTClient mqttClient;
 SystemLog syslog(mqttClient);
-HeartbeatManager heartbeatManager(syslog);
+HeartbeatManager heartbeatManager(syslog, &mqttClient);
 Relay pump(Relay::Name::COMPONENT_PUMP, syslog, D7, true);
 Relay inlet(Relay::Name::COMPONENT_INLETVALVE, syslog, D6, true);
 Relay flush(Relay::Name::COMPONENT_FLUSHVALVE, syslog, D5, true);

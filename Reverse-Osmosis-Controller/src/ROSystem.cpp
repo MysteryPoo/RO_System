@@ -106,7 +106,7 @@ void ROSystem::OnConnect(bool connectSuccess, MQTTClient* mqtt)
 {
     if (nullptr != mqtt)
     {
-        mqtt->Subscribe("ro-system/#", MQTT::EMQTT_QOS::QOS1);
+        mqtt->Subscribe("configuration/ro-system/#", MQTT::EMQTT_QOS::QOS1);
         JSONBufferWriter message = SystemLog::createBuffer(512);
         message.beginObject();
         message.name("display").value("RO System");

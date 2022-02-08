@@ -76,7 +76,7 @@ void FloatSwitch::OnConnect(bool success, MQTTClient* mqtt)
 {
     if (nullptr != mqtt)
     {
-        mqtt->Subscribe("float-switch/#", MQTT::EMQTT_QOS::QOS1);
+        mqtt->Subscribe("configuration/float-switch/#", MQTT::EMQTT_QOS::QOS1);
         JSONBufferWriter message = SystemLog::createBuffer(512);
         message.beginObject();
         message.name("display").value("Float Switch");
