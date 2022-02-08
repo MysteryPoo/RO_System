@@ -93,7 +93,7 @@ void ROSystem::Callback(char* topic, uint8_t* payload, unsigned int length)
     memcpy(p, payload, length);
     p[length] = '\0';
 
-    if (strcmp(topic, "to/" + System.deviceID() + "/ro-system/configuration"))
+    if (strcmp(topic, "to/" + System.deviceID() + "/configuration/ro-system"))
     {
         return;
     }

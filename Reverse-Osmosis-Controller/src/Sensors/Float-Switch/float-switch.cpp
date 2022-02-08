@@ -1,4 +1,5 @@
 
+#include "global-defines.h"
 #include "float-switch.h"
 #include "system-log.h"
 #include "mqtt-client.h"
@@ -61,7 +62,7 @@ void FloatSwitch::Callback(char* topic, uint8_t* payload, unsigned int length)
     memcpy(p, payload, length);
     p[length] = '\0';
 
-    if (strcmp(topic, "to/" + System.deviceID() + "/float-switch/configuration"))
+    if (strcmp(topic, "to/" + System.deviceID() + "/configuration/float-switch"))
     {
         return;
     }

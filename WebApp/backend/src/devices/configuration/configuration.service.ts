@@ -55,7 +55,7 @@ export class ConfigurationService {
     const message = {};
     message[option] = true;
     client.publish(
-      `to/${deviceId}/${component}/configuration`,
+      `to/${deviceId}/configuration/${component}`,
       JSON.stringify(message),
     );
     return { success: true };

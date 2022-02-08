@@ -1,6 +1,9 @@
 
 #include "global-defines.h"
 #include "heartbeat-manager.h"
+#include "system-log.h"
+#include "IHeartbeatReporter.h"
+#include "mqtt-client.h"
 
 #define THIRTY_SECONDS_MS 30000
 #define ONE_MINUTE_MS 60000
@@ -35,10 +38,14 @@ void HeartbeatManager::Update()
 
 void HeartbeatManager::Configure(JSONValue json)
 {
+  if (!json.isValid())
+  {
+    return;
+  }
   JSONObjectIterator jsonIt(json);
   while(jsonIt.next())
   {
-    if (jsonIt.name() == "rate")
+    if (jsonIt.name() == "Rate")
     {
       int rawRate = jsonIt.value().toInt();
       if (rawRate > 0)
@@ -52,6 +59,43 @@ void HeartbeatManager::Configure(JSONValue json)
 void HeartbeatManager::ForceHeartbeat()
 {
   sendHeartbeat();
+}
+
+void HeartbeatManager::Callback(char* topic, uint8_t* payload, unsigned int length)
+{
+  char p[length + 1];
+  memcpy(p, payload, length);
+  p[length] = '\0';
+
+  if (strcmp(topic, "to/" + System.deviceID() + "/configuration/heartbeat"))
+  {
+      return;
+  }
+
+  JSONValue configuration = JSONValue::parseCopy(String(p));
+  this->Configure(configuration);
+}
+
+void HeartbeatManager::OnConnect(bool connectSuccess, MQTTClient* mqtt)
+{
+  if (nullptr != mqtt)
+  {
+    mqtt->Subscribe("heartbeat/#", MQTT::EMQTT_QOS::QOS1);
+    JSONBufferWriter message = SystemLog::createBuffer(512);
+    message.beginObject();
+    message.name("display").value("Heartbeat Manager");
+    message.name("options").beginArray()
+    .beginObject()
+    .name("name").value("Rate")
+    .name("type").value("number")
+    .name("units").value("millisecond")
+    .name("default").value(this->updatePeriod)
+    .endObject()
+    .endArray();
+    message.endObject();
+    mqtt->Publish("configuration/heartbeat", message.buffer());
+    delete[] message.buffer();
+  }
 }
 
 void HeartbeatManager::sendHeartbeat()

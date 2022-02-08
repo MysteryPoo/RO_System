@@ -10,7 +10,6 @@
 #ifndef _FLOAT_SWITCH_
 #define _FLOAT_SWITCH_
 
-#include "global-defines.h"
 #include "application.h"
 #include "ICloud.h"
 #include "IComponent.h"
