@@ -11,4 +11,5 @@ export const databaseConstants = {
   configurationCollectionName: 'configuration',
   statusCollectionName: 'status',
   userCollectionName: 'users',
+  featureCollectionName: 'feature',
 };
