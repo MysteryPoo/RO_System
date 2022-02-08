@@ -16,14 +16,7 @@ export class LogsService {
       this.databaseService.database.collection(deviceId);
     const query = {
       component: {
-        $in: [
-          'ERROR',
-          'TRACE',
-          'INFO',
-          'WARN',
-          'system/restart',
-          'system/configuration',
-        ],
+        $in: ['ERROR', 'TRACE', 'INFO', 'WARN', 'system/restart'],
       },
     };
     const options: FindOptions = {
