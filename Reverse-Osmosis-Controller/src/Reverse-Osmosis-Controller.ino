@@ -178,7 +178,8 @@ void announceFeatures()
     .endArray();
     message.endObject();
 
-    syslog.pushMessage("system/feature-list", message.buffer());
+    mqttClient.Publish("feature-list", message.buffer());
+    delete[] message.buffer();
 }
 
 int sysRestart(String data)

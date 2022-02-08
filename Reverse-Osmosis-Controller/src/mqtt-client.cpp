@@ -27,7 +27,7 @@ void MQTTClient::RegisterCallbackListener(ISubCallback* listener)
 
 void MQTTClient::Subscribe(const char* topic, MQTT::EMQTT_QOS qos)
 {
-  this->client.subscribe(topic, qos);
+  this->client.subscribe("to/" + System.deviceID() + "/" + topic, qos);
 }
 
 void MQTTClient::Update()
@@ -43,6 +43,7 @@ void MQTTClient::Update()
   if (this->client.isConnected())
   {
     this->client.loop();
+    this->client.publish("from/" + System.deviceID() + "/status", "online");
   }
   else
   {
