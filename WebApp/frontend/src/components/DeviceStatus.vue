@@ -10,12 +10,12 @@
             <RemainingTime v-if="currentState === 'FLUSH' || currentState === 'FILL'" :startTime="stateStartTime" :estimatedElapsedSeconds="currentState === 'FLUSH' ? 300 : props.averageFillTime" />
             <p>Firmware Version: {{ version }}</p>
             <p>System is {{ enabled ? "Enabled" : "Disabled" }}</p>
-            <i class="pi pi-wifi" :style=wifiColor>{{ wifiSignal }}%</i>
-            <Accordion>
+            <i v-show="wifiSignal" class="pi pi-wifi" :style=wifiColor>{{ wifiSignal }}%</i>
+            <Accordion v-show="featureList.length > 0">
               <AccordionTab header="Feature List">
-                <ul>
-                  <li v-for="feature in featureList" :key="feature">
-                    {{ feature }}
+                <ul style="list-style-type: none">
+                  <li v-for="feature in featureList" :key="feature._id">
+                    {{ feature.display }}
                   </li>
                 </ul>
               </AccordionTab>
@@ -47,7 +47,7 @@ const currentState = ref("Unknown");
 const stateStartTime : Ref<Date | undefined> = ref(undefined);
 const version = ref('');
 const enabled = ref(true);
-const featureList = ref([]);
+const featureList: Ref<Array<any>> = ref([]);
 const wifiSignal = ref(0);
 const wifiQuality = ref(0);
 const refreshInterval : Ref<number | undefined> = ref(undefined);
@@ -87,8 +87,8 @@ const callApi = async (deviceId: string | undefined) => {
       const heartbeat : Array<any> = await api.getHeartbeat(deviceId);
       version.value = heartbeat[0].data.version;
       enabled.value = heartbeat[0].data.enabled;
-      wifiSignal.value = heartbeat[0].data.WiFi.signal;
-      wifiQuality.value = heartbeat[0].data.WiFi.quality;
+      wifiSignal.value = heartbeat[0].data.WiFi?.signal;
+      wifiQuality.value = heartbeat[0].data.WiFi?.quality;
       featureList.value = await api.getFeatureList(deviceId);
     } catch( e ) {
         if (e instanceof UnauthorizedException && e.code === 401) {

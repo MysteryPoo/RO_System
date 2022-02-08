@@ -64,7 +64,6 @@ const deviceLogs : Ref<Log[]> = ref([]);
 const logs = computed( () => {
   const logs : Log[] = [];
   deviceLogs.value.forEach((log) => {
-    // TODO : Process configuration logs
     if (log.component === 'system/configuration') {
       return;
     }
