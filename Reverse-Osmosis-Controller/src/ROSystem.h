@@ -17,6 +17,7 @@
 #include "Sensors/ISensor.h"
 #include "IHeartbeatReporter.h"
 #include "IConfigurable.h"
+#include "MQTT/ISubCallback.h"
 #include <vector>
 
 class Relay;
@@ -29,7 +30,7 @@ namespace spark
     class JSONValue;
 }
 
-class ROSystem : public IComponent, public IHeartbeatReporter, public IConfigurable {
+class ROSystem : public IComponent, public IHeartbeatReporter, public IConfigurable, public ISubCallback {
 public:
     enum State {
         BOOT,
@@ -39,6 +40,7 @@ public:
     };
     
     ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger);
+    ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger, MQTTClient* mqtt);
 
     void AddSensor(ISensor* sensor);
 
@@ -48,6 +50,9 @@ public:
     virtual void reportHeartbeat(JSONBufferWriter& writer) const;
     // IConfigurable
     virtual void Configure(JSONValue json) override;
+    // ISubCallback
+    virtual void Callback(char* topic, uint8_t* payload, unsigned int length) override;
+    virtual void OnConnect(bool connectSuccess, MQTTClient* mqtt) override;
 
     void shutdown();
 

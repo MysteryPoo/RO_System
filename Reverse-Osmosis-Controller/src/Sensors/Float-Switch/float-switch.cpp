@@ -34,15 +34,24 @@ FloatSwitch::FloatSwitch(int pin, SystemLog &logger, MQTTClient* mqtt) : FloatSw
 
 void FloatSwitch::Configure(JSONValue json)
 {
-    JSONObjectIterator jsonIt(json);
-    while(jsonIt.next())
+    if (!json.isValid())
+    {
+        return;
+    }
+    JSONObjectIterator it(json);
+    while(it.next())
     {
 #ifdef TESTING
-        if(jsonIt.name() == "float")
+        if (it.name() == "float")
         {
-            this->setStatus(jsonIt.value().toBool());
+            this->setStatus(it.value().toBool());
         }
 #endif
+        if (it.name() == "Reset Reliable")
+        {
+            this->isReliable = it.value().toBool();
+            logger.trace("Float Switch Reliable flag reset!");
+        }
     }
 }
 
@@ -58,25 +67,7 @@ void FloatSwitch::Callback(char* topic, uint8_t* payload, unsigned int length)
     }
 
     JSONValue configuration = JSONValue::parseCopy(String(p));
-    if (!configuration.isValid())
-    {
-        return;
-    }
-    JSONObjectIterator it(configuration);
-    while(it.next())
-    {
-#ifdef TESTING
-        if (it.name() == "float")
-        {
-            this->setStatus(it.value().toBool());
-        }
-#endif
-        if (it.name() == "reliable")
-        {
-            this->isReliable = it.value().toBool();
-            logger.trace("Float Switch Reliable flag reset!");
-        }
-    }
+    this->Configure(configuration);
 
 }
 
@@ -96,7 +87,7 @@ void FloatSwitch::OnConnect(bool success, MQTTClient* mqtt)
         .endObject()
 #endif
         .beginObject()
-        .name("name").value("reliable")
+        .name("name").value("Reset Reliable")
         .name("type").value("trigger")
         .endObject()
         .endArray();

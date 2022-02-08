@@ -75,7 +75,7 @@ HeartbeatManager heartbeatManager(syslog);
 Relay pump(Relay::Name::COMPONENT_PUMP, syslog, D7, true);
 Relay inlet(Relay::Name::COMPONENT_INLETVALVE, syslog, D6, true);
 Relay flush(Relay::Name::COMPONENT_FLUSHVALVE, syslog, D5, true);
-ROSystem ro(pump, inlet, flush, syslog);
+ROSystem ro(pump, inlet, flush, syslog, &mqttClient);
 
 #ifdef FEATURE_ULTRASONIC
 UltraSonic us(A3, A4, syslog);
@@ -102,7 +102,6 @@ void setup()
 #ifdef FEATURE_FLOATSWITCH
     ro.AddSensor(&fs);
     componentsToUpdate.push_back(&fs);
-    //configurables["float-switch"] = &fs;
     heartbeatManager.RegisterReporter("float-switch", &fs);
 #endif
 
@@ -130,7 +129,6 @@ void setup()
     componentsToUpdate.push_back(&ro);
 
     configurables["heartbeat-manager"] = &heartbeatManager;
-    configurables["ro-system"] = &ro;
 
     uint32_t resetData = System.resetReasonData();
 
@@ -166,6 +164,7 @@ void announceFeatures()
     message.beginObject();
     message.name("event").value("feature-list");
     message.name("features").beginArray()
+    .value("RO System")
 #ifdef FEATURE_FLOATSWITCH
     .value("Float Switch")
 #endif
