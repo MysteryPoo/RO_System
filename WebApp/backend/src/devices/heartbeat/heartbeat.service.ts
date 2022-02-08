@@ -74,19 +74,12 @@ export class HeartbeatService {
     return returnList.reverse();
   }
 
-  async getFeatureList(deviceId: string): Promise<Array<string>> {
-    const collection = this.databaseService.database.collection(deviceId);
+  async getFeatureList(deviceId: string): Promise<Array<any>> {
+    const collection = this.databaseService.featureCollection;
     const query = {
-      component: 'system/feature-list',
+      deviceId,
     };
-    const options: FindOptions = {
-      sort: {
-        datetime: -1,
-        limit: 1,
-      },
-    };
-    const cursor = collection.find(query, options);
-    const documents = await cursor.toArray();
-    return documents[0].data.features;
+    const cursor = collection.find(query);
+    return cursor.toArray();
   }
 }
