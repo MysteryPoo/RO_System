@@ -140,11 +140,11 @@ class DevicesApi {
     }
   }
 
-  async getStates(deviceId: string | undefined, skip = 0, rows = 10, stateFilter = ['IDLE', 'FILL', 'FLUSH']) {
+  async getStates(deviceId: string | undefined, skip = 0, rows = 10, stateFilter = ['IDLE', 'FILL', 'FLUSH'], successOnly = false) {
     if (deviceId === undefined) {
       throw new DeviceRequiredException();
     }
-    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/states?states=${JSON.stringify(stateFilter)}&skip=${skip}&rows=${rows}`, {
+    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/states?states=${JSON.stringify(stateFilter)}&skip=${skip}&rows=${rows}&success=${successOnly}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${window.localStorage.token}`,

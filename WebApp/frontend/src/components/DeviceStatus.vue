@@ -35,6 +35,16 @@ import AccordionTab from 'primevue/accordiontab';
 import RemainingTime from '@/components/RemainingTime.vue';
 import { useDevicesApi, UnauthorizedException } from '@/services/devices';
 
+interface IState {
+  datetime: number;
+  data: {
+    state: string;
+    success: boolean;
+    requestReason: string;
+    failureReason: string;
+  };
+}
+
 const router = useRouter();
 const api = useDevicesApi();
 const props = defineProps({
@@ -81,9 +91,10 @@ const callApi = async (deviceId: string | undefined) => {
   try {
       const statusRequest = await api.getStatus(deviceId);
       deviceStatus.value = statusRequest.online;
-      const stateRequest = await api.getStates(deviceId, 0, 1);
-      currentState.value = stateRequest[0].data.state;
-      stateStartTime.value = new Date(stateRequest[0].datetime);
+      const stateRequest: Array<any> = await api.getStates(deviceId, 0, 1, undefined, true);
+      const currentStateData: IState = stateRequest.find( (state) => state.data.success === true );
+      currentState.value = currentStateData.data.state;
+      stateStartTime.value = new Date(currentStateData.datetime);
       const heartbeat : Array<any> = await api.getHeartbeat(deviceId);
       version.value = heartbeat[0].data.version;
       enabled.value = heartbeat[0].data.enabled;

@@ -12,6 +12,7 @@ export class StatesService {
     projectionOnly = false,
     rowCount = 10,
     skip = 0,
+    successOnly = false,
   ) {
     const collection = this.databaseService.database.collection(deviceId);
     const query = {
@@ -19,6 +20,11 @@ export class StatesService {
       'data.state': {
         $in: include,
       },
+      'data.success': successOnly
+        ? true
+        : {
+            $in: [true, false],
+          },
     };
     const options: FindOptions = {
       sort: {
