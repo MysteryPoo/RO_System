@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from 'src/database/database.module';
+import { MqttModule } from 'src/mqtt/mqtt.module';
 import { DevicesConfigurationController } from './configuration/configuration.controller';
 import { ConfigurationService } from './configuration/configuration.service';
 import { DevicesController } from './devices.controller';
@@ -14,7 +15,7 @@ import { StatesService } from './states/states.service';
 import { StatusController } from './status/status.controller';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, MqttModule],
   providers: [
     ConfigurationService,
     HeartbeatService,

@@ -101,25 +101,36 @@ const getConfigurationFromApi = async (deviceId : string | undefined) : Promise<
   }
 };
 
-const setConfigurationFromApi = async (deviceId : string | undefined, configuration : any) : Promise<void> => {
+const setConfigurationFromApi = async (deviceId : string | undefined, configuration : any) : Promise<{success: boolean, message: string}> => {
   if (deviceId === undefined) {
-    return;
+    return {
+      success: false,
+      message: 'Must select a device.',
+    };
   }
   try {
-    await api.setConfiguration(deviceId, configuration);
+    return api.setConfiguration(deviceId, configuration);
   } catch (e) {
     if (e instanceof UnauthorizedException && e.code === 401) {
       router.replace('/login');
     }
     console.log(e);
+    return {
+      success: false,
+      message: 'Unauthorized',
+    }
   }
 }
 
 const setConfiguration = async (feature : IFeature) : Promise<void> => {
   const config : any = {};
   config[feature.component] = configuration.value[feature.component];
-  await setConfigurationFromApi(deviceId.value, config);
-  toast.add({severity:'success', summary: 'Configuration Updated', detail: `${feature.display} configuration was updated.`, life: 3000});
+  const response = await setConfigurationFromApi(deviceId.value, config);
+  if (response.success) {
+    toast.add({severity:'success', summary: 'Configuration Updated', detail: `${feature.display} configuration was updated.`, life: 3000});
+  } else {
+    toast.add({severity:'error', summary: 'Configuration Failed', detail: response.message, life: 6000});
+  }
 };
 
 const capitalize = (string : string) => {

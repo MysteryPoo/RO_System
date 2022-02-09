@@ -39,7 +39,7 @@ class DevicesApi {
     }
   }
 
-  async setConfiguration(deviceId: string | undefined, configuration : any): Promise<{success: boolean, code: number}> {
+  async setConfiguration(deviceId: string | undefined, configuration : any): Promise<{success: boolean, message: string}> {
     if (deviceId === undefined) {
       throw new DeviceRequiredException();
     }
@@ -60,7 +60,7 @@ class DevicesApi {
     }
     return {
       success: false,
-      code: response.status,
+      message: 'Unknown error occurred.',
     };
   }
 

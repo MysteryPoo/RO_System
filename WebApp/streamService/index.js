@@ -54,24 +54,24 @@ async function getConfiguration(device) {
   const query = {
       deviceId: device,
   };
-  const configuration = database.collection('configuration').findOne(query);
-  return configuration;
+  const configuration = await database.collection('configuration').findOne(query);
+  return configuration?.configuration;
 }
 
-async function sendConfiguration(deviceId) {
-  const token = await login();
+async function sendConfiguration(deviceId, client) {
+  console.log(`Sending configuration for: ${deviceId}`);
   const configurationStored = await getConfiguration(deviceId);
   const configuration = configurationStored || {};
+  console.log(`Configuration:`);
+  console.log(configuration);
   if (configuration != {}) {
-    try {
-      const response = await particle.callFunction({ deviceId: deviceId, name: 'configuration', argument: JSON.stringify(configuration), auth: token });
-      return response;
-    } catch(err) {
-      console.log(err);
-      particleAPISession.connected = false;
-      // Try again
-      return sendConfiguration(deviceId, configuration);
-    }
+    Object.keys(configuration).forEach( (component) => {
+      console.log(`Sending configuration for component: ${component}`);
+      client.publish(
+        `to/${deviceId}/configuration/${component}`,
+        JSON.stringify(configuration[component]),
+      );
+    });
   }
 }
 
@@ -91,10 +91,6 @@ async function UpdateDeviceStatus(device) {
     upsert: true
   };
   await collection.updateOne(query, update, options);
-
-  if (device.online) {
-    //sendConfiguration(device.id);
-  }
 }
 
 function ResetTimer(deviceId) {
@@ -157,7 +153,12 @@ function ResetTimer(deviceId) {
     const subTopic = tokens[2];
     if (subTopic === 'status') {
       ResetTimer(deviceId);
-      UpdateDeviceStatus({id: deviceId, online: true});
+      console.log(`Message: ${message}`);
+      if (message == 'connected') {
+        console.log("INSIDE");
+        sendConfiguration(deviceId, client);
+      }
+      UpdateDeviceStatus({id: deviceId, online: message == 'offline' ? false : true});
     } else if (subTopic === 'romcon') {
       try {
         const data = JSON.parse(message);
