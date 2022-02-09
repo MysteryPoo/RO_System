@@ -89,7 +89,6 @@ void MQTTClient::Update()
         bool connectionSuccess = this->client.connect("sparkclient_" + String(Time.now()), username, password);
         if (this->client.isConnected())
         {
-          this->client.publish("from/" + System.deviceID() + "/status", "connected");
           for(ISubCallback* listener : this->listeners)
           {
             listener->OnConnect(connectionSuccess, this);
@@ -97,6 +96,7 @@ void MQTTClient::Update()
           this->connected = true;
           this->discovery = false;
           udp.stop();
+          this->client.publish("from/" + System.deviceID() + "/status", "connected");
         }
         else
         {
