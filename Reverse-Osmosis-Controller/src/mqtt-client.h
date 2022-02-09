@@ -11,7 +11,7 @@ class MQTTClient: public IComponent, public ISubCallback
 {
 public:
   MQTTClient();
-  void Publish(const char* topic, const String payload);
+  bool Publish(const char* topic, const String payload);
   bool isConnected() { return this->client.isConnected(); }
   void RegisterCallbackListener(ISubCallback* listener);
   void Subscribe(const char* topic, MQTT::EMQTT_QOS);
@@ -25,6 +25,7 @@ private:
   uint8_t ipAddress[4] = {0, 0, 0, 0};
   std::vector<ISubCallback*> listeners;
   UDP udp;
+  bool connected;
   bool discovery;
 
   void discoverMQTT();

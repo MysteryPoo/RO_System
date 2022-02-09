@@ -8,15 +8,20 @@
 #define MQTT_UDP_LISTEN_PORT 11882
 
 MQTTClient::MQTTClient()
-: discovery(false)
+: connected(false)
+, discovery(false)
 {
   this->client.Initialize(NULL, this->ipAddress, MQTT_PORT, MQTT_DEFAULT_KEEPALIVE, MQTT_PACKET_SIZE, NULL, true);
   this->client.RegisterCallbackListener(this);
 }
 
-void MQTTClient::Publish(const char* topic, const String payload)
+bool MQTTClient::Publish(const char* topic, const String payload)
 {
-  this->client.publish("from/" + System.deviceID() + "/" + topic, payload);
+  bool success = this->client.publish("from/" + System.deviceID() + "/" + topic, payload);
+  if (!success) {
+    this->connected = false;
+  }
+  return success;
 }
 
 void MQTTClient::RegisterCallbackListener(ISubCallback* listener)
@@ -40,10 +45,10 @@ void MQTTClient::Update()
   }
   timer = curMillis;
 
-  if (this->client.isConnected())
+  if (this->connected && this->client.isConnected())
   {
     this->client.loop();
-    this->client.publish("from/" + System.deviceID() + "/status", "online");
+    this->connected = this->client.publish("from/" + System.deviceID() + "/status", "online");
   }
   else
   {
@@ -89,6 +94,7 @@ void MQTTClient::Update()
           {
             listener->OnConnect(connectionSuccess, this);
           }
+          this->connected = true;
           this->discovery = false;
           udp.stop();
         }
