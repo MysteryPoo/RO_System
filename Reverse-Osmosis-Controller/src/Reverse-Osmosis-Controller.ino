@@ -281,5 +281,6 @@ String getUserReason(int code)
 void onResetPending()
 {
     ro.shutdown();
+    mqttClient.Publish("status", "offline");
     System.enableReset();
 }
