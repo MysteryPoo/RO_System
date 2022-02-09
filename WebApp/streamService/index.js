@@ -59,14 +59,10 @@ async function getConfiguration(device) {
 }
 
 async function sendConfiguration(deviceId, client) {
-  console.log(`Sending configuration for: ${deviceId}`);
   const configurationStored = await getConfiguration(deviceId);
   const configuration = configurationStored || {};
-  console.log(`Configuration:`);
-  console.log(configuration);
   if (configuration != {}) {
     Object.keys(configuration).forEach( (component) => {
-      console.log(`Sending configuration for component: ${component}`);
       client.publish(
         `to/${deviceId}/configuration/${component}`,
         JSON.stringify(configuration[component]),
@@ -153,9 +149,7 @@ function ResetTimer(deviceId) {
     const subTopic = tokens[2];
     if (subTopic === 'status') {
       ResetTimer(deviceId);
-      console.log(`Message: ${message}`);
       if (message == 'connected') {
-        console.log("INSIDE");
         sendConfiguration(deviceId, client);
       }
       UpdateDeviceStatus({id: deviceId, online: message == 'offline' ? false : true});
