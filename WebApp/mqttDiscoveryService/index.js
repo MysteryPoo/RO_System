@@ -16,9 +16,11 @@ server.on('message', (msg, info) => {
     console.log('Client info:');
     console.log(`Address: ${info.address}`);
     console.log(`Port: ${info.port}`);
+    console.log(`Override: ${process.env.MQTT_OVERRIDE ?? '<Blank>'}`);
     server.send(JSON.stringify({
       username: process.env.MQTT_USERNAME,
-      password: process.env.MQTT_PASSWORD
+      password: process.env.MQTT_PASSWORD,
+      override: process.env.MQTT_OVERRIDE ?? ''
     }), info.port, info.address);
   }
 });
