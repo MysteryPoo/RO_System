@@ -66,6 +66,7 @@ void MQTTClient::Update()
         }
         String username;
         String password;
+        String override;
         JSONObjectIterator it(json);
         while(it.next())
         {
@@ -77,12 +78,20 @@ void MQTTClient::Update()
           {
             password = it.value().toString().data();
           }
+          if (it.name() == "override")
+          {
+            override = it.value().toString().data();
+            this->parseIpFromString(override.c_str());
+          }
         }
 
-        IPAddress remoteIp = udp.remoteIP();
-        for (int i = 0; i < 4; ++i)
+        if (override == "")
         {
-          this->ipAddress[i] = remoteIp[i];
+          IPAddress remoteIp = udp.remoteIP();
+          for (int i = 0; i < 4; ++i)
+          {
+            this->ipAddress[i] = remoteIp[i];
+          }
         }
 
         this->client.setBroker(this->ipAddress, MQTT_PORT);
@@ -126,4 +135,26 @@ void MQTTClient::discoverMQTT()
   udp.beginPacket(broadcast, MQTT_UDP_DISCOVER_PORT);
   udp.write("Looking for MQTT server");
   udp.endPacket();
+}
+
+// Code from https://forum.arduino.cc/t/get-ip-address-from-string/478308/20
+void MQTTClient::parseIpFromString(const char* cstringToParse)
+{
+  uint8_t idx = 0;
+  byte part = 0;
+  if (cstringToParse[idx] != '\0') {
+    while (true)
+    {
+      if (cstringToParse[idx] == '.' || cstringToParse[idx] == '\0') { // part separator / end of string
+        part++ ;  // skip to next byte
+        if (cstringToParse[idx] == 0 || part == 4)  // done if 4 parts parsed or end of string
+          break ;
+        else  this->ipAddress[part] = 0 ;
+      } else if (cstringToParse[idx] >= '0' && cstringToParse[idx] <= '9') {
+        this->ipAddress[part] = this->ipAddress[part] * 10 + (cstringToParse[idx] - '0') ; // build up value from decimal digits.
+      } else
+        break ;
+      idx++ ;  // step to next char
+    }
+  }
 }

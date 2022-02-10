@@ -29,6 +29,7 @@ private:
   bool discovery;
 
   void discoverMQTT();
+  void parseIpFromString(const char* cstring);
 };
 
 #endif
