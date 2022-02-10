@@ -1,5 +1,6 @@
 
 #include "mqtt-client.h"
+#include "system-log.h"
 
 #define MQTTClient_DEFAULT_PERIOD 10000
 #define MQTT_PACKET_SIZE 2048
@@ -106,6 +107,7 @@ void MQTTClient::Update()
           this->discovery = false;
           udp.stop();
           this->client.publish("from/" + System.deviceID() + "/status", "connected");
+          this->announceFeatures();
         }
         else
         {
@@ -157,4 +159,27 @@ void MQTTClient::parseIpFromString(const char* cstringToParse)
       idx++ ;  // step to next char
     }
   }
+}
+
+void MQTTClient::announceFeatures()
+{
+    JSONBufferWriter message = SystemLog::createBuffer(512);
+    message.beginObject();
+    message.name("features").beginArray()
+    .value("ro-system")
+    .value("heartbeat")
+#ifdef FEATURE_FLOATSWITCH
+    .value("float-switch")
+#endif
+#ifdef FEATURE_ULTRASONIC
+    .value("ultra-sonic")
+#endif
+#ifdef FEATURE_FLOATMETER
+    .value("float-meter")
+#endif
+    .endArray();
+    message.endObject();
+
+    this->Publish("feature-list", message.buffer());
+    delete[] message.buffer();
 }

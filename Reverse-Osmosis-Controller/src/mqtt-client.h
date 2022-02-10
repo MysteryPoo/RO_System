@@ -30,6 +30,7 @@ private:
 
   void discoverMQTT();
   void parseIpFromString(const char* cstring);
+  void announceFeatures(); // I don't like this in here
 };
 
 #endif

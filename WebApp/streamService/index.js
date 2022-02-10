@@ -186,6 +186,24 @@ function ResetTimer(deviceId) {
         upsert: true
       };
       await collection.updateOne(query, update, options);
+    } else if (subTopic === 'feature-list') {
+      const listFromDevice = JSON.parse(message).features;
+      const collection = await database.collection('feature');
+      const query = {
+        deviceId,
+      };
+      const cursor = await collection.find(query);
+      const listFromDatabase = await cursor.toArray();
+      for (const feature of listFromDatabase) {
+        const component = feature.component;
+        if (listFromDevice.find( (element) => element === component) === undefined) {
+          const query = {
+            deviceId,
+            component,
+          };
+          await collection.deleteOne(query);
+        }
+      }
     }
   });
 })();
