@@ -67,7 +67,6 @@ ApplicationWatchdog *watchDog;
 time32_t timeToRestart;
 Timer restartSystem(RESTART_DELAY, sysRestart_Helper, true);
 
-std::map<String, IConfigurable*> configurables;
 std::vector<IComponent*> componentsToUpdate;
 MQTTClient mqttClient;
 SystemLog syslog(mqttClient);
@@ -96,7 +95,6 @@ void setup()
     timeToRestart = Time.now() + SECONDS_PER_DAY;
     
     Particle.function("reset", sysRestart);
-    Particle.function("configuration", Configuration);
     heartbeatManager.RegisterReporter("ro-system", &ro);
 
 #ifdef FEATURE_FLOATSWITCH
@@ -108,14 +106,12 @@ void setup()
 #ifdef FEATURE_ULTRASONIC
     us.cloudSetup();
     componentsToUpdate.push_back(&us);
-    configurables["ultra-sonic"] = &us;
     heartbeatManager.RegisterReporter("ultra-sonic", &us);
 #endif
 
 #ifdef FEATURE_FLOATMETER
     ro.AddSensor(&fm);
     componentsToUpdate.push_back(&fm);
-    configurables["float-meter"] = &fm;
     heartbeatManager.RegisterReporter("float-meter", &fm);
 #endif
 
@@ -128,8 +124,6 @@ void setup()
     componentsToUpdate.push_back(&heartbeatManager);
     componentsToUpdate.push_back(&ro);
 
-    configurables["heartbeat-manager"] = &heartbeatManager;
-
     uint32_t resetData = System.resetReasonData();
 
     JSONBufferWriter message = SystemLog::createBuffer(2048);
@@ -141,7 +135,6 @@ void setup()
 
     syslog.pushMessage("system/restart", message.buffer());
 
-    announceFeatures();
     heartbeatManager.ForceHeartbeat();
 }
 
@@ -158,58 +151,12 @@ void loop()
     }
 }
 
-void announceFeatures()
-{
-    JSONBufferWriter message = SystemLog::createBuffer(512);
-    message.beginObject();
-    message.name("event").value("feature-list");
-    message.name("features").beginArray()
-    .value("RO System")
-#ifdef FEATURE_FLOATSWITCH
-    .value("Float Switch")
-#endif
-#ifdef FEATURE_ULTRASONIC
-    .value("Ultra Sonic")
-#endif
-#ifdef FEATURE_FLOATMETER
-    .value("Float Meter")
-#endif
-    .endArray();
-    message.endObject();
-
-    mqttClient.Publish("feature-list", message.buffer());
-    delete[] message.buffer();
-}
-
 int sysRestart(String data)
 {
     syslog.enabled = false;
     restartSystem.start();
     timeToRestart = Time.now() + SECONDS_PER_DAY;
     return 0;
-}
-
-int Configuration(String config)
-{
-    int error = 0;
-    JSONValue configuration = JSONValue::parseCopy(config);
-    if(!configuration.isValid())
-    {
-        return 1;
-    }
-    syslog.pushMessage("system/configuration", config);
-    JSONObjectIterator iter(configuration);
-    while(iter.next())
-    {
-        std::map<String, IConfigurable*>::iterator it;
-        it = configurables.find(iter.name().data());
-        if (it != configurables.end())
-        {
-            it->second->Configure(iter.value());
-        }
-    }
-
-    return error;
 }
 
 void sysRestart_Helper()
