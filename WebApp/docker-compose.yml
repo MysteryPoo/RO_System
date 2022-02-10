@@ -37,8 +37,9 @@ services:
     ports:
       - "1882:1882/udp"
     environment:
-      - MQTT_USERNAME=${MQTT_USERNAME}
-      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - MQTT_USERNAME
+      - MQTT_PASSWORD
+      - MQTT_OVERRIDE
   
   stream:
     container_name: romcon_stream
