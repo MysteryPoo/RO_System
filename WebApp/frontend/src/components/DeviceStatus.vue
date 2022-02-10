@@ -13,9 +13,9 @@
             <i v-show="wifiSignal" class="pi pi-wifi" :style=wifiColor>{{ wifiSignal }}%</i>
             <Accordion v-show="featureList.length > 0">
               <AccordionTab header="Feature List">
-                <ul style="list-style-type: none">
+                <ul style="list-style-type: none; margin: 0; padding: 0;">
                   <li v-for="feature in featureList" :key="feature._id">
-                    {{ feature.display }}
+                    <Chip style="margin-bottom: 1em;" :label="feature.display" />
                   </li>
                 </ul>
               </AccordionTab>
@@ -32,6 +32,7 @@ import { useRouter } from 'vue-router';
 import Card from 'primevue/card';
 import Accordion from 'primevue/accordion';
 import AccordionTab from 'primevue/accordiontab';
+import Chip from 'primevue/chip';
 import RemainingTime from '@/components/RemainingTime.vue';
 import { useDevicesApi, UnauthorizedException } from '@/services/devices';
 
