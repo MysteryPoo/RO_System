@@ -64,7 +64,7 @@ enum UserReason
 
 ApplicationWatchdog *watchDog;
 
-time32_t timeToRestart;
+unsigned long timeToRestart;
 Timer restartSystem(RESTART_DELAY, sysRestart_Helper, true);
 
 std::vector<IComponent*> componentsToUpdate;
@@ -92,7 +92,7 @@ void setup()
     System.on(reset_pending, onResetPending);
     System.disableReset();
     watchDog = new ApplicationWatchdog(60000, watchDogHandler, 1536);
-    timeToRestart = Time.now() + SECONDS_PER_DAY;
+    timeToRestart = millis() + (SECONDS_PER_DAY * 1000ul);
     
     Particle.function("reset", sysRestart);
     heartbeatManager.RegisterReporter("ro-system", &ro);
@@ -140,7 +140,7 @@ void setup()
 
 void loop()
 {
-    if(Time.now() > timeToRestart)
+    if(millis() > timeToRestart)
     {
         sysRestart("");
     }
