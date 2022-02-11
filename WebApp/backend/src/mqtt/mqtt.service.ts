@@ -18,7 +18,10 @@ export class MqttService {
 
   connect() {
     // Create connection
-    this.client = mqtt.connect('mqtt://rabbitmq', this.mqttOptions);
+    this.client = mqtt.connect(
+      `mqtt://${constants.connectionString}`,
+      this.mqttOptions,
+    );
   }
 
   publish(topic: string, payload: string): Promise<boolean> {

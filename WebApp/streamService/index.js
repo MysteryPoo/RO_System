@@ -8,6 +8,7 @@ const databaseName = process.env.MONGODB_DB_NAME ?? 'test';
 const username = process.env.MONGODB_USERNAME ?? 'admin';
 const password = process.env.MONGODB_PASSWORD ?? 'admin';
 const connectionString = process.env.MONGODB_URI ?? 'localhost';
+const mqttServer = process.env.MQTT_OVERRIDE ?? 'rabbitmq';
 
 const mongo = new MongoClient(`mongodb://${username}:${password}@${connectionString}?retryWrites=true&authSource=admin`, {
   useUnifiedTopology: true,
@@ -138,7 +139,7 @@ function ResetTimer(deviceId) {
     password: process.env.MQTT_PASSWORD,
     clean: true,
   };
-  const client = mqtt.connect("mqtt://rabbitmq", options);
+  const client = mqtt.connect(`mqtt://${mqttServer}`, options);
   client.on('connect', () => {
     console.log('MQTT: Connected!');
   });

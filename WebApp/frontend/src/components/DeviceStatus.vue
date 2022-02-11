@@ -8,7 +8,7 @@
           {{ deviceStatus ? currentState : "Offline" }}
           <div v-show="deviceStatus">
             <RemainingTime v-if="currentState === 'FLUSH' || currentState === 'FILL'" :startTime="stateStartTime" :estimatedElapsedSeconds="currentState === 'FLUSH' ? 300 : props.averageFillTime" />
-            <p>Firmware Version: {{ version }}</p>
+            <p>Firmware Version: <Chip :label="version" /></p>
             <p>System is <span :style="enabled ? 'color: green' : 'color: red'">{{ enabled ? "Enabled" : "Disabled" }}</span></p>
             <i v-show="wifiSignal" class="pi pi-wifi" :style=wifiColor>{{ wifiSignal }}%</i>
             <Accordion v-show="featureList.length > 0">
