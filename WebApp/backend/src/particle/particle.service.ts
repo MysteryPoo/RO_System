@@ -36,7 +36,7 @@ interface Device {
   default_build_target: string;
 }
 
-interface DeviceListRequest {
+interface IDeviceListRequest {
   body: Array<Device>;
   statusCode: number;
 }
@@ -66,7 +66,9 @@ export class ParticleService {
 
   async getDeviceList(): Promise<Array<any>> {
     const token = await this.login();
-    const request = await this.particle.listDevices({ auth: token });
+    const request: IDeviceListRequest = await this.particle.listDevices({
+      auth: token,
+    });
     const deviceList = [];
     Object.keys(request.body).forEach((key) => {
       const device = request.body[key];
@@ -76,9 +78,5 @@ export class ParticleService {
       });
     });
     return deviceList;
-  }
-
-  async sendConfiguration(): Promise<any> {
-    const token = await this.login();
   }
 }

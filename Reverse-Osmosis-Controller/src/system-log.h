@@ -13,6 +13,7 @@
 #define _SYSTEM_LOG_
 
 #include "application.h"
+#include "mqtt-client.h"
 #include "message.h"
 #include "IComponent.h"
 #include <queue>
@@ -22,7 +23,7 @@
 class SystemLog : public IComponent
 {
 public:
-    SystemLog();
+    SystemLog(MQTTClient& mqttClient);
     void trace(String message);
     void information(String message);
     void warning(String message);
@@ -37,7 +38,7 @@ public:
     boolean enabled;
     
 private:
-    byte currentMessageIndex;
+    MQTTClient& mqttClient;
     std::queue<Message*> messageQueue;
     unsigned long lastBurst;
     

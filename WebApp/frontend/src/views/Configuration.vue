@@ -2,34 +2,45 @@
   <div class="flex flex-column">
     <Toast />
     <DeviceSelect @deviceSelected="onDeviceSelected" class="flex align-items-center justify-content-center m-2 px-5 py-3 border-round" />
-    <div v-show="show">
-      <div>
-        <h2>System Enabled:</h2>
-        <InputSwitch v-model="configuration.enabled" />
-      </div>
-      <div class="flex justify-content-center" style="margin-top: 5em;">
-        <label for="flushtime">Flush Time</label>
-        <InputNumber id="flushtime" v-model="configuration.flushDuration" :suffix="` ${configuration.flushDuration === 1 ? 'minute' : 'minutes'}`"/>
-      </div>
-      <div class="flex justify-content-center" style="margin-top: 5em;">
-        <label for="pumpcooldown">Pump Cooldown</label>
-        <InputNumber id="pumpcooldown" v-model="configuration.pumpCooldown" :suffix="` ${configuration.pumpCooldown === 1 ? 'minute' : 'minutes'}`"/>
-      </div>
-      <div class="flex justify-content-center" style="margin-top: 5em;">
-        <label for="tick">Heartbeat Rate</label>
-        <InputNumber id="tick" v-model="configuration.tickRate" :suffix="` ${configuration.tickRate === 1 ? 'minute' : 'minutes'}`"/>
-      </div>
-      <div style="margin-top: 5em;">
-        <Button @click="setConfiguration" label="Submit"/>
+    <div class="card">
+      <div class="flex flex-row flex-wrap justify-content-center">
+        <Card v-for="feature in featureList" key="feature._id" class="Card">
+          <template #title>
+            {{ feature.display }}
+          </template>
+          <template #content>
+            <template v-for="option in feature.options" key="option.name">
+              <template v-if="option.type === 'boolean'">
+                <h2>{{ capitalize(option.name) }}</h2>
+                <InputSwitch v-model="configuration[feature.component][option.name]" />
+              </template>
+              <template v-if="option.type === 'number'">
+                <div class="flex justify-content-center" style="margin-top: 5em;">
+                  <label :for="`${feature.component}_${option.name}`">{{ capitalize(option.name) }}</label>
+                  <InputNumber :id="`${feature.component}_${option.name}`" v-model="configuration[feature.component][option.name]" :suffix="` ${getSuffix(configuration[feature.component][option.name], option.units)}`"/>
+                </div>
+              </template>
+              <template v-if="option.type === 'trigger'">
+                <div class="flex justify-content-center" style="margin-top: 5em;">
+                  <Button @click="trigger(feature, option.name)" :label="capitalize(option.name)" class="p-button-rounded" />
+                </div>
+              </template>
+            </template>
+            <div style="margin-top: 5em;">
+              <Button @click="setConfiguration(feature)" label="Submit"/>
+            </div>
+          </template>
+        </Card>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, Ref, onMounted, toRaw } from 'vue';
+import { Ref, ref, onMounted, toRaw } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';
+import Card from 'primevue/card';
 import InputNumber from 'primevue/inputnumber';
 import InputSwitch from 'primevue/inputswitch';
 import Toast from 'primevue/toast';
@@ -38,16 +49,11 @@ import { useToast } from 'primevue/usetoast';
 import DeviceSelect from '@/components/DeviceSelect.vue';
 import { useDevicesApi, UnauthorizedException } from '@/services/devices';
 
-interface IConfiguration {
-  enabled: boolean;
-  pumpCooldown: number;
-  flushDuration: number;
-  tickRate: number;
-}
-
-enum CONVERSION_MODE {
-  TORAW,
-  TODISPLAY,
+interface IFeature {
+  deviceId: string;
+  component: string;
+  display: string;
+  options: Array<{name: string, type: string, units?: string, default?: any}>;
 }
 
 const router = useRouter();
@@ -57,16 +63,27 @@ const toast = useToast();
 
 const show = ref(false);
 const deviceId = ref('');
-let configuration : IConfiguration = reactive({
-  enabled: true,
-  pumpCooldown: 600000, // 10 minutes
-  flushDuration: 300000, // 5 minutes
-  tickRate: 60000, // 1 minute
-});
+let configuration : any = ref({});
+const featureList: Ref<Array<IFeature>> = ref([]);
 
-const onDeviceSelected = (_deviceId : string) : void => {
+const onDeviceSelected = async (_deviceId : string) : Promise<void> => {
   deviceId.value = _deviceId;
-  getConfigurationFromApi(_deviceId);
+  await getConfigurationFromApi(_deviceId);
+  featureList.value = await api.getFeatureList(_deviceId);
+  if (featureList.value.length === 0) {
+    toast.add({severity:'info', summary: 'No Configuration', detail:'This device is not configurable.', life: 10000});
+  }
+  for (const feature of toRaw(featureList.value)) {
+    if (!(feature.component in configuration.value)) {
+      toast.add({severity:'info', summary: `${feature.display}`, detail:'This component is running on default configuration settings.', life: 10000});
+      const featureConfig : any = {};
+      for (const option of feature.options) {
+        if (option.type === 'trigger') continue;
+        featureConfig[option.name] = option.default ? option.default : option.type === 'boolean' ? false : option.type === 'number' ? 0 : '';
+      }
+      configuration.value[feature.component] = featureConfig;
+    }
+  }
 };
 
 const getConfigurationFromApi = async (deviceId : string | undefined) : Promise<void> => {
@@ -74,15 +91,7 @@ const getConfigurationFromApi = async (deviceId : string | undefined) : Promise<
     return;
   }
   try {
-    const configRequest = await api.getConfiguration(deviceId);
-    if (Object.keys(configRequest).length === 0) {
-      toast.add({severity:'info', summary: 'No Configuration', detail:'This device is running on default configuration settings.', life: 3000});
-    }
-    const convertedConfig : IConfiguration | undefined = convertConfiguration(configRequest, CONVERSION_MODE.TODISPLAY);
-    configuration.enabled = convertedConfig?.enabled ?? true;
-    configuration.flushDuration = convertedConfig?.flushDuration ?? 300000;
-    configuration.pumpCooldown = convertedConfig?.pumpCooldown ?? 600000;
-    configuration.tickRate = convertedConfig?.tickRate ?? 60000;
+    configuration.value = await api.getConfiguration(deviceId);
     show.value = true;
   } catch (e) {
     if (e instanceof UnauthorizedException && e.code === 401) {
@@ -92,53 +101,57 @@ const getConfigurationFromApi = async (deviceId : string | undefined) : Promise<
   }
 };
 
-const setConfigurationFromApi = async (deviceId : string | undefined) : Promise<void> => {
+const setConfigurationFromApi = async (deviceId : string | undefined, configuration : any) : Promise<{success: boolean, message: string}> => {
   if (deviceId === undefined) {
-    return;
+    return {
+      success: false,
+      message: 'Must select a device.',
+    };
   }
   try {
-    const convertedConfig : IConfiguration | undefined = convertConfiguration(toRaw(configuration), CONVERSION_MODE.TORAW);
-    if (undefined === convertedConfig) {
-      toast.add({severity:'error', summary: 'Invalid Configuration', detail: 'Provided configuration is invalid.', life: 3000});
-      return;
-    }
-    const response = await api.setConfiguration(deviceId, convertedConfig);
-    if (response.success) {
-      toast.add({severity:'success', summary: 'Configuration Updated', detail: `Configuration has been updated.`, life: 3000});
-    } else {
-      toast.add({severity:'error', summary: 'Configuration NOT Updated', detail:'Failed to update the configuration.', life: 3000});
-    }
+    return api.setConfiguration(deviceId, configuration);
   } catch (e) {
     if (e instanceof UnauthorizedException && e.code === 401) {
       router.replace('/login');
     }
-  }
-};
-
-const setConfiguration = async (event : MouseEvent) : Promise<void> => {
-  setConfigurationFromApi(deviceId.value);
-};
-
-const convertConfiguration = (configuration : IConfiguration, mode : CONVERSION_MODE) : IConfiguration | undefined => {
-  if (mode === CONVERSION_MODE.TODISPLAY) {
+    console.log(e);
     return {
-      enabled: configuration.enabled ?? true,
-      pumpCooldown: configuration.pumpCooldown ? configuration.pumpCooldown / 1000 / 60 : 5,
-      flushDuration: configuration.flushDuration ? configuration.flushDuration / 1000 / 60 : 5,
-      tickRate: configuration.tickRate ? configuration.tickRate / 1000 / 60 : 1
-    };
-  } else if (mode === CONVERSION_MODE.TORAW) {
-    return {
-      enabled: configuration.enabled,
-      pumpCooldown: configuration.pumpCooldown * 1000 * 60,
-      flushDuration: configuration.flushDuration * 1000 * 60,
-      tickRate: configuration.tickRate * 1000 * 60
-    };
-  }
-  else {
-    return undefined;
+      success: false,
+      message: 'Unauthorized',
+    }
   }
 }
+
+const setConfiguration = async (feature : IFeature) : Promise<void> => {
+  const config : any = {};
+  config[feature.component] = configuration.value[feature.component];
+  const response = await setConfigurationFromApi(deviceId.value, config);
+  if (response.success) {
+    toast.add({severity:'success', summary: 'Configuration Updated', detail: `${feature.display} configuration was updated.`, life: 3000});
+  } else {
+    toast.add({severity:'error', summary: 'Configuration Failed', detail: response.message, life: 6000});
+  }
+};
+
+const capitalize = (string : string) => {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+};
+
+const getSuffix = (amount : number, unit : string | undefined) => {
+  if (undefined === unit) {
+    return '';
+  }
+  if (amount === 1) {
+    return unit;
+  } else {
+    return `${unit}s`;
+  }
+};
+
+const trigger = async (feature : IFeature, option : string) => {
+  await api.triggerOption(deviceId.value, feature.component, option);
+  toast.add({severity:'success', summary: 'Triggered', detail: `${feature.display} -> ${option} was triggered.`, life: 3000});
+};
 
 onMounted( () => {
   if (store.state.token === undefined) {
@@ -147,3 +160,12 @@ onMounted( () => {
 });
 
 </script>
+
+<style>
+.Card {
+  width: 25rem;
+  margin-bottom: 2em;
+  margin-right: 2em;
+  background: linear-gradient(to bottom right, rgb(27, 34, 99), rgb(17, 20, 48));
+}
+</style>

@@ -1,12 +1,12 @@
 
 #include "system-log.h"
 
-#define BURST_DELAY 2500
+#define BURST_DELAY 500
 #define BURST_LIMIT 10
 
-SystemLog::SystemLog()
+SystemLog::SystemLog(MQTTClient& mqtt)
 : enabled(true)
-, currentMessageIndex(0)
+, mqttClient(mqtt)
 , lastBurst(millis() - BURST_DELAY)
 {
     
@@ -41,16 +41,16 @@ void SystemLog::Update()
 void SystemLog::publishLog()
 {
     unsigned long curMillis = millis();
-    if(Particle.connected() && curMillis > lastBurst + BURST_DELAY && !this->isEmpty())
+    if(mqttClient.isConnected() && curMillis > lastBurst + BURST_DELAY && !this->isEmpty())
     {
         if(this->isFull())
         {
-            Particle.publish("romcon/logger", "Logger message queue full. Potential telemetry data loss.", 60, PRIVATE);
+            mqttClient.Publish("romcon/logger", "Logger message queue full. Potential telemetry data loss.");
         }
 
         Message* msg = this->messageQueue.front();
         
-        Particle.publish("romcon/" + msg->component, msg->toJSON(), 60, PRIVATE);
+        mqttClient.Publish("romcon/" + msg->component, msg->toJSON());
 
         this->messageQueue.pop();
         delete msg;

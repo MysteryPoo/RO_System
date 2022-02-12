@@ -11,4 +11,10 @@ export class StatusController {
   async getStatus(@Param('deviceId') deviceId: string) {
     return this.heartbeatService.getStatus(deviceId);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('feature-list')
+  async getFeatures(@Param('deviceId') deviceId: string) {
+    return this.heartbeatService.getFeatureList(deviceId);
+  }
 }

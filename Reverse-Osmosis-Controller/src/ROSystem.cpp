@@ -34,9 +34,13 @@ ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger) :
     
 }
 
-void ROSystem::cloudSetup()
+ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger, MQTTClient* mqtt) :
+    ROSystem(pump, inlet, flush, logger)
 {
-    
+    if (nullptr != mqtt)
+    {
+        mqtt->RegisterCallbackListener(this);
+    }
 }
 
 void ROSystem::AddSensor(ISensor* sensor)
@@ -56,6 +60,10 @@ void ROSystem::Update()
 
 void ROSystem::Configure(JSONValue json)
 {
+    if (!json.isValid())
+    {
+        return;
+    }
     JSONObjectIterator jsonIt(json);
     while(jsonIt.next())
     {
@@ -68,14 +76,62 @@ void ROSystem::Configure(JSONValue json)
             JSONValue distances = jsonIt.value();
             this->configureFillDistances(distances);
         }
-        if(jsonIt.name() == "pumpCooldown")
+        if(jsonIt.name() == "Pump Cooldown")
         {
             this->configurePumpCooldown(jsonIt.value().toInt());
         }
-        if(jsonIt.name() == "flushDuration")
+        if(jsonIt.name() == "Flush Duration")
         {
             this->configureFlushDuration(jsonIt.value().toInt());
         }
+    }
+}
+
+void ROSystem::Callback(char* topic, uint8_t* payload, unsigned int length)
+{
+    char p[length + 1];
+    memcpy(p, payload, length);
+    p[length] = '\0';
+
+    if (strcmp(topic, "to/" + System.deviceID() + "/configuration/ro-system"))
+    {
+        return;
+    }
+
+    JSONValue configuration = JSONValue::parseCopy(String(p));
+    this->Configure(configuration);
+}
+
+void ROSystem::OnConnect(bool connectSuccess, MQTTClient* mqtt)
+{
+    if (nullptr != mqtt)
+    {
+        mqtt->Subscribe("configuration/ro-system/#", MQTT::EMQTT_QOS::QOS1);
+        JSONBufferWriter message = SystemLog::createBuffer(512);
+        message.beginObject();
+        message.name("display").value("RO System");
+        message.name("options").beginArray()
+        .beginObject()
+        .name("name").value("enabled")
+        .name("type").value("boolean")
+        .name("default").value(true)
+        .endObject()
+        .beginObject()
+        .name("name").value("Pump Cooldown")
+        .name("type").value("number")
+        .name("units").value("millisecond")
+        .name("default").value(PUMP_FREQUENCY_MS)
+        .endObject()
+        .beginObject()
+        .name("name").value("Flush Duration")
+        .name("type").value("number")
+        .name("units").value("millisecond")
+        .name("default").value(FLUSH_TIMER_MS)
+        .endObject()
+        .endArray();
+        message.endObject();
+        mqtt->Publish("configuration/ro-system", message.buffer());
+        delete[] message.buffer();
     }
 }
 

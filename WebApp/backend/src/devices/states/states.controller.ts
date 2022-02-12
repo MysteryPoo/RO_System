@@ -14,6 +14,7 @@ export class StatesController {
     @Query('count') count: string,
     @Query('skip') skip: number,
     @Query('rows') rows: number,
+    @Query('success') successOnly: string,
   ) {
     try {
       const stateList: Array<string> = states
@@ -25,6 +26,7 @@ export class StatesController {
         count === 'true',
         Number(rows) || undefined,
         Number(skip) || undefined,
+        successOnly === 'true',
       );
     } catch (e) {
       console.error(e);

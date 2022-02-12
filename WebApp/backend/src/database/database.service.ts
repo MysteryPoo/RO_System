@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Collection, Db, MongoClient } from 'mongodb';
 import { databaseConstants } from './constants';
-import { IDeviceStatus } from './interfaces';
 
 @Injectable()
 export class DatabaseService {
@@ -9,6 +8,7 @@ export class DatabaseService {
   public configCollection: Collection;
   public statusCollection: Collection;
   public userCollection: Collection;
+  public featureCollection: Collection;
 
   private mongo: MongoClient;
 
@@ -27,20 +27,13 @@ export class DatabaseService {
     this.userCollection = this.database.collection(
       databaseConstants.userCollectionName,
     );
+    this.featureCollection = this.database.collection(
+      databaseConstants.featureCollectionName,
+    );
     // Set up indices
     this.configCollection.createIndex({ deviceId: 1 }, { unique: true });
     this.statusCollection.createIndex({ deviceId: 1 }, { unique: true });
     this.userCollection.createIndex({ username: 1 }, { unique: true });
-  }
-
-  async getDeviceStatus(deviceId: string): Promise<{ online: boolean }> {
-    const query = {
-      deviceId,
-    };
-    const status: IDeviceStatus =
-      await this.statusCollection.findOne<IDeviceStatus>(query);
-    return {
-      online: status.online,
-    };
+    this.featureCollection.createIndex({ component: 1 }, { unique: true });
   }
 }

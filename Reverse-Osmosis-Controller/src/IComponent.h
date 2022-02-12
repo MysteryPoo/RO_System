@@ -8,7 +8,7 @@
 class IComponent
 {
 public:
-    virtual void Update() = 0;
+    virtual void Update() = 0; // TODO: Investigate if can make const
 };
 
 #endif

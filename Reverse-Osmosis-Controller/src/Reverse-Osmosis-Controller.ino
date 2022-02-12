@@ -38,6 +38,7 @@ SYSTEM_THREAD(ENABLED)
 #include "heartbeat-manager.h"
 #include "relay.h"
 #include "ROSystem.h"
+#include "mqtt-client.h"
 #include <vector>
 #include <map>
 #ifdef FEATURE_ULTRASONIC
@@ -63,23 +64,23 @@ enum UserReason
 
 ApplicationWatchdog *watchDog;
 
-time32_t timeToRestart;
+unsigned long timeToRestart;
 Timer restartSystem(RESTART_DELAY, sysRestart_Helper, true);
 
-std::map<String, IConfigurable*> configurables;
 std::vector<IComponent*> componentsToUpdate;
-SystemLog syslog;
-HeartbeatManager heartbeatManager(syslog);
+MQTTClient mqttClient;
+SystemLog syslog(mqttClient);
+HeartbeatManager heartbeatManager(syslog, &mqttClient);
 Relay pump(Relay::Name::COMPONENT_PUMP, syslog, D7, true);
 Relay inlet(Relay::Name::COMPONENT_INLETVALVE, syslog, D6, true);
 Relay flush(Relay::Name::COMPONENT_FLUSHVALVE, syslog, D5, true);
-ROSystem ro(pump, inlet, flush, syslog);
+ROSystem ro(pump, inlet, flush, syslog, &mqttClient);
 
 #ifdef FEATURE_ULTRASONIC
 UltraSonic us(A3, A4, syslog);
 #endif
 #ifdef FEATURE_FLOATSWITCH
-FloatSwitch fs(D4, syslog);
+FloatSwitch fs(D4, syslog, &mqttClient);
 #endif
 #ifdef FEATURE_FLOATMETER
 FloatMeter fm(A5, syslog);
@@ -91,32 +92,26 @@ void setup()
     System.on(reset_pending, onResetPending);
     System.disableReset();
     watchDog = new ApplicationWatchdog(60000, watchDogHandler, 1536);
-    timeToRestart = Time.now() + SECONDS_PER_DAY;
+    timeToRestart = millis() + (SECONDS_PER_DAY * 1000ul);
     
     Particle.function("reset", sysRestart);
-    Particle.function("configuration", Configuration);
-    ro.cloudSetup();
     heartbeatManager.RegisterReporter("ro-system", &ro);
 
 #ifdef FEATURE_FLOATSWITCH
-    fs.cloudSetup();
     ro.AddSensor(&fs);
     componentsToUpdate.push_back(&fs);
-    configurables["float-switch"] = &fs;
     heartbeatManager.RegisterReporter("float-switch", &fs);
 #endif
 
 #ifdef FEATURE_ULTRASONIC
     us.cloudSetup();
     componentsToUpdate.push_back(&us);
-    configurables["ultra-sonic"] = &us;
     heartbeatManager.RegisterReporter("ultra-sonic", &us);
 #endif
 
 #ifdef FEATURE_FLOATMETER
     ro.AddSensor(&fm);
     componentsToUpdate.push_back(&fm);
-    configurables["float-meter"] = &fm;
     heartbeatManager.RegisterReporter("float-meter", &fm);
 #endif
 
@@ -124,12 +119,10 @@ void setup()
     syslog.information("TEST MODE ENABLED");
 #endif
 
+    componentsToUpdate.push_back(&mqttClient);
     componentsToUpdate.push_back(&syslog);
     componentsToUpdate.push_back(&heartbeatManager);
     componentsToUpdate.push_back(&ro);
-
-    configurables["heartbeat-manager"] = &heartbeatManager;
-    configurables["ro-system"] = &ro;
 
     uint32_t resetData = System.resetReasonData();
 
@@ -141,11 +134,13 @@ void setup()
     message.endObject();
 
     syslog.pushMessage("system/restart", message.buffer());
+
+    heartbeatManager.ForceHeartbeat();
 }
 
 void loop()
 {
-    if(Time.now() > timeToRestart)
+    if(millis() > timeToRestart)
     {
         sysRestart("");
     }
@@ -162,29 +157,6 @@ int sysRestart(String data)
     restartSystem.start();
     timeToRestart = Time.now() + SECONDS_PER_DAY;
     return 0;
-}
-
-int Configuration(String config)
-{
-    int error = 0;
-    JSONValue configuration = JSONValue::parseCopy(config);
-    if(!configuration.isValid())
-    {
-        return 1;
-    }
-    syslog.pushMessage("system/configuration", config);
-    JSONObjectIterator iter(configuration);
-    while(iter.next())
-    {
-        std::map<String, IConfigurable*>::iterator it;
-        it = configurables.find(iter.name().data());
-        if (it != configurables.end())
-        {
-            it->second->Configure(iter.value());
-        }
-    }
-
-    return error;
 }
 
 void sysRestart_Helper()
@@ -256,5 +228,6 @@ String getUserReason(int code)
 void onResetPending()
 {
     ro.shutdown();
+    mqttClient.Publish("status", "offline");
     System.enableReset();
 }

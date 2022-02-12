@@ -73,4 +73,13 @@ export class HeartbeatService {
     }
     return returnList.reverse();
   }
+
+  async getFeatureList(deviceId: string): Promise<Array<any>> {
+    const collection = this.databaseService.featureCollection;
+    const query = {
+      deviceId,
+    };
+    const cursor = collection.find(query);
+    return cursor.toArray();
+  }
 }

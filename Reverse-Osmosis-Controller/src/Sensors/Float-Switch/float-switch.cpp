@@ -1,6 +1,8 @@
 
+#include "global-defines.h"
 #include "float-switch.h"
 #include "system-log.h"
+#include "mqtt-client.h"
 
 #define TIME_CONSIDERED_STABLE_MS 1000
 #define TIME_CONSIDERED_UNSTABLE_MS 10000
@@ -23,28 +25,76 @@ FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
     this->fireConfigurationMessage();
 }
 
-int FloatSwitch::ResetReliableFlag(String reset)
+FloatSwitch::FloatSwitch(int pin, SystemLog &logger, MQTTClient* mqtt) : FloatSwitch(pin, logger)
 {
-    this->isReliable = true;
-    return 0;
-}
-
-void FloatSwitch::cloudSetup()
-{
-    Particle.function("reset-float-switch", &FloatSwitch::ResetReliableFlag, this);
+    if (nullptr != mqtt)
+    {
+        mqtt->RegisterCallbackListener(this);
+    }
 }
 
 void FloatSwitch::Configure(JSONValue json)
 {
-    JSONObjectIterator jsonIt(json);
-    while(jsonIt.next())
+    if (!json.isValid())
+    {
+        return;
+    }
+    JSONObjectIterator it(json);
+    while(it.next())
     {
 #ifdef TESTING
-        if(jsonIt.name() == "float")
+        if (it.name() == "float")
         {
-            this->setStatus(jsonIt.value().toBool());
+            this->setStatus(it.value().toBool());
         }
 #endif
+        if (it.name() == "Reset Reliable")
+        {
+            this->isReliable = it.value().toBool();
+            logger.trace("Float Switch Reliable flag reset!");
+        }
+    }
+}
+
+void FloatSwitch::Callback(char* topic, uint8_t* payload, unsigned int length)
+{
+    char p[length + 1];
+    memcpy(p, payload, length);
+    p[length] = '\0';
+
+    if (strcmp(topic, "to/" + System.deviceID() + "/configuration/float-switch"))
+    {
+        return;
+    }
+
+    JSONValue configuration = JSONValue::parseCopy(String(p));
+    this->Configure(configuration);
+
+}
+
+void FloatSwitch::OnConnect(bool success, MQTTClient* mqtt)
+{
+    if (nullptr != mqtt)
+    {
+        mqtt->Subscribe("configuration/float-switch/#", MQTT::EMQTT_QOS::QOS1);
+        JSONBufferWriter message = SystemLog::createBuffer(512);
+        message.beginObject();
+        message.name("display").value("Float Switch");
+        message.name("options").beginArray()
+#ifdef TESTING
+        .beginObject()
+        .name("name").value("float")
+        .name("type").value("boolean")
+        .endObject()
+#endif
+        .beginObject()
+        .name("name").value("Reset Reliable")
+        .name("type").value("trigger")
+        .endObject()
+        .endArray();
+        message.endObject();
+        mqtt->Publish("configuration/float-switch", message.buffer());
+        delete[] message.buffer();
     }
 }
 
@@ -115,7 +165,10 @@ void FloatSwitch::fireConfigurationMessage() const
 
 void FloatSwitch::reportHeartbeat(JSONBufferWriter& writer) const
 {
-    writer.name(COMPONENT_NAME).value(this->isFull());
+    writer.name(COMPONENT_NAME).beginObject()
+    .name("float").value(this->isFull())
+    .name("reliable").value(this->isReliable)
+    .endObject();
 }
 
 #ifdef TESTING

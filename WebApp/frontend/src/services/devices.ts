@@ -39,7 +39,7 @@ class DevicesApi {
     }
   }
 
-  async setConfiguration(deviceId: string | undefined, configuration : any) {
+  async setConfiguration(deviceId: string | undefined, configuration : any): Promise<{success: boolean, message: string}> {
     if (deviceId === undefined) {
       throw new DeviceRequiredException();
     }
@@ -60,7 +60,7 @@ class DevicesApi {
     }
     return {
       success: false,
-      code: response.status,
+      message: 'Unknown error occurred.',
     };
   }
 
@@ -86,7 +86,29 @@ class DevicesApi {
     if (deviceId === undefined) {
       return [];
     }
-    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/ticks?skip=${skip}&rows=${rows}`, {
+    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/heartbeat?skip=${skip}&rows=${rows}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${window.localStorage.token}`,
+      },
+    });
+    if (response.status === 200) {
+      return response.json();
+    }
+    if (response.status === 401) {
+      throw new UnauthorizedException();
+    }
+  }
+
+  async getHeartbeat(deviceId: string | undefined, skip = 0, rows = 1) : Promise<Array<any>> {
+    return this.getTicks(deviceId, skip, rows);
+  }
+
+  async getFeatureList(deviceId: string | undefined) {
+    if (deviceId === undefined) {
+      return [];
+    }
+    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/status/feature-list`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${window.localStorage.token}`,
@@ -118,11 +140,11 @@ class DevicesApi {
     }
   }
 
-  async getStates(deviceId: string | undefined, skip = 0, rows = 10, stateFilter = ['IDLE', 'FILL', 'FLUSH']) {
+  async getStates(deviceId: string | undefined, skip = 0, rows = 10, stateFilter = ['IDLE', 'FILL', 'FLUSH'], successOnly = false) {
     if (deviceId === undefined) {
       throw new DeviceRequiredException();
     }
-    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/states?states=${JSON.stringify(stateFilter)}&skip=${skip}&rows=${rows}`, {
+    const response = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/states?states=${JSON.stringify(stateFilter)}&skip=${skip}&rows=${rows}&success=${successOnly}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${window.localStorage.token}`,
@@ -193,6 +215,21 @@ class DevicesApi {
       throw new DeviceRequiredException();
     }
     const request = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/restart`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${window.localStorage.token}`,
+      },
+    });
+    if (request.status === 200) {
+      return request.json();
+    }
+    if (request.status === 401) {
+      throw new UnauthorizedException();
+    }
+  }
+  
+  async triggerOption(deviceId: string, component: string, option: string) {
+    const request = await fetch(`http://${window.location.hostname}:4000/devices/${deviceId}/configuration/trigger/${component}/${option}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${window.localStorage.token}`,

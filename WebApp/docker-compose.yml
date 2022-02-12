@@ -12,11 +12,41 @@ services:
       - romcon_mongo_volume:/data/db
     ports:
       - "27017:27017"
+
+  rabbitmq:
+    container_name: romcon_rabbitmq
+    restart: always
+    build: ./rabbitmq
+    image: ${DOCKER_USERNAME}/romcon-rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=${MQTT_USERNAME}
+      - RABBITMQ_DEFAULT_PASS=${MQTT_PASSWORD}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+      - "1883:1883"
+    volumes:
+      - romcon_rabbitmq_volume_data:/var/lib/rabbitmq/
+      - romcon_rabbitmq_volume_logs:/var/log/rabbitmq
+
+  discovery:
+    container_name: romcon_discovery
+    build: ./mqttDiscoveryService
+    image: ${DOCKER_USERNAME}/romcon-discovery
+    restart: always
+    ports:
+      - "1882:1882/udp"
+    environment:
+      - MQTT_USERNAME
+      - MQTT_PASSWORD
+      - MQTT_OVERRIDE
   
   stream:
     container_name: romcon_stream
     depends_on: 
       - mongo
+      - rabbitmq
+      - discovery
     build: ./streamService
     image: ${DOCKER_USERNAME}/romcon-stream
     restart: always
@@ -27,11 +57,14 @@ services:
       - MONGODB_DB_NAME=${MONGODB_DB_NAME}
       - MONGODB_USERNAME=${MONGODB_USERNAME}
       - MONGODB_PASSWORD=${MONGODB_PASSWORD}
+      - MQTT_USERNAME=${MQTT_USERNAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
   
   backend:
     container_name: romcon_backend
     depends_on:
       - mongo
+      - rabbitmq
     build: ./backend
     image: ${DOCKER_USERNAME}/romcon-backend
     restart: always
@@ -46,6 +79,8 @@ services:
       - MONGODB_USERNAME=${MONGODB_USERNAME}
       - MONGODB_PASSWORD=${MONGODB_PASSWORD}
       - API_SECRET=${API_SECRET}
+      - MQTT_USERNAME=${MQTT_USERNAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
   
   frontend:
     container_name: romcon_frontend
@@ -59,3 +94,5 @@ services:
 
 volumes:
   romcon_mongo_volume:
+  romcon_rabbitmq_volume_data:
+  romcon_rabbitmq_volume_logs:

@@ -2,19 +2,23 @@
 require('dotenv').config();
 const Particle = require('particle-api-js');
 const { MongoClient } = require('mongodb');
+const mqtt = require('mqtt');
 
 const databaseName = process.env.MONGODB_DB_NAME ?? 'test';
 const username = process.env.MONGODB_USERNAME ?? 'admin';
 const password = process.env.MONGODB_PASSWORD ?? 'admin';
 const connectionString = process.env.MONGODB_URI ?? 'localhost';
+const mqttServer = process.env.MQTT_OVERRIDE ?? 'rabbitmq';
 
 const mongo = new MongoClient(`mongodb://${username}:${password}@${connectionString}?retryWrites=true&authSource=admin`, {
-    useUnifiedTopology: true,
+  useUnifiedTopology: true,
 });
 mongo.connect();
 const database = mongo.db(databaseName);
 
 const particle = new Particle();
+
+const deviceTimeouts = {};
 
 const particleAPISession = {
   username: process.env.PARTICLE_USERNAME,
@@ -23,7 +27,7 @@ const particleAPISession = {
   expires_in: undefined,
   refresh_token: undefined,
   event_stream: {},
-  deviceList: {},
+  deviceList: [],
   keepAliveList: {},
   connected: false,
 };
@@ -51,24 +55,20 @@ async function getConfiguration(device) {
   const query = {
       deviceId: device,
   };
-  const configuration = database.collection('configuration').findOne(query);
-  return configuration;
+  const configuration = await database.collection('configuration').findOne(query);
+  return configuration?.configuration;
 }
 
-async function sendConfiguration(deviceId) {
-  const token = await login();
+async function sendConfiguration(deviceId, client) {
   const configurationStored = await getConfiguration(deviceId);
   const configuration = configurationStored || {};
   if (configuration != {}) {
-    try {
-      const response = await particle.callFunction({ deviceId: deviceId, name: 'configuration', argument: JSON.stringify(configuration), auth: token });
-      return response;
-    } catch(err) {
-      console.log(err);
-      particleAPISession.connected = false;
-      // Try again
-      return sendConfiguration(deviceId, configuration);
-    }
+    Object.keys(configuration).forEach( (component) => {
+      client.publish(
+        `to/${deviceId}/configuration/${component}`,
+        JSON.stringify(configuration[component]),
+      );
+    });
   }
 }
 
@@ -88,13 +88,20 @@ async function UpdateDeviceStatus(device) {
     upsert: true
   };
   await collection.updateOne(query, update, options);
-
-  if (device.online) {
-    sendConfiguration(device.id);
-  }
 }
 
-(async function run() {
+function ResetTimer(deviceId) {
+  if (deviceTimeouts[deviceId]) {
+    clearTimeout(deviceTimeouts[deviceId]);
+  }
+  deviceTimeouts[deviceId] = setTimeout( () => {
+    UpdateDeviceStatus({id: deviceId, online: false});
+    deviceTimeouts[deviceId] = undefined;
+    delete deviceTimeouts[deviceId];
+  }, 30000);
+}
+
+(async function runParticle() {
   // Login
   const token = await login();
   // Get Device List
@@ -122,5 +129,82 @@ async function UpdateDeviceStatus(device) {
       const collection = database.collection(device.id);
       await collection.insertOne(incomingEvent.data);
     });
+  });
+})();
+
+(async function runmqtt() {
+  const options = {
+    clientId: "streamService",
+    username: process.env.MQTT_USERNAME,
+    password: process.env.MQTT_PASSWORD,
+    clean: true,
+  };
+  const client = mqtt.connect(`mqtt://${mqttServer}`, options);
+  client.on('connect', () => {
+    console.log('MQTT: Connected!');
+  });
+  client.subscribe("from/#", {qos: 1});
+  client.on('message', async (topic, message, packet) => {
+    const tokens = topic.split('/');
+    const deviceId = tokens[1]; // TODO: Validate this value against a Particle.getDevices call
+    const subTopic = tokens[2];
+    if (subTopic === 'status') {
+      ResetTimer(deviceId);
+      if (message == 'connected') {
+        sendConfiguration(deviceId, client);
+      }
+      UpdateDeviceStatus({id: deviceId, online: message == 'offline' ? false : true});
+    } else if (subTopic === 'romcon') {
+      try {
+        const data = JSON.parse(message);
+        if (data.datetime != 'undefined') {
+          data.datetime = new Date(data.datetime * 1000); // Particle sends time as seconds since 1970, JS expects milliseconds.
+        } else {
+          data.datetime = new Date();
+        }
+        const collection = database.collection(deviceId);
+        await collection.insertOne(data);
+
+        ResetTimer(deviceId);
+      } catch (e) {
+        console.error(`Failed to parse the following as JSON: ${message}`);
+      }
+    } else if (subTopic === 'configuration') {
+      const component = tokens[3];
+      const feature = JSON.parse(message);
+      feature['component'] = component;
+      feature['deviceId'] = deviceId;
+
+      const query = {
+        deviceId,
+        component
+      };
+      const update = {
+        $set: feature
+      };
+      const collection = database.collection('feature');
+      const options = {
+        upsert: true
+      };
+      await collection.updateOne(query, update, options);
+    } else if (subTopic === 'feature-list') {
+      const listFromDevice = JSON.parse(message).features;
+      const collection = await database.collection('feature');
+      const query = {
+        deviceId,
+      };
+      const cursor = await collection.find(query);
+      const listFromDatabase = await cursor.toArray();
+      for (const feature of listFromDatabase) {
+        const component = feature.component;
+        if (listFromDevice.find( (element) => element === component) === undefined) {
+          const query = {
+            deviceId,
+            component,
+          };
+          await collection.deleteOne(query);
+        }
+      }
+    }
   });
 })();
