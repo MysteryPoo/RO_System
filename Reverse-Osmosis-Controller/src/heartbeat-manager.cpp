@@ -92,6 +92,7 @@ void HeartbeatManager::OnConnect(bool connectSuccess, MQTTClient* mqtt)
     JSONBufferWriter message = SystemLog::createBuffer(512);
     message.beginObject();
     message.name("display").value("Heartbeat Manager");
+    message.name("description").value("Periodically sends current state data.");
     message.name("options").beginArray()
     .beginObject()
     .name("name").value("Rate")
@@ -128,7 +129,7 @@ void HeartbeatManager::sendHeartbeat()
   .endObject();
   for (IHeartbeatReporter* reporter : this->reporters)
   {
-    reporter->reportHeartbeat(message);
+    reporter->ReportHeartbeat(message);
   }
   message.endObject();
 
