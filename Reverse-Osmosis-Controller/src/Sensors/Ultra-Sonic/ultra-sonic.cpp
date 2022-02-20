@@ -122,7 +122,7 @@ void UltraSonic::fireConfigurationMessage() const
     this->logger.pushMessage("ultra-sonic", writer.buffer());
 }
 
-void UltraSonic::reportHeartbeat(JSONBufferWriter& writer) const
+void UltraSonic::ReportHeartbeat(JSONBufferWriter& writer) const
 {
     writer.name("ultra-sonic").value(this->distance);
 }

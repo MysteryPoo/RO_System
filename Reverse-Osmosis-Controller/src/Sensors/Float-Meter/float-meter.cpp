@@ -67,7 +67,7 @@ float FloatMeter::voltage() const
   return (float)input / FLOAT_METER_RESOLUTION * 3.3f;
 }
 
-void FloatMeter::reportHeartbeat(JSONBufferWriter& writer) const
+void FloatMeter::ReportHeartbeat(JSONBufferWriter& writer) const
 {
   writer.name(COMPONENT_NAME).value((double)this->voltage());
 }

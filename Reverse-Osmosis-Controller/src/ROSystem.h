@@ -47,7 +47,7 @@ public:
     // IComponent
     virtual void Update() override;
     // IHeartbeatReporter
-    virtual void reportHeartbeat(JSONBufferWriter& writer) const;
+    virtual void ReportHeartbeat(JSONBufferWriter& writer) const;
     // IConfigurable
     virtual void Configure(JSONValue json) override;
     // ISubCallback
@@ -69,12 +69,12 @@ private:
     Relay &flush;
     SystemLog &logger;
     bool flushedToday;
-    unsigned long totalPumpTime; // Deprecated
+    unsigned long totalPumpTime;
     unsigned long totalPumpRuns;
     unsigned long lastPumpTime;
     unsigned long flushStartedTime;
     unsigned int flushDuration;
-    unsigned long pumpRunTime; // Deprecated
+    unsigned long pumpRunTime;
     bool firstPump;
     std::vector<ISensor*> sensors;
 
