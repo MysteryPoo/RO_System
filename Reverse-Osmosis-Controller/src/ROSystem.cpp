@@ -11,6 +11,7 @@
 #define FILL_STOP_DISTANCE_CM 40
 #define PUMP_RUN_MIN_TO_FLUSH 2
 #define WARNING_DELAY 60000
+#define COMPONENT_NAME "ro-system"
 
 ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger) :
     state(ROSystem::BOOT),
@@ -56,6 +57,14 @@ void ROSystem::Update()
         tankIsFull |= sensor->isFull();
     }
     this->update(tankIsFull);
+}
+
+void ROSystem::ReportHeartbeat(JSONBufferWriter& writer) const
+{
+    writer.name(COMPONENT_NAME).beginObject();
+    writer.name("enabled").value(getEnabled());
+    writer.name("Total Pump Time").value(this->totalPumpTime);
+    writer.endObject();
 }
 
 void ROSystem::Configure(JSONValue json)
@@ -110,6 +119,7 @@ void ROSystem::OnConnect(bool connectSuccess, MQTTClient* mqtt)
         JSONBufferWriter message = SystemLog::createBuffer(512);
         message.beginObject();
         message.name("display").value("RO System");
+        message.name("description").value("The component responsible for maintaining water level.");
         message.name("options").beginArray()
         .beginObject()
         .name("name").value("enabled")
@@ -294,7 +304,7 @@ bool ROSystem::activatePump()
             this->inlet.set(Relay::State::ON);
             delay(PUMP_INLET_DELAY_MS);
 
-            curMillis = millis(); // Not sure this is necessary
+            curMillis = millis();
             this->pumpRunTime = curMillis;
 
             this->pump.set(Relay::State::ON);
@@ -340,11 +350,6 @@ bool ROSystem::deactivatePump()
 void ROSystem::shutdown()
 {
     this->requestState(ROSystem::State::IDLE, "Shutdown requested.");
-}
-
-void ROSystem::reportHeartbeat(JSONBufferWriter& writer) const
-{
-    writer.name("enabled").value(getEnabled());
 }
 
 String ROSystem::getStateString()
