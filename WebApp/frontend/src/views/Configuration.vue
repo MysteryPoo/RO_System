@@ -9,6 +9,7 @@
             {{ feature.display }}
           </template>
           <template #content>
+            <h1>{{ feature.description }}</h1>
             <template v-for="option in feature.options" key="option.name">
               <template v-if="option.type === 'boolean'">
                 <h2>{{ capitalize(option.name) }}</h2>
@@ -53,6 +54,7 @@ interface IFeature {
   deviceId: string;
   component: string;
   display: string;
+  description: string;
   options: Array<{name: string, type: string, units?: string, default?: any}>;
 }
 
