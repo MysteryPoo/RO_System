@@ -158,7 +158,7 @@ function ResetTimer(deviceId) {
         const query = {
           deviceId,
         };
-        await collection.delete(query);
+        await collection.deleteMany(query);
       }
       UpdateDeviceStatus({id: deviceId, online: message == 'offline' ? false : true});
     } else if (subTopic === 'romcon') {
