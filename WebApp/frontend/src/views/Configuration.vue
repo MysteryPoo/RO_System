@@ -9,7 +9,7 @@
             {{ feature.display }}
           </template>
           <template #content>
-            <h1>{{ feature.description }}</h1>
+            <h4>{{ feature.description }}</h4>
             <template v-for="option in feature.options" key="option.name">
               <template v-if="option.type === 'boolean'">
                 <h2>{{ capitalize(option.name) }}</h2>
