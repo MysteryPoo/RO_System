@@ -11,15 +11,7 @@
             <p>Firmware Version: <Chip :label="version" /></p>
             <p>System is <span :style="enabled ? 'color: green' : 'color: red'">{{ enabled ? "Enabled" : "Disabled" }}</span></p>
             <i v-show="wifiSignal" class="pi pi-wifi" :style=wifiColor>{{ wifiSignal }}%</i>
-            <Accordion v-show="featureList.length > 0">
-              <AccordionTab header="Feature List">
-                <ul style="list-style-type: none; margin: 0; padding: 0;">
-                  <li v-for="feature in featureList" :key="feature._id">
-                    <Chip style="margin-bottom: 1em;" :label="feature.display" />
-                  </li>
-                </ul>
-              </AccordionTab>
-            </Accordion>
+            <FeatureList :deviceId="props.deviceId" />
           </div>
         </template>
       </Card>
@@ -30,11 +22,10 @@
 import { ref, Ref, onBeforeUnmount, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import Card from 'primevue/card';
-import Accordion from 'primevue/accordion';
-import AccordionTab from 'primevue/accordiontab';
 import Chip from 'primevue/chip';
 import RemainingTime from '@/components/RemainingTime.vue';
 import { useDevicesApi, UnauthorizedException } from '@/services/devices';
+import FeatureList from './FeatureList.vue';
 
 interface IState {
   datetime: number;
@@ -58,7 +49,6 @@ const currentState = ref("Unknown");
 const stateStartTime : Ref<Date | undefined> = ref(undefined);
 const version = ref('');
 const enabled = ref(true);
-const featureList: Ref<Array<any>> = ref([]);
 const wifiSignal = ref(0);
 const wifiQuality = ref(0);
 const refreshInterval : Ref<number | undefined> = ref(undefined);
@@ -98,10 +88,9 @@ const callApi = async (deviceId: string | undefined) => {
       stateStartTime.value = new Date(currentStateData.datetime);
       const heartbeat : Array<any> = await api.getHeartbeat(deviceId);
       version.value = heartbeat[0].data.version;
-      enabled.value = heartbeat[0].data.enabled;
+      enabled.value = heartbeat[0].data['ro-system']?.enabled;
       wifiSignal.value = heartbeat[0].data.WiFi?.signal;
       wifiQuality.value = heartbeat[0].data.WiFi?.quality;
-      featureList.value = await api.getFeatureList(deviceId);
     } catch( e ) {
         if (e instanceof UnauthorizedException && e.code === 401) {
           router.replace('/login');
