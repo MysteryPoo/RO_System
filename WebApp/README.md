@@ -28,7 +28,7 @@ not build the images locally by commenting out the 'build:' statements. Then cre
 automatically pull the latest images from docker hub.
 Ex.
 docker buildx build --platform linux/arm/v7 . -t victordavion/romcon-backend --push
-The batch file 'buildXplatform.bat' has been provided to easily one-click build all services for arm/v7 and arm64
+The batch file 'buildXplatform.bat' has been provided to easily one-click build all services for arm64
 
 # .ENV Required Variables
 ## Required for Docker-Compose, runtime ENV
