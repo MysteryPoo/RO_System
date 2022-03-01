@@ -27,7 +27,8 @@ I use docker buildx to build the frontend/backend images for arm64 on an amd64 p
 not build the images locally by commenting out the 'build:' statements. Then create the .env file and run docker-compose up like normal and it should 
 automatically pull the latest images from docker hub.
 Ex.
-docker buildx build --platform linux/arm/v7 . -t victordavion/romcon_backend --push
+docker buildx build --platform linux/arm/v7 . -t victordavion/romcon-backend --push
+The batch file 'buildXplatform.bat' has been provided to easily one-click build all services for arm/v7 and arm64
 
 # .ENV Required Variables
 ## Required for Docker-Compose, runtime ENV
