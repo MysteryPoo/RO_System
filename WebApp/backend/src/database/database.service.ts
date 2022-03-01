@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Collection, Db, MongoClient } from 'mongodb';
 import { databaseConstants } from './constants';
+import { IFeature } from '../interfaces/IFeature';
 
 @Injectable()
 export class DatabaseService {
@@ -8,7 +9,7 @@ export class DatabaseService {
   public configCollection: Collection;
   public statusCollection: Collection;
   public userCollection: Collection;
-  public featureCollection: Collection;
+  public featureCollection: Collection<IFeature>;
 
   private mongo: MongoClient;
 
@@ -27,7 +28,7 @@ export class DatabaseService {
     this.userCollection = this.database.collection(
       databaseConstants.userCollectionName,
     );
-    this.featureCollection = this.database.collection(
+    this.featureCollection = this.database.collection<IFeature>(
       databaseConstants.featureCollectionName,
     );
     // Set up indices

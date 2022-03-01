@@ -153,6 +153,13 @@ function ResetTimer(deviceId) {
       if (message == 'connected') {
         sendConfiguration(deviceId, client);
       }
+      if (message == 'feature-refresh') {
+        const collection = await database.collection('feature');
+        const query = {
+          deviceId,
+        };
+        await collection.deleteMany(query);
+      }
       UpdateDeviceStatus({id: deviceId, online: message == 'offline' ? false : true});
     } else if (subTopic === 'romcon') {
       try {

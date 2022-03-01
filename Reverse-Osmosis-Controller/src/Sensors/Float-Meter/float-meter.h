@@ -31,7 +31,7 @@ public:
   // ISensor
   virtual bool isFull() const override;
   // IHeartbeatReporter
-  virtual void reportHeartbeat(JSONBufferWriter&) const override;
+  virtual void ReportHeartbeat(JSONBufferWriter&) const override;
   // IConfigurable
   virtual void Configure(JSONValue json) override;
 

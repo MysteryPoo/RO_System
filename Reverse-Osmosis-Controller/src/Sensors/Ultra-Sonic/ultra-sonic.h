@@ -29,7 +29,7 @@ public:
 
     virtual void Update() override;
     // IHeartbeatReporter
-    virtual void reportHeartbeat(JSONBufferWriter& writer) const override;
+    virtual void ReportHeartbeat(JSONBufferWriter& writer) const override;
     // IConfigurable
     virtual void Configure(JSONValue json) override;
 

@@ -9,6 +9,7 @@
             {{ feature.display }}
           </template>
           <template #content>
+            <h4>{{ feature.description }}</h4>
             <template v-for="option in feature.options" key="option.name">
               <template v-if="option.type === 'boolean'">
                 <h2>{{ capitalize(option.name) }}</h2>
@@ -48,13 +49,7 @@ import Button from 'primevue/button';
 import { useToast } from 'primevue/usetoast';
 import DeviceSelect from '@/components/DeviceSelect.vue';
 import { useDevicesApi, UnauthorizedException } from '@/services/devices';
-
-interface IFeature {
-  deviceId: string;
-  component: string;
-  display: string;
-  options: Array<{name: string, type: string, units?: string, default?: any}>;
-}
+import { IFeature } from '@/interfaces/IFeature';
 
 const router = useRouter();
 const store = useStore();

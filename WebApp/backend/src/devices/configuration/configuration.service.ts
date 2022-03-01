@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { Collection } from 'mongodb';
 import { DatabaseService } from 'src/database/database.service';
 import { MqttService } from 'src/mqtt/mqtt.service';
-import * as mqtt from 'mqtt';
 
 @Injectable()
 export class ConfigurationService {

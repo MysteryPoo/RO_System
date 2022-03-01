@@ -57,8 +57,9 @@ services:
       - MONGODB_DB_NAME=${MONGODB_DB_NAME}
       - MONGODB_USERNAME=${MONGODB_USERNAME}
       - MONGODB_PASSWORD=${MONGODB_PASSWORD}
-      - MQTT_USERNAME=${MQTT_USERNAME}
-      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - MQTT_USERNAME
+      - MQTT_PASSWORD
+      - MQTT_OVERRIDE
   
   backend:
     container_name: romcon_backend
@@ -79,8 +80,9 @@ services:
       - MONGODB_USERNAME=${MONGODB_USERNAME}
       - MONGODB_PASSWORD=${MONGODB_PASSWORD}
       - API_SECRET=${API_SECRET}
-      - MQTT_USERNAME=${MQTT_USERNAME}
-      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - MQTT_USERNAME
+      - MQTT_PASSWORD
+      - MQTT_OVERRIDE
   
   frontend:
     container_name: romcon_frontend

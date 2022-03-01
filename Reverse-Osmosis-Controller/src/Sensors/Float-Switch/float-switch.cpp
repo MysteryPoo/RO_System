@@ -80,6 +80,7 @@ void FloatSwitch::OnConnect(bool success, MQTTClient* mqtt)
         JSONBufferWriter message = SystemLog::createBuffer(512);
         message.beginObject();
         message.name("display").value("Float Switch");
+        message.name("description").value("On when the tank is full. Off when not.");
         message.name("options").beginArray()
 #ifdef TESTING
         .beginObject()
@@ -163,7 +164,7 @@ void FloatSwitch::fireConfigurationMessage() const
     this->logger.pushMessage(COMPONENT_NAME, writer.buffer());
 }
 
-void FloatSwitch::reportHeartbeat(JSONBufferWriter& writer) const
+void FloatSwitch::ReportHeartbeat(JSONBufferWriter& writer) const
 {
     writer.name(COMPONENT_NAME).beginObject()
     .name("float").value(this->isFull())
