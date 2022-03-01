@@ -49,14 +49,7 @@ import Button from 'primevue/button';
 import { useToast } from 'primevue/usetoast';
 import DeviceSelect from '@/components/DeviceSelect.vue';
 import { useDevicesApi, UnauthorizedException } from '@/services/devices';
-
-interface IFeature {
-  deviceId: string;
-  component: string;
-  display: string;
-  description: string;
-  options: Array<{name: string, type: string, units?: string, default?: any}>;
-}
+import { IFeature } from '@/interfaces/IFeature';
 
 const router = useRouter();
 const store = useStore();
