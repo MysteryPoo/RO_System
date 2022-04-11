@@ -83,7 +83,7 @@ UltraSonic us(A3, A4, syslog);
 FloatSwitch fs(D4, syslog, &mqttClient);
 #endif
 #ifdef FEATURE_FLOATMETER
-FloatMeter fm(A5, syslog);
+FloatMeter fm(A4, syslog);
 #endif
 
 void setup()
@@ -113,6 +113,7 @@ void setup()
     ro.AddSensor(&fm);
     componentsToUpdate.push_back(&fm);
     heartbeatManager.RegisterReporter("float-meter", &fm);
+    mqttClient.RegisterCallbackListener(&fm);
 #endif
 
 #ifdef TESTING

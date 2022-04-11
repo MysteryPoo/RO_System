@@ -12,14 +12,15 @@
 #include "application.h"
 #include "ICloud.h"
 #include "IComponent.h"
-#include "IConfigurable.h"
 #include "Sensors/ISensor.h"
 #include "IHeartbeatReporter.h"
+#include "IConfigurable.h"
+#include "MQTT/ISubCallback.h"
 
 // Foward delcaration
 class SystemLog;
 
-class FloatMeter : public IComponent, public ISensor, public IHeartbeatReporter, public IConfigurable {
+class FloatMeter : public IComponent, public ISensor, public IHeartbeatReporter, public IConfigurable, public ISubCallback {
 
 public:
   FloatMeter(int pin, SystemLog &logger);
@@ -34,6 +35,9 @@ public:
   virtual void ReportHeartbeat(JSONBufferWriter&) const override;
   // IConfigurable
   virtual void Configure(JSONValue json) override;
+  // ISubCallback
+  virtual void Callback(char* topic, uint8_t* payload, unsigned int length) override;
+  virtual void OnConnect(bool connectSuccess, MQTTClient* mqtt) override;
 
 #ifdef TESTING
   void setValue(int newValue);
@@ -43,6 +47,7 @@ private:
   int pin;
   int input;
   int fullValue;
+  bool highIsFull;
 
   // IConfigurable
   virtual void fireConfigurationMessage() const override;
