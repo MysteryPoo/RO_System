@@ -10,7 +10,7 @@ FloatMeter::FloatMeter(int pin, SystemLog &logger) :
   pin(pin),
   input(0),
   fullValue(DEFAULT_FULL_VALUE),
-  highIsFull(true),
+  highIsFull(false),
 #ifdef TESTING
   simulatedValue(0),
 #endif
