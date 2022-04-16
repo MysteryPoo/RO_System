@@ -26,6 +26,9 @@
                   <Button @click="trigger(feature, option.name)" :label="capitalize(option.name)" class="p-button-rounded" />
                 </div>
               </template>
+              <template v-if="option.type === 'table'">
+                
+              </template>
             </template>
             <div style="margin-top: 5em;">
               <Button @click="setConfiguration(feature)" label="Submit"/>
