@@ -9,7 +9,7 @@
           <div v-show="deviceStatus">
             <RemainingTime v-if="currentState === 'FLUSH' || currentState === 'FILL'" :startTime="stateStartTime" :estimatedElapsedSeconds="currentState === 'FLUSH' ? 300 : props.averageFillTime" />
             <p>Firmware Version: <Chip :label="version" /></p>
-            <p v-if="volume">~{{ volume }} Gallons</p>
+            <p v-show="volume">~{{ volume }} Gallons</p>
             <p>System is <span :style="enabled ? 'color: green' : 'color: red'">{{ enabled ? "Enabled" : "Disabled" }}</span></p>
             <i v-show="wifiSignal" class="pi pi-wifi" :style=wifiColor>{{ Math.round(wifiSignal) }}%</i>
             <FeatureList :deviceId="props.deviceId" />
@@ -105,6 +105,7 @@ const convertVoltageToGallons = (voltage: number | undefined) : number | undefin
   if (undefined === voltage) {
     return undefined;
   }
+  let volume = 0;
   const table = [
     {Voltage: 1.127, Gallons: 198.334},
     {Voltage: 1.265, Gallons: 195.001},
@@ -150,10 +151,10 @@ const convertVoltageToGallons = (voltage: number | undefined) : number | undefin
   });
   table.forEach((tick) => {
     if (voltage >= tick.Voltage) {
-      return tick.Gallons;
+      volume = tick.Gallons;
     }
   });
-  return 0;
+  return volume;
 };
 
 onMounted( () => {
