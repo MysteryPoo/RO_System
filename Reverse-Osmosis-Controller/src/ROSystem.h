@@ -77,6 +77,7 @@ private:
     unsigned long pumpRunTime;
     bool firstPump;
     std::vector<ISensor*> sensors;
+    unsigned long traceCooldown;
 
     // Configuration
     bool enabled;

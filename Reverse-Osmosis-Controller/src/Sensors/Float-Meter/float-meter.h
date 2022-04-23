@@ -31,6 +31,7 @@ public:
   virtual void Update() override;
   // ISensor
   virtual bool isFull() const override;
+  virtual const char* GetName() const override;
   // IHeartbeatReporter
   virtual void ReportHeartbeat(JSONBufferWriter&) const override;
   // IConfigurable
@@ -45,9 +46,11 @@ public:
 
 private:
   int pin;
-  int input;
+  //int input;
   int fullValue;
   bool highIsFull;
+
+  int normalize(int value) const;
 
   // IConfigurable
   virtual void fireConfigurationMessage() const override;

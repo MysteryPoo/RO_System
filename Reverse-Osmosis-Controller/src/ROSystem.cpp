@@ -4,6 +4,8 @@
 #include "relay.h"
 #include "system-log.h"
 
+#include "Sensors/Float-Meter/float-meter.h"
+
 #define FLUSH_TIMER_MS 300000
 #define PUMP_INLET_DELAY_MS 5000
 #define PUMP_FREQUENCY_MS 500000 // Default
@@ -27,6 +29,7 @@ ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger) :
     flushDuration(FLUSH_TIMER_MS),
     pumpRunTime(0),
     firstPump(true),
+    traceCooldown(0),
     enabled(true),
     fillStartDistance(FILL_START_DISTANCE_CM),
     fillStopDistance(FILL_STOP_DISTANCE_CM),
@@ -51,12 +54,17 @@ void ROSystem::AddSensor(ISensor* sensor)
 
 void ROSystem::Update()
 {
+    if (millis() < traceCooldown) return;
     bool tankIsFull = false;
     for (ISensor* sensor : sensors)
     {
-        tankIsFull |= sensor->isFull();
+        tankIsFull = tankIsFull || sensor->isFull();
+        logger.trace(String("From ROSystem, ") + String(sensor->GetName()) + String(" is full: ") + String(sensor->isFull() ? "true" : "false"));
+        logger.trace(String("From ROSystem, sensor reads " + String(sensor->input)));
     }
     this->update(tankIsFull);
+    traceCooldown = millis() + 5000;
+    logger.trace(String("Tank is full: " + String(tankIsFull ? "true" : "false")));
 }
 
 void ROSystem::ReportHeartbeat(JSONBufferWriter& writer) const

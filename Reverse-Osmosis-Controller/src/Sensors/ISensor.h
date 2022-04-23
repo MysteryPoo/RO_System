@@ -11,6 +11,8 @@ class ISensor
 {
 public:
   virtual bool isFull() const = 0;
+  virtual const char* GetName() const = 0;
+  int input = 0;
 };
 
 #endif

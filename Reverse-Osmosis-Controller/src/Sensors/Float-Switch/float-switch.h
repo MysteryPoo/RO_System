@@ -30,6 +30,7 @@ public:
     virtual void Update() override;
     // ISensor
     virtual bool isFull() const override;
+    virtual const char* GetName() const override;
     // IHeartbeatReporter
     virtual void ReportHeartbeat(JSONBufferWriter&) const override;
     // IConfigurable
