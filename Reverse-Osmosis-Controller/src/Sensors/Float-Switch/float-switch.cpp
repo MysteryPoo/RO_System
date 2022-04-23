@@ -72,6 +72,11 @@ void FloatSwitch::Callback(char* topic, uint8_t* payload, unsigned int length)
 
 }
 
+const char* FloatSwitch::GetName() const
+{
+    return COMPONENT_NAME;
+}
+
 void FloatSwitch::OnConnect(bool success, MQTTClient* mqtt)
 {
     if (nullptr != mqtt)

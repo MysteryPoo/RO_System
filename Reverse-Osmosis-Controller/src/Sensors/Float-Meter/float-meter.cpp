@@ -2,8 +2,8 @@
 #include "float-meter.h"
 #include "system-log.h"
 
-#define FLOAT_METER_RESOLUTION 4096.f
-#define DEFAULT_FULL_VALUE 2832 // 1398
+#define FLOAT_METER_RESOLUTION 100.f
+#define DEFAULT_FULL_VALUE 80
 #define COMPONENT_NAME "float-meter"
 
 FloatMeter::FloatMeter(int pin, SystemLog &logger) :
@@ -22,7 +22,7 @@ FloatMeter::FloatMeter(int pin, SystemLog &logger) :
 void FloatMeter::Update()
 {
 #ifndef TESTING
-  input = analogRead(pin);
+  input = this->normalize(analogRead(pin));
 #else
   input = simulatedValue;
 #endif
@@ -48,6 +48,7 @@ void FloatMeter::Configure(JSONValue json)
     if (jsonIt.name() == "Voltage High is Full")
     {
       this->highIsFull = jsonIt.value().toBool();
+      logger.trace(String("Configuration set highIsFull to ") + (this->highIsFull ? "true" : "false"));
     }
   }
 }
@@ -99,6 +100,11 @@ void FloatMeter::OnConnect(bool success, MQTTClient* mqtt)
     }
 }
 
+const char* FloatMeter::GetName() const
+{
+  return COMPONENT_NAME;
+}
+
 bool FloatMeter::isFull() const
 {
   if (this->highIsFull)
@@ -124,7 +130,8 @@ void FloatMeter::fireConfigurationMessage() const
 
 float FloatMeter::voltage() const
 {
-  return (float)input / FLOAT_METER_RESOLUTION * 3.3f;
+  //return ((float)input * FLOAT_METER_RESOLUTION) * 3.3f;
+  return input;
 }
 
 void FloatMeter::ReportHeartbeat(JSONBufferWriter& writer) const
@@ -133,6 +140,14 @@ void FloatMeter::ReportHeartbeat(JSONBufferWriter& writer) const
   .name("voltage").value((double)this->voltage())
   .endObject();
   this->logger.trace("F_Meter Voltage: " + String(this->voltage()));
+  logger.trace("Input: " + String(this->input) + " FullValue: " + String(this->fullValue));
+  logger.trace(String("IsFull: ") + (this->isFull() ? "true" : "false"));
+  logger.trace(String("highIsFull: ") + (this->highIsFull ? "true" : "false"));
+}
+
+int FloatMeter::normalize(int value) const
+{
+  return (int)(((float)value / 4096.f) * FLOAT_METER_RESOLUTION);
 }
 
 #ifdef TESTING
