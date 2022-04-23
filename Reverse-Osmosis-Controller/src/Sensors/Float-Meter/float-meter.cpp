@@ -3,7 +3,7 @@
 #include "system-log.h"
 
 #define FLOAT_METER_RESOLUTION 4096.f
-#define DEFAULT_FULL_VALUE 4096
+#define DEFAULT_FULL_VALUE 2832 // 1398
 #define COMPONENT_NAME "float-meter"
 
 FloatMeter::FloatMeter(int pin, SystemLog &logger) :

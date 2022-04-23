@@ -32,6 +32,7 @@
 */
 
 SYSTEM_THREAD(ENABLED)
+STARTUP(WiFi.selectAntenna(ANT_EXTERNAL));
 
 #include "global-defines.h"
 #include "system-log.h"
