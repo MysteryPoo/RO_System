@@ -46,7 +46,7 @@ public:
 
 private:
   int pin;
-  //int input;
+  int input;
   int fullValue;
   bool highIsFull;
 

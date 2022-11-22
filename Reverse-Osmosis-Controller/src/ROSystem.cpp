@@ -54,17 +54,24 @@ void ROSystem::AddSensor(ISensor* sensor)
 
 void ROSystem::Update()
 {
-    if (millis() < traceCooldown) return;
+    system_tick_t curMillis = millis();
+    bool traceAllowed = curMillis > traceCooldown;
     bool tankIsFull = false;
     for (ISensor* sensor : sensors)
     {
         tankIsFull = tankIsFull || sensor->isFull();
-        logger.trace(String("From ROSystem, ") + String(sensor->GetName()) + String(" is full: ") + String(sensor->isFull() ? "true" : "false"));
-        logger.trace(String("From ROSystem, sensor reads " + String(sensor->input)));
+        if (traceAllowed)
+        {
+            logger.trace(String("From ROSystem, ") + String(sensor->GetName()) + String(" is full: ") + String(sensor->isFull() ? "true" : "false"));
+            logger.trace(String("From ROSystem, sensor reads " + String(sensor->input)));
+        }
     }
     this->update(tankIsFull);
-    traceCooldown = millis() + 5000;
-    logger.trace(String("Tank is full: " + String(tankIsFull ? "true" : "false")));
+    if (traceAllowed)
+    {
+        traceCooldown = curMillis + 5000;
+        logger.trace(String("Tank is full: " + String(tankIsFull ? "true" : "false")));
+    }
 }
 
 void ROSystem::ReportHeartbeat(JSONBufferWriter& writer) const
@@ -79,6 +86,7 @@ void ROSystem::Configure(JSONValue json)
 {
     if (!json.isValid())
     {
+        this->logger.error("ROSystem received invalid Configuration format.");
         return;
     }
     JSONObjectIterator jsonIt(json);
@@ -121,36 +129,34 @@ void ROSystem::Callback(char* topic, uint8_t* payload, unsigned int length)
 
 void ROSystem::OnConnect(bool connectSuccess, MQTTClient* mqtt)
 {
-    if (nullptr != mqtt)
-    {
-        mqtt->Subscribe("configuration/ro-system/#", MQTT::EMQTT_QOS::QOS1);
-        JSONBufferWriter message = SystemLog::createBuffer(512);
-        message.beginObject();
-        message.name("display").value("RO System");
-        message.name("description").value("The component responsible for maintaining water level.");
-        message.name("options").beginArray()
-        .beginObject()
-        .name("name").value("enabled")
-        .name("type").value("boolean")
-        .name("default").value(true)
-        .endObject()
-        .beginObject()
-        .name("name").value("Pump Cooldown")
-        .name("type").value("number")
-        .name("units").value("millisecond")
-        .name("default").value(PUMP_FREQUENCY_MS)
-        .endObject()
-        .beginObject()
-        .name("name").value("Flush Duration")
-        .name("type").value("number")
-        .name("units").value("millisecond")
-        .name("default").value(FLUSH_TIMER_MS)
-        .endObject()
-        .endArray();
-        message.endObject();
-        mqtt->Publish("configuration/ro-system", message.buffer());
-        delete[] message.buffer();
-    }
+    if (nullptr == mqtt) return;
+    mqtt->Subscribe("configuration/ro-system/#", MQTT::EMQTT_QOS::QOS1);
+    JSONBufferWriter message = SystemLog::createBuffer(512);
+    message.beginObject();
+    message.name("display").value("RO System");
+    message.name("description").value("The component responsible for maintaining water level.");
+    message.name("options").beginArray()
+    .beginObject()
+    .name("name").value("enabled")
+    .name("type").value("boolean")
+    .name("default").value(true)
+    .endObject()
+    .beginObject()
+    .name("name").value("Pump Cooldown")
+    .name("type").value("number")
+    .name("units").value("millisecond")
+    .name("default").value(PUMP_FREQUENCY_MS)
+    .endObject()
+    .beginObject()
+    .name("name").value("Flush Duration")
+    .name("type").value("number")
+    .name("units").value("millisecond")
+    .name("default").value(FLUSH_TIMER_MS)
+    .endObject()
+    .endArray();
+    message.endObject();
+    mqtt->Publish("configuration/ro-system", message.buffer());
+    delete[] message.buffer();
 }
 
 void ROSystem::update(bool tankFull)
