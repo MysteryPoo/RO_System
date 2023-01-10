@@ -23,7 +23,7 @@
   "dependencies": {
     "@nestjs/common": "^8.0.0",
     "@nestjs/core": "^8.0.0",
-    "@nestjs/jwt": "^8.0.0",
+    "@nestjs/jwt": "^10.0.1",
     "@nestjs/passport": "^8.1.0",
     "@nestjs/platform-express": "^8.0.0",
     "@types/bcrypt": "^5.0.0",
@@ -33,7 +33,7 @@
     "mqtt": "^4.3.5",
     "particle-api-js": "^9.1.2",
     "passport": "^0.5.2",
-    "passport-jwt": "^4.0.0",
+    "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
