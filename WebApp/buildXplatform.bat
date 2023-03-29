@@ -4,7 +4,7 @@ docker buildx build --platform linux/arm64 . -t victordavion/romcon-backend --pu
 cd ..\frontend
 docker buildx build --platform linux/arm64 . -t victordavion/romcon-frontend --push
 
-cd ..\mqttDiscoveryService
+cd ..\MQTT_Discovery_Service
 docker buildx build --platform linux/arm64 . -t victordavion/romcon-discovery --push
 
 cd ..\rabbitmq
