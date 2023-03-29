@@ -28,7 +28,7 @@ jobs:
         name: MQTT Discovery Service (Build & Push)
         uses: docker/build-push-action@v4
         with:
-          context: ./MQTT_Discovery_Service
+          context: ./WebApp/MQTT_Discovery_Service
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/todo-api:latest
