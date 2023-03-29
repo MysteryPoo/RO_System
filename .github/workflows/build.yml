@@ -34,4 +34,4 @@ jobs:
           push: true
           tags:
             - ${{ secrets.DOCKERHUB_USERNAME }}/romcon-discovery:latest
-            - ${{ secrets.DOCKERHUB_USERNAME }}/romcon_discovery:{{ github.ref_name }}
+            - ${{ secrets.DOCKERHUB_USERNAME }}/romcon-discovery:{{ github.ref_name }}
