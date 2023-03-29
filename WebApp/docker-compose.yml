@@ -31,7 +31,9 @@ services:
 
   discovery:
     container_name: romcon_discovery
-    build: ./mqttDiscoveryService
+    build:
+      context: .
+      dockerfile: ./MQTT_Discovery_Service/Dockerfile
     image: ${DOCKER_USERNAME}/romcon-discovery
     restart: always
     ports:
