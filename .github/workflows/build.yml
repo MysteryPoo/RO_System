@@ -32,4 +32,4 @@ jobs:
           file: ./WebApp/MQTT_Discovery_Service/Dockerfile
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/romcon-discovery:latest,${{ secrets.DOCKERHUB_USERNAME }}/romcon-discovery:{{ github.ref_name }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/romcon-discovery:latest,${{ secrets.DOCKERHUB_USERNAME }}/romcon-discovery:${{ github.ref_name }}
