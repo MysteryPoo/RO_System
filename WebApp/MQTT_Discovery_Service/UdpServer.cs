@@ -27,8 +27,7 @@ public class UdpServer : UdpBase {
     const string multicastIP = "224.0.0.116";
     _client = new UdpClient(endPoint);
     try {
-      MulticastOption option = new MulticastOption(IPAddress.Parse(multicastIP));
-      _client.Client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, option);
+      _client.JoinMulticastGroup(IPAddress.Parse(multicastIP), IPAddress.Any);
       Console.WriteLine($"Joining multicast group: {multicastIP}");
     } catch (Exception e) {
       Console.WriteLine(e.Message);
