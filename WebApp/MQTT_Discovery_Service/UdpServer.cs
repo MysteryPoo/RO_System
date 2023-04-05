@@ -24,7 +24,15 @@ public class UdpServer : UdpBase {
   }
   public UdpServer() : this(new IPEndPoint(IPAddress.Any, 1882)) {}
   public UdpServer(IPEndPoint endPoint) {
+    const string multicastIP = "224.0.0.116";
     _client = new UdpClient(endPoint);
+    try {
+      MulticastOption option = new MulticastOption(IPAddress.Parse(multicastIP));
+      _client.Client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, option);
+      Console.WriteLine($"Joining multicast group: {multicastIP}");
+    } catch (Exception e) {
+      Console.WriteLine(e.Message);
+    }
   }
   public int Reply(string payload, IPEndPoint endPoint) {
     var datagram = Encoding.ASCII.GetBytes(payload);
