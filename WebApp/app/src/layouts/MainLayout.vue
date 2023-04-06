@@ -4,13 +4,13 @@
     <q-header elevated height-hint="98">
       <q-toolbar>
         <q-toolbar-title class="wrapper">
+          <main-logo />
           <div class="bubble small"></div>
           <div class="bubble small-l"></div>
           <div class="bubble s-medium"></div>
           <q-avatar>
             <img src="https://cdn.quasar.dev/logo-v2/svg/logo-mono-white.svg">
           </q-avatar>
-          Romcon
         </q-toolbar-title>
       </q-toolbar>
 
@@ -40,6 +40,7 @@
 </template>
 
 <script setup lang="ts">
+import MainLogo from 'components/MainLogo.vue';
 </script>
 
 <style scoped lang="scss">
