@@ -71,7 +71,9 @@ module.exports = configure(function (ctx) {
       env: {
         API_URL: ctx.dev
           ? 'http://raspberrypi:4000'
-          : 'https://romcon-api.thornyshits.website'
+          : 'https://romcon-api.thornyshits.website',
+        SUPABASE_URL: 'https://uuwvtzrleqzyvyhngsra.supabase.co',
+        SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1d3Z0enJsZXF6eXZ5aG5nc3JhIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODA3MjMxNDYsImV4cCI6MTk5NjI5OTE0Nn0.iMqIOIepzorkd8Ei0KSuPyLtHSUxHhBH2SDuhfRPEN4'
       },
       // rawDefine: {}
       // ignorePublicFolder: true,
