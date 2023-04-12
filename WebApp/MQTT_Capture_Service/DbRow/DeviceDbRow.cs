@@ -2,7 +2,7 @@
 using Postgrest.Attributes;
 using Postgrest.Models;
 
-namespace DbRow;
+namespace Capture.DbRow;
 
 [Table("device_list")]
 public class DeviceDbRow : BaseModel {

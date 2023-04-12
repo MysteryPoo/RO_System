@@ -2,6 +2,8 @@
 using Postgrest.Attributes;
 using Postgrest.Models;
 
+namespace Capture.DbRow;
+
 [Table("option_list")]
 public class OptionDbRow : BaseModel {
   [PrimaryKey("id")]

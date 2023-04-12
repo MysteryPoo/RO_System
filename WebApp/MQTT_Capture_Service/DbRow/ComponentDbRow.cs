@@ -2,7 +2,7 @@
 using Postgrest.Attributes;
 using Postgrest.Models;
 
-namespace DbRow;
+namespace Capture.DbRow;
 
 [Table("component_list")]
 public class ComponentDbRow : BaseModel {

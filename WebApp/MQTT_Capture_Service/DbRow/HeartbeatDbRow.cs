@@ -2,6 +2,8 @@
 using Postgrest.Attributes;
 using Postgrest.Models;
 
+namespace Capture.DbRow;
+
 [Table("heartbeat")]
 public class HeartbeatDbRow : BaseModel {
   [PrimaryKey("id")]

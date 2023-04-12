@@ -70,6 +70,10 @@ public class MQTTService {
     if (!topic[0].Equals("from")) throw new Exception("This processor is for 'from' topics only.");
     string deviceId = topic[1];
     switch(topic[2]) {
+      case "feature-list": {
+        await ProcessFeatureList(topic, payload);
+        break;
+      }
       case "status": {
         await ProcessStatus(topic, payload);
         break;
@@ -86,6 +90,10 @@ public class MQTTService {
         Console.WriteLine($"No processor found for {topic[2]}");
         break;
     }
+  }
+
+  private async Task ProcessFeatureList(string[] topic, string? payload) {
+    await _supabase.PruneFeaturesForDevice(topic[1], JsonSerializer.Deserialize<string[]>(payload!)!);
   }
 
   private async Task ProcessStatus(string[] topic, string? payload) {

@@ -1,6 +1,8 @@
 using Postgrest.Attributes;
 using Postgrest.Models;
 
+namespace Capture.DbRow;
+
 [Table("option_boolean_list")]
 public class OptionBooleanDbRow : BaseModel {
   [PrimaryKey("id")]

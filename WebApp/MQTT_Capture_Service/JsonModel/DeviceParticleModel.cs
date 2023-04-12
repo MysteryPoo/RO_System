@@ -1,4 +1,4 @@
-using DbRow;
+using Capture.DbRow;
 using System.Text.Json.Serialization;
 
 public class DeviceParticleModel {
