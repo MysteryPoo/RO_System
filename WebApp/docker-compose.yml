@@ -42,6 +42,23 @@ services:
       - MQTT_USERNAME
       - MQTT_PASSWORD
       - MQTT_OVERRIDE
+
+  capture:
+    container_name: romcon_capture
+    depends_on:
+      - rabbitmq
+    build:
+      context: .
+      dockerfile: ./MQTT_Capture_Service/Dockerfile
+    image: ${DOCKER_USERNAME}/romcon-capture
+    restart: always
+    environment:
+      - SUPABASE_URL
+      - SUPABASE_KEY
+      - PARTICLE_API_KEY
+      - MQTT_USERNAME
+      - MQTT_PASSWORD
+      - MQTT_OVERRIDE
   
   stream:
     container_name: romcon_stream
@@ -53,12 +70,15 @@ services:
     image: ${DOCKER_USERNAME}/romcon-stream
     restart: always
     environment: 
-      - PARTICLE_USERNAME=${PARTICLE_USERNAME}
-      - PARTICLE_PASSWORD=${PARTICLE_PASSWORD}
-      - MONGODB_URI=romcon_mongo
-      - MONGODB_DB_NAME=${MONGODB_DB_NAME}
-      - MONGODB_USERNAME=${MONGODB_USERNAME}
-      - MONGODB_PASSWORD=${MONGODB_PASSWORD}
+      - PARTICLE_USERNAME=${PARTICLE_USERNAME} # Deprecated
+      - PARTICLE_PASSWORD=${PARTICLE_PASSWORD} # Deprecated
+      - MONGODB_URI=romcon_mongo # Deprecated
+      - MONGODB_DB_NAME=${MONGODB_DB_NAME} # Deprecated
+      - MONGODB_USERNAME=${MONGODB_USERNAME} # Deprecated
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD} # Deprecated
+      - PARTICLE_API_KEY
+      - SUPABASE_URL
+      - SUPABASE_KEY
       - MQTT_USERNAME
       - MQTT_PASSWORD
       - MQTT_OVERRIDE
