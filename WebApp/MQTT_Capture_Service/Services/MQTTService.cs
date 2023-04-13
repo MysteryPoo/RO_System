@@ -87,7 +87,7 @@ public class MQTTService {
         break;
       }
       default:
-        Console.WriteLine($"No processor found for {topic[2]}");
+        await ProcessUnknownMessage(topic, payload);
         break;
     }
   }
@@ -103,12 +103,16 @@ public class MQTTService {
         await _supabase.UpdateOnlineStatusForDevice(deviceId, true);
         break;
       }
+      case "offline": {
+        await _supabase.UpdateOnlineStatusForDevice(deviceId, false);
+        break;
+      }
       case "feature-refresh": {
         // This message is deprecated
         break;
       }
       default:
-        Console.WriteLine($"No subprocessor found for {payload}");
+        await ProcessUnknownMessage(topic, payload);
         break;
     }
     
@@ -151,5 +155,12 @@ public class MQTTService {
     string deviceId = topic[1];
     var heartbeat = JsonSerializer.Deserialize<HeartbeatJson>(payload);
     await _supabase.InsertHeartbeat(deviceId, heartbeat!);
+  }
+
+  private async Task ProcessUnknownMessage(string[] topic, string? payload) {
+    if (payload is null) throw new Exception("No payload for unknown message.");
+    string deviceId = topic[1];
+    string topicFull = String.Join('/', topic);
+    await _supabase.InsertUnknownMessage(deviceId, topicFull, payload);
   }
 }

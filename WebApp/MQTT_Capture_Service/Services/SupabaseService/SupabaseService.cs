@@ -60,6 +60,17 @@ public partial class SupabaseService {
     }
   }
 
+  public async Task InsertUnknownMessage(string deviceId, string topic, string payload) {
+    var device = (await Client.From<DeviceDbRow>().Where(d => d.DeviceId == deviceId).Get()).Models.FirstOrDefault();
+    if (device is null) throw new Exception("Insert Unknown Message Error: Device does not exist.");
+    var unknownMessage = new UnknownMessageDbRow() {
+      DeviceId = device.Id,
+      Topic = topic,
+      Payload = payload,
+    };
+    await Client.From<UnknownMessageDbRow>().Insert(unknownMessage);
+  }
+
   private async Task<List<DeviceDbRow>> GetDeviceListFromDatabase() {
     return (await Client.From<DeviceDbRow>().Get()).Models;
   }

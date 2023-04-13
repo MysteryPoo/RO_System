@@ -2,7 +2,10 @@ using Capture.DbRow;
 
 public partial class SupabaseService {
   public async Task InsertHeartbeat(string deviceId, HeartbeatJson heartbeat) {
+    var device = (await Client.From<DeviceDbRow>().Where(d => d.DeviceId == deviceId).Get()).Models.FirstOrDefault();
+    if (device is null) throw new Exception("Insert Heartbeat Error: Device does not exist");
     var heartbeatToInsert = new HeartbeatDbRow() {
+      DeviceId = device.Id,
       Datetime = heartbeat.Datetime,
       MessageQueueSize = heartbeat.Data!.MessageQueueSize,
       Version = heartbeat.Data.Version,
@@ -10,9 +13,9 @@ public partial class SupabaseService {
     };
     try {
       var heartbeatDb = await Client.From<HeartbeatDbRow>().Insert(heartbeatToInsert);
-      await CreateWifiHeartbeat(heartbeatDb.Models.First().Id, heartbeat.Data.WiFi!);
-      await CreateRoSystemHeartbeat(heartbeatDb.Models.First().Id, heartbeat.Data.RoSystem!);
-      await CreateFloatSwitchHeartbeat(heartbeatDb.Models.First().Id, heartbeat.Data.FloatSwitch!);
+      if (heartbeat.Data.WiFi is not null) { await CreateWifiHeartbeat(heartbeatDb.Models.First().Id, heartbeat.Data.WiFi); }
+      if (heartbeat.Data.RoSystem is not null) { await CreateRoSystemHeartbeat(heartbeatDb.Models.First().Id, heartbeat.Data.RoSystem); }
+      if (heartbeat.Data.FloatSwitch is not null) { await CreateFloatSwitchHeartbeat(heartbeatDb.Models.First().Id, heartbeat.Data.FloatSwitch); }
     } catch (Exception e) {
       Console.WriteLine(e.Message);
     }

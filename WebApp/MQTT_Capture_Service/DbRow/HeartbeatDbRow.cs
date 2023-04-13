@@ -6,9 +6,11 @@ namespace Capture.DbRow;
 
 [Table("heartbeat")]
 public class HeartbeatDbRow : BaseModel {
-  [PrimaryKey("id")]
+  [PrimaryKey("id", false)]
   public long Id { get; set; }
-  [Column("inserted_at")]
+  [Column("device_id")]
+  public long DeviceId { get; set; }
+  [PrimaryKey("inserted_at", false)] // This is a hack to prevent the api from sending the field so it defaults on the DB level
   public DateTimeOffset InsertedAt { get; set; } = DateTimeOffset.Now;
   [Column("received_at")]
   public DateTimeOffset Datetime { get; set; }
