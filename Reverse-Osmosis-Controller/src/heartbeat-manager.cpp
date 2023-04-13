@@ -4,21 +4,20 @@
 #include "system-log.h"
 #include "IHeartbeatReporter.h"
 #include "mqtt-client.h"
+#include "mqtt-queue.h"
 
 #define THIRTY_SECONDS_MS 30000
 #define ONE_MINUTE_MS 60000
+#define COMPONENT_NAME "heartbeat"
 
-HeartbeatManager::HeartbeatManager(SystemLog& logger) :
-  logger(logger),
+HeartbeatManager::HeartbeatManager(SystemLog& logger, MQTTClient* mqtt, MqttQueue& mqttQueue)
+: logger(logger)
+, mqttQueue(mqttQueue)
 #ifndef TESTING
-  updatePeriod(ONE_MINUTE_MS * 10)
+, updatePeriod(ONE_MINUTE_MS * 10)
 #else
-  updatePeriod(THIRTY_SECONDS_MS)
+, updatePeriod(THIRTY_SECONDS_MS)
 #endif
-{}
-
-HeartbeatManager::HeartbeatManager(SystemLog& logger, MQTTClient* mqtt)
-: HeartbeatManager(logger)
 {
   if (nullptr != mqtt)
   {
@@ -64,9 +63,9 @@ void HeartbeatManager::Configure(JSONValue json)
   }
 }
 
-void HeartbeatManager::ForceHeartbeat()
+bool HeartbeatManager::ForceHeartbeat() const
 {
-  sendHeartbeat();
+  return this->sendHeartbeat();
 }
 
 void HeartbeatManager::Callback(char* topic, uint8_t* payload, unsigned int length)
@@ -75,7 +74,7 @@ void HeartbeatManager::Callback(char* topic, uint8_t* payload, unsigned int leng
   memcpy(p, payload, length);
   p[length] = '\0';
 
-  if (strcmp(topic, "to/" + System.deviceID() + "/configuration/heartbeat"))
+  if (strcmp(topic, "to/" + System.deviceID() + "/heartbeat/configuration"))
   {
       return;
   }
@@ -88,7 +87,7 @@ void HeartbeatManager::OnConnect(bool connectSuccess, MQTTClient* mqtt)
 {
   if (nullptr != mqtt)
   {
-    mqtt->Subscribe("configuration/heartbeat/#", MQTT::EMQTT_QOS::QOS1);
+    mqtt->Subscribe("heartbeat/configuration", MQTT::EMQTT_QOS::QOS1);
     JSONBufferWriter message = SystemLog::createBuffer(512);
     message.beginObject();
     message.name("display").value("Heartbeat Manager");
@@ -102,16 +101,16 @@ void HeartbeatManager::OnConnect(bool connectSuccess, MQTTClient* mqtt)
     .endObject()
     .endArray();
     message.endObject();
-    mqtt->Publish("configuration/heartbeat", message.buffer());
+    mqttQueue.PushPayload("configuration/heartbeat", message.buffer());
     delete[] message.buffer();
   }
 }
 
-void HeartbeatManager::sendHeartbeat()
+bool HeartbeatManager::sendHeartbeat() const
 {
   if (!WiFi.ready())
   {
-    return;
+    return false;
   }
 
   WiFiSignal wifi = WiFi.RSSI();
@@ -124,8 +123,13 @@ void HeartbeatManager::sendHeartbeat()
   message.name("version").value(VERSION_STRING);
   message.name("heartbeat-rate").value(this->updatePeriod);
   message.name("WiFi").beginObject()
+#ifdef TESTING
+  .name("signal").value(random(20, 100))
+  .name("quality").value(random(20,100))
+#else
   .name("signal").value(wifi.getStrength())
   .name("quality").value(wifi.getQuality())
+#endif
   .endObject();
   for (IHeartbeatReporter* reporter : this->reporters)
   {
@@ -152,4 +156,10 @@ void HeartbeatManager::sendHeartbeat()
 
     logger.pushMessage("system/heartbeat", errorMessage.buffer());
   }
+  return true;
+}
+
+String HeartbeatManager::GetName() const
+{
+  return COMPONENT_NAME;
 }

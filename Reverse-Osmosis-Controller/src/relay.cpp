@@ -15,12 +15,14 @@
 
 #include "relay.h"
 #include "system-log.h"
+#include "mqtt-queue.h"
 
-Relay::Relay(Name name, SystemLog &logger, int pin, bool activeLow) : 
+Relay::Relay(Name name, SystemLog& logger, MqttQueue& mqtt, int pin, bool activeLow) : 
     name(name),
+    logger(logger),
+    mqtt(mqtt),
     pin(pin),
-    activeLow(activeLow),
-    logger(logger)
+    activeLow(activeLow)
 {
     pinMode(pin, OUTPUT);
     this->set(Relay::State::OFF);
@@ -33,13 +35,13 @@ const String Relay::toString() const
     switch(this->name)
     {
         case COMPONENT_PUMP:
-            return "COMPONENT_PUMP";
+            return "pump";
         case COMPONENT_INLETVALVE:
-            return "COMPONENT_INLETVALVE";
+            return "inlet-valve";
         case COMPONENT_FLUSHVALVE:
-            return "COMPONENT_FLUSHVALVE";
+            return "flush-valve";
         default:
-            return "COMPONENT_UNKNOWN";
+            return "unknown";
     }
 }
 
@@ -51,9 +53,8 @@ void Relay::set(const Relay::State newState)
         return;
     }
     JSONBufferWriter writer = SystemLog::createBuffer(128);
-    writer.beginObject();
-    writer.name("event").value("set");
-    writer.name("name").value(this->toString());
+    writer.beginObject()
+    .name("datetime").value(Particle.connected() ? Time.now() : 0);
     if(newState == Relay::State::ON)
     {
         writer.name("value").value("ON");
@@ -65,18 +66,18 @@ void Relay::set(const Relay::State newState)
         digitalWrite(this->pin, this->activeLow ? HIGH : LOW);
     }
     writer.endObject();
-    this->logger.pushMessage("relay/set", writer.buffer());
+    this->mqtt.PushPayload("relay/" + this->toString() + "/set", writer.buffer());
+    delete[] writer.buffer();
     this->state = newState;
 }
 
 void Relay::fireConfigurationMessage() const
 {
     JSONBufferWriter writer = SystemLog::createBuffer(128);
-    writer.beginObject();
-    writer.name("event").value("configuration");
-    writer.name("name").value(this->toString());
-    writer.name("pin").value(this->pin);
-    writer.name("activeLow").value(activeLow);
-    writer.endObject();
-    this->logger.pushMessage("relay/configuration", writer.buffer());
+    writer.beginObject()
+    .name("pin").value(this->pin)
+    .name("activeLow").value(this->activeLow)
+    .endObject();
+    this->mqtt.PushPayload("relay/" + this->toString() + "/pin", writer.buffer());
+    delete[] writer.buffer();
 }

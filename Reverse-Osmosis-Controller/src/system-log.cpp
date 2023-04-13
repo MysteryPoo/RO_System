@@ -1,12 +1,15 @@
 
 #include "system-log.h"
+#include "mqtt-client.h"
+#include "mqtt-queue.h"
 
 #define BURST_DELAY 500
 #define BURST_LIMIT 10
 
-SystemLog::SystemLog(MQTTClient& mqtt)
+SystemLog::SystemLog(MQTTClient& mqtt, MqttQueue& mqttQueue)
 : enabled(true)
 , mqttClient(mqtt)
+, mqttQueue(mqttQueue)
 , lastBurst(millis() - BURST_DELAY)
 {
     
@@ -62,10 +65,12 @@ void SystemLog::publishLog()
 void SystemLog::simpleMessage(String label, String message)
 {
     JSONBufferWriter writer = this->createBuffer(256);
-    writer.beginObject();
-    writer.name("message").value(message);
-    writer.endObject();
-    pushMessage(label, writer.buffer());
+    writer.beginObject()
+    .name("datetime").value(Particle.connected() ? Time.now() : 0)
+    .name("message").value(message)
+    .endObject();
+    mqttQueue.PushPayload("log/" + label, writer.buffer());
+    delete[] writer.buffer();
 }
 
 void SystemLog::trace(String message)

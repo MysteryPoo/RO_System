@@ -13,17 +13,19 @@
 #define _SYSTEM_LOG_
 
 #include "application.h"
-#include "mqtt-client.h"
 #include "message.h"
 #include "IComponent.h"
 #include <queue>
 
 #define SYSTEMLOG_MESSAGEBUFFERSIZE 32
 
+class MQTTClient;
+class MqttQueue;
+
 class SystemLog : public IComponent
 {
 public:
-    SystemLog(MQTTClient& mqttClient);
+    SystemLog(MQTTClient& mqttClient, MqttQueue& mqttQueue);
     void trace(String message);
     void information(String message);
     void warning(String message);
@@ -39,6 +41,7 @@ public:
     
 private:
     MQTTClient& mqttClient;
+    MqttQueue& mqttQueue;
     std::queue<Message*> messageQueue;
     unsigned long lastBurst;
     

@@ -14,17 +14,19 @@
 #include "global-defines.h"
 #include "ICloud.h"
 #include "IComponent.h"
-#include "Sensors/ISensor.h"
 #include "IHeartbeatReporter.h"
 #include "IConfigurable.h"
 #include "MQTT/ISubCallback.h"
 #include <vector>
 
+class ISensor;
 class Relay;
 class SystemLog;
 class String;
 class FloatSwitch;
 class UltraSonic;
+class MQTTClient;
+class MqttQueue;
 namespace spark
 {
     class JSONValue;
@@ -39,8 +41,8 @@ public:
         FILL
     };
     
-    ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger);
-    ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger, MQTTClient* mqtt);
+    ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger, MqttQueue& mqttQueue);
+    ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger, MQTTClient* mqtt, MqttQueue& mqttQueue);
 
     void AddSensor(ISensor* sensor);
 
@@ -53,6 +55,7 @@ public:
     // ISubCallback
     virtual void Callback(char* topic, uint8_t* payload, unsigned int length) override;
     virtual void OnConnect(bool connectSuccess, MQTTClient* mqtt) override;
+    virtual String GetName() const override;
 
     void shutdown();
 
@@ -68,6 +71,8 @@ private:
     Relay &inlet;
     Relay &flush;
     SystemLog &logger;
+    MQTTClient* mqttClient = nullptr;
+    MqttQueue& mqttQueue;
     bool flushedToday;
     unsigned long totalPumpTime;
     unsigned long totalPumpRuns;
