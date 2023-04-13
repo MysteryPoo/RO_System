@@ -11,4 +11,6 @@ public class OptionBooleanDbRow : BaseModel {
   public long OptionId { get; set; }
   [Column("default")]
   public bool Default { get; set; }
+  [Column("value")]
+  public bool? Value { get; set; }
 }

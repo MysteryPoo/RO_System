@@ -3,9 +3,9 @@ using System.Text.Json.Serialization;
 
 public class DeviceParticleModel {
   [JsonPropertyName("id")]
-  public string? DeviceId { get; set; }
+  public string DeviceId { get; set; } = string.Empty;
   [JsonPropertyName("name")]
-  public string? Name { get; set; }
+  public string Name { get; set; } = string.Empty;
   [JsonPropertyName("last_ip_address")]
   public string? LastIpAddress { get; set; }
   [JsonPropertyName("last_heard")]
