@@ -1,7 +1,10 @@
 
 using System.Text.Json;
+using Capture.DbRow;
 using MQTTnet;
 using MQTTnet.Client;
+//using Newtonsoft.Json;
+using static Supabase.Client;
 
 public class MQTTService {
   private MqttFactory _factory;
@@ -20,6 +23,21 @@ public class MQTTService {
     _factory = new MqttFactory();
     _client = _factory.CreateMqttClient();
     _options = new MqttClientOptionsBuilder().WithTcpServer("localhost").WithCredentials(mqttUsername, mqttPassword).WithClientId("Capture_Service").Build();
+    // This stuff needs a refactor but it works for now
+    _supabase.Client.From<OptionBooleanDbRow>().On(ChannelEventType.Update, async (sender, args) => {
+      var option = args.Response!.Model<OptionBooleanDbRow>();
+      var optionBase = (await _supabase.Client.From<OptionDbRow>().Where(o => o.Id == option!.OptionId).Get()).Models.First();
+      var component = (await _supabase.Client.From<ComponentDbRow>().Where(c => c.Id == optionBase.ComponentId).Get()).Models.First();
+      var device = (await _supabase.Client.From<DeviceDbRow>().Where(d => d.Id == component.DeviceId).Get()).Models.First();
+      await SendDeviceConfiguration(device.DeviceId);
+    });
+    _supabase.Client.From<OptionNumberDbRow>().On(ChannelEventType.Update, async (sender, args) => {
+      var option = args.Response!.Model<OptionNumberDbRow>();
+      var optionBase = (await _supabase.Client.From<OptionDbRow>().Where(o => o.Id == option!.OptionId).Get()).Models.First();
+      var component = (await _supabase.Client.From<ComponentDbRow>().Where(c => c.Id == optionBase.ComponentId).Get()).Models.First();
+      var device = (await _supabase.Client.From<DeviceDbRow>().Where(d => d.Id == component.DeviceId).Get()).Models.First();
+      await SendDeviceConfiguration(device.DeviceId);
+    });
   }
 
   public async Task StartAsync() {

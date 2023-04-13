@@ -9,9 +9,9 @@ public class DeviceDbRow : BaseModel {
   [PrimaryKey("id", false)]
   public long Id { get; set; }
   [Column("device_id")]
-  public string? DeviceId { get; set; }
+  public string DeviceId { get; set; } = string.Empty;
   [Column("device_name")]
-  public string? Name { get; set; }
+  public string Name { get; set; } = string.Empty;
   [Column("last_ip_address")]
   public string? LastIpAddress { get; set; }
   [Column("online")]
