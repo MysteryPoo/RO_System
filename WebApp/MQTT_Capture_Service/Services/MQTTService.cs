@@ -5,7 +5,7 @@ using MQTTnet.Client;
 
 public class MQTTService {
   private MqttFactory _factory;
-  private IMqttClient? _client;
+  private IMqttClient _client;
   private MqttClientOptions _options;
   private SupabaseService _supabase;
 
@@ -107,6 +107,10 @@ public class MQTTService {
         await _supabase.UpdateOnlineStatusForDevice(deviceId, false);
         break;
       }
+      case "connected": {
+        await SendDeviceConfiguration(deviceId);
+        break;
+      }
       case "feature-refresh": {
         // This message is deprecated
         break;
@@ -162,5 +166,63 @@ public class MQTTService {
     string deviceId = topic[1];
     string topicFull = String.Join('/', topic);
     await _supabase.InsertUnknownMessage(deviceId, topicFull, payload);
+  }
+
+  private async Task SendDeviceConfiguration(string deviceId) {
+    // Get device
+    var device = await _supabase.GetDevice(deviceId);
+    if (device is null) throw new Exception("Send Device Configuration Error: Device does not exist.");
+    // Get list of components
+    var componentList = await _supabase.GetComponentListForDevice(device.Id);
+    // For each component, get list of options
+    foreach (var component in componentList) {
+      string topic = $"to/{deviceId}/{component.Name}/configuration";
+      string payload = "{";
+      var optionList = await _supabase.GetOptionListForComponent(component.Id);
+      // For each option, get value and send
+      foreach (var optionBase in optionList) {
+        switch(optionBase.Type) {
+          case "number": {
+            payload += $"\"{optionBase.Name}\": ";
+            var option = await _supabase.GetNumberOptionFromOption(optionBase.Id);
+            if (option is not null) {
+              if (option.Value is not null) {
+                payload += $"{option.Value}";
+              } else {
+                payload += $"{option.Default}";
+              }
+            }
+            break;
+          }
+          case "boolean": {
+            payload += $"\"{optionBase.Name}\": ";
+            var option = await _supabase.GetBooleanOptionFromOption(optionBase.Id);
+            if (option is not null) {
+              if (option.Value is not null) {
+                payload += (bool)option.Value ? "true" : "false";
+              } else {
+                payload += option.Default ? "true" : "false";
+              }
+            }
+            break;
+          }
+          case "trigger": {
+            // Do nothing
+            break;
+          }
+          default: {
+            throw new Exception("Unsupported option type.");
+          }
+        }
+        payload += ',';
+      }
+      payload = payload.TrimEnd(',') + "}";
+      var message = new MqttApplicationMessageBuilder()
+        .WithTopic(topic)
+        .WithPayload(payload)
+        .Build();
+      Console.WriteLine($"Sending topic: {topic} with payload: {payload}");
+      await _client.PublishAsync(message);
+    }
   }
 }

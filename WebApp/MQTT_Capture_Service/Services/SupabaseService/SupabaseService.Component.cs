@@ -12,6 +12,10 @@ public partial class SupabaseService {
     }
   }
 
+  public async Task<IEnumerable<ComponentDbRow>> GetComponentListForDevice(long deviceId) {
+    return (await Client.From<ComponentDbRow>().Where(c => c.DeviceId == deviceId).Get()).Models;
+  }
+
   private async Task<ComponentDbRow> CreateComponentForDevice(long deviceId, string componentName, ConfigurationJson configuration) {
     var component = new ComponentDbRow() {
       Name = componentName,

@@ -13,4 +13,6 @@ public class OptionNumberDbRow : BaseModel {
   public string Units { get; set; } = string.Empty;
   [Column("default")]
   public int Default { get; set; }
+  [Column("value")]
+  public int? Value { get; set; }
 }

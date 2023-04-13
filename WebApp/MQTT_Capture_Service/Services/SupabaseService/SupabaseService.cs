@@ -71,6 +71,10 @@ public partial class SupabaseService {
     await Client.From<UnknownMessageDbRow>().Insert(unknownMessage);
   }
 
+  public async Task<DeviceDbRow?> GetDevice(string deviceId) {
+    return (await Client.From<DeviceDbRow>().Where(d => d.DeviceId == deviceId).Get()).Models.FirstOrDefault();
+  }
+
   private async Task<List<DeviceDbRow>> GetDeviceListFromDatabase() {
     return (await Client.From<DeviceDbRow>().Get()).Models;
   }

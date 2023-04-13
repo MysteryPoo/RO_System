@@ -2,6 +2,19 @@
 using Capture.DbRow;
 
 public partial class SupabaseService {
+
+  public async Task<IEnumerable<OptionDbRow>> GetOptionListForComponent(long componentId) {
+    return (await Client.From<OptionDbRow>().Where(o => o.ComponentId == componentId).Get()).Models;
+  }
+
+  public async Task<OptionNumberDbRow?> GetNumberOptionFromOption(long optionId) {
+    return (await Client.From<OptionNumberDbRow>().Where(o => o.OptionId == optionId).Get()).Models.FirstOrDefault();
+  }
+
+  public async Task<OptionBooleanDbRow?> GetBooleanOptionFromOption(long optionId) {
+    return (await Client.From<OptionBooleanDbRow>().Where(o => o.OptionId == optionId).Get()).Models.FirstOrDefault();
+  }
+
   private async Task CreateOrUpdateOptionForComponent(long componentId, OptionJson option) {
     OptionDbRow? existingOption = (await Client.From<OptionDbRow>().Where(o => o.ComponentId == componentId && o.Name == option.Name).Get()).Models.FirstOrDefault();
     var optionDb = existingOption is null ? await CreateOptionForComponent(componentId, option) : await UpdateOptionForComponent(existingOption, option);
