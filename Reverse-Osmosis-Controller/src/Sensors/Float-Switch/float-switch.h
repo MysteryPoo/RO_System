@@ -20,11 +20,12 @@
 
 class SystemLog;
 class MQTTClient;
+class MqttQueue;
 
 class FloatSwitch : public IComponent, public ISensor, public IHeartbeatReporter, public IConfigurable, public ISubCallback {
 public:
-    FloatSwitch(int pin, SystemLog &logger);
-    FloatSwitch(int pin, SystemLog &logger, MQTTClient* mqtt);
+    FloatSwitch(int pin, SystemLog &logger, MqttQueue& mqttQueue);
+    FloatSwitch(int pin, SystemLog &logger, MQTTClient* mqtt, MqttQueue& mqttQueue);
 
     // IComponent
     virtual void Update() override;
@@ -37,6 +38,7 @@ public:
     // ISubCallback
     virtual void Callback(char* topic, uint8_t* payload, unsigned int length) override;
     virtual void OnConnect(bool connectSuccess, MQTTClient* mqtt) override;
+    virtual String GetName() const override;
 
 private:
     int pin;
@@ -57,7 +59,8 @@ private:
 
 protected:
     SystemLog &logger;
-    
+    MQTTClient* mqttClient = nullptr;
+    MqttQueue& mqttQueue;
 };
 
 #endif

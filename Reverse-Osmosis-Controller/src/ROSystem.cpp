@@ -1,8 +1,11 @@
 
 #include "ROSystem.h"
 #include "application.h"
+#include "Sensors/ISensor.h"
 #include "relay.h"
 #include "system-log.h"
+#include "mqtt-client.h"
+#include "mqtt-queue.h"
 
 #define FLUSH_TIMER_MS 300000
 #define PUMP_INLET_DELAY_MS 5000
@@ -13,12 +16,13 @@
 #define WARNING_DELAY 60000
 #define COMPONENT_NAME "ro-system"
 
-ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger) :
+ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger, MqttQueue& mqttQueue) :
     state(ROSystem::BOOT),
     pump(pump),
     inlet(inlet),
     flush(flush),
     logger(logger),
+    mqttQueue(mqttQueue),
     flushedToday(false),
     totalPumpTime(0),
     totalPumpRuns(0),
@@ -35,12 +39,13 @@ ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger) :
     
 }
 
-ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger, MQTTClient* mqtt) :
-    ROSystem(pump, inlet, flush, logger)
+ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger, MQTTClient* mqtt, MqttQueue& mqttQueue) :
+    ROSystem(pump, inlet, flush, logger, mqttQueue)
 {
     if (nullptr != mqtt)
     {
         mqtt->RegisterCallbackListener(this);
+        this->mqttClient = mqtt;
     }
 }
 
@@ -102,7 +107,7 @@ void ROSystem::Callback(char* topic, uint8_t* payload, unsigned int length)
     memcpy(p, payload, length);
     p[length] = '\0';
 
-    if (strcmp(topic, "to/" + System.deviceID() + "/configuration/ro-system"))
+    if (strcmp(topic, "to/" + System.deviceID() + "/ro-system/configuration"))
     {
         return;
     }
@@ -115,7 +120,7 @@ void ROSystem::OnConnect(bool connectSuccess, MQTTClient* mqtt)
 {
     if (nullptr != mqtt)
     {
-        mqtt->Subscribe("configuration/ro-system/#", MQTT::EMQTT_QOS::QOS1);
+        mqtt->Subscribe("ro-system/configuration", MQTT::EMQTT_QOS::QOS1);
         JSONBufferWriter message = SystemLog::createBuffer(512);
         message.beginObject();
         message.name("display").value("RO System");
@@ -140,7 +145,8 @@ void ROSystem::OnConnect(bool connectSuccess, MQTTClient* mqtt)
         .endObject()
         .endArray();
         message.endObject();
-        mqtt->Publish("configuration/ro-system", message.buffer());
+        //mqtt->Publish("configuration/ro-system", message.buffer());
+        mqttQueue.PushPayload("configuration/" COMPONENT_NAME, message.buffer());
         delete[] message.buffer();
     }
 }
@@ -213,13 +219,12 @@ void ROSystem::requestState(ROSystem::State newState, const char* requestReason)
 void ROSystem::requestState(ROSystem::State newState, String requestReason)
 {
     String error;
-    String message;
 
     bool isAlreadyInState = newState == this->state;
 
-    JSONBufferWriter jsonMessage = SystemLog::createBuffer(2048);
-    jsonMessage.beginObject();
-    jsonMessage.name("event").value("state-request");
+    JSONBufferWriter writer = SystemLog::createBuffer(2048);
+    writer.beginObject()
+    .name("datetime").value(Particle.connected() ? Time.now() : 0);
     switch(newState)
     {
         case ROSystem::IDLE:
@@ -233,7 +238,7 @@ void ROSystem::requestState(ROSystem::State newState, String requestReason)
             {
                 error = "Failed to deactivate the pump.";
             }
-            jsonMessage.name("state").value("IDLE");
+            writer.name("state").value("IDLE");
             break;
         case ROSystem::FLUSH:
             error = "";
@@ -254,7 +259,7 @@ void ROSystem::requestState(ROSystem::State newState, String requestReason)
             {
                 error = "System is currently disabled.";
             }
-            jsonMessage.name("state").value("FLUSH");
+            writer.name("state").value("FLUSH");
             break;
         case ROSystem::FILL:
             error = "";
@@ -273,23 +278,24 @@ void ROSystem::requestState(ROSystem::State newState, String requestReason)
             {
                 error = "System is currently disabled.";
             }
-            jsonMessage.name("state").value("FILL");
+            writer.name("state").value("FILL");
             break;
         default:
             logger.error("ROSystem was requested to enter an invalid state!");
-            jsonMessage.name("state").value(this->getStateString());
-            jsonMessage.name("success").value(false);
+            writer.name("state").value(this->getStateString());
+            writer.name("success").value(false);
     }
 
     if (isAlreadyInState)
     {
         error = "System attempted to change into state it was already in.";
     }
-    jsonMessage.name("success").value(!isAlreadyInState && this->state == newState);
-    jsonMessage.name("requestReason").value(requestReason);
-    jsonMessage.name("failureReason").value(error);
-    jsonMessage.endObject();
-    logger.pushMessage("system/state-request", jsonMessage.buffer());
+    writer.name("success").value(!isAlreadyInState && this->state == newState);
+    writer.name("requestReason").value(requestReason);
+    writer.name("failureReason").value(error);
+    writer.endObject();
+    this->mqttClient->Publish(COMPONENT_NAME "/state-request", writer.buffer());
+    delete[] writer.buffer();
 }
 
 bool ROSystem::activatePump()
@@ -465,4 +471,9 @@ void ROSystem::configureFlushDuration(int duration)
     {
         this->flushDuration = (unsigned int) duration;
     }
+}
+
+String ROSystem::GetName() const
+{
+    return COMPONENT_NAME;
 }

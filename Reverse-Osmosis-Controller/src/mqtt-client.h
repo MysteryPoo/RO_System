@@ -20,6 +20,7 @@ public:
   virtual void Update() override;
   // ISubCallback
   virtual void Callback(char*, uint8_t*, unsigned int) override;
+  virtual String GetName() const override;
 private:
   MQTT client;
   uint8_t ipAddress[4] = {0, 0, 0, 0};

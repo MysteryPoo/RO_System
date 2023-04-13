@@ -11,16 +11,16 @@
 class SystemLog;
 class IHeartbeatReporter;
 class MQTTClient;
+class MqttQueue;
 
 class HeartbeatManager: public IComponent, public IConfigurable, public ISubCallback
 {
 public:
-  HeartbeatManager(SystemLog& logger);
-  HeartbeatManager(SystemLog& logger, MQTTClient* mqtt);
+  HeartbeatManager(SystemLog& logger, MQTTClient* mqttClient, MqttQueue& mqttQueue);
   
   void RegisterReporter(String name, IHeartbeatReporter*);
   void SetPeriod(unsigned long newPeriod) { this->updatePeriod = newPeriod; }
-  void ForceHeartbeat(); // TODO : Make this const
+  bool ForceHeartbeat() const; // TODO : Make this const
 
   // IComponent
   virtual void Update() override;
@@ -29,14 +29,16 @@ public:
   // ISubCallback
   virtual void Callback(char* topic, uint8_t* payload, unsigned int length) override;
   virtual void OnConnect(bool connectSuccess, MQTTClient* mqtt) override;
+  virtual String GetName() const override;
 
 private:
   SystemLog& logger;
+  MqttQueue& mqttQueue;
   unsigned long updatePeriod;
 
   std::vector<IHeartbeatReporter*> reporters;
 
-  void sendHeartbeat();
+  bool sendHeartbeat() const;
 
   // IConfigurable
   virtual void fireConfigurationMessage() const override {};

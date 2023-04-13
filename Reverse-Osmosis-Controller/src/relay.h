@@ -20,6 +20,7 @@
 #include "application.h"
 #include "IConfigurable.h"
 
+class MqttQueue;
 class SystemLog;
 
 class Relay : public IConfigurable
@@ -36,7 +37,7 @@ public:
         ON,
         OFF
     };
-    Relay(Name name, SystemLog &logger, int pin, bool activeLow = false);
+    Relay(Name name, SystemLog& logger, MqttQueue& mqtt, int pin, bool activeLow = false);
     void set(const Relay::State state);
     const Relay::State get() const {return this->state;}
 
@@ -45,9 +46,10 @@ public:
 
 private:
     Name name;
+    SystemLog& logger;
+    MqttQueue& mqtt;
     int pin;
     bool activeLow;
-    SystemLog &logger;
     State state;
 
     const String toString() const;

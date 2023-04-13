@@ -7,6 +7,7 @@
 #define MQTT_PORT 1883
 #define MQTT_UDP_DISCOVER_PORT 1882
 #define MQTT_UDP_LISTEN_PORT 11882
+#define COMPONENT_NAME "mqtt-client"
 
 MQTTClient::MQTTClient()
 : connected(false)
@@ -99,7 +100,7 @@ void MQTTClient::Update()
         bool connectionSuccess = this->client.connect("sparkclient_" + String(Time.now()), username, password);
         if (this->client.isConnected())
         {
-          this->client.publish("from/" + System.deviceID() + "/status", "feature-refresh");
+          this->announceFeatures();
           for(ISubCallback* listener : this->listeners)
           {
             listener->OnConnect(connectionSuccess, this);
@@ -133,7 +134,8 @@ void MQTTClient::discoverMQTT()
 {
   udp.begin(MQTT_UDP_LISTEN_PORT);
   this->discovery = true;
-  IPAddress broadcast(255, 255, 255, 255);
+  //IPAddress broadcast(224, 0, 0, 116);
+  IPAddress broadcast(255,255,255,255);
   udp.beginPacket(broadcast, MQTT_UDP_DISCOVER_PORT);
   udp.write("Looking for MQTT server");
   udp.endPacket();
@@ -164,10 +166,13 @@ void MQTTClient::parseIpFromString(const char* cstringToParse)
 void MQTTClient::announceFeatures()
 {
     JSONBufferWriter message = SystemLog::createBuffer(512);
-    message.beginObject();
-    message.name("features").beginArray()
+    message.beginArray();
+    for(ISubCallback* listener : this->listeners)
+    {
+      message.value(listener->GetName());
+    }
+    /*
     .value("ro-system")
-    .value("heartbeat")
 #ifdef FEATURE_FLOATSWITCH
     .value("float-switch")
 #endif
@@ -177,9 +182,14 @@ void MQTTClient::announceFeatures()
 #ifdef FEATURE_FLOATMETER
     .value("float-meter")
 #endif
-    .endArray();
-    message.endObject();
+    */
+    message.endArray();
 
     this->Publish("feature-list", message.buffer());
     delete[] message.buffer();
+}
+
+String MQTTClient::GetName() const
+{
+  return COMPONENT_NAME;
 }

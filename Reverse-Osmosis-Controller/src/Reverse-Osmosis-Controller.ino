@@ -39,6 +39,7 @@ SYSTEM_THREAD(ENABLED)
 #include "relay.h"
 #include "ROSystem.h"
 #include "mqtt-client.h"
+#include "mqtt-queue.h"
 #include <vector>
 #include <map>
 #ifdef FEATURE_ULTRASONIC
@@ -69,22 +70,25 @@ Timer restartSystem(RESTART_DELAY, sysRestart_Helper, true);
 
 std::vector<IComponent*> componentsToUpdate;
 MQTTClient mqttClient;
-SystemLog syslog(mqttClient);
-HeartbeatManager heartbeatManager(syslog, &mqttClient);
-Relay pump(Relay::Name::COMPONENT_PUMP, syslog, D7, true);
-Relay inlet(Relay::Name::COMPONENT_INLETVALVE, syslog, D6, true);
-Relay flush(Relay::Name::COMPONENT_FLUSHVALVE, syslog, D5, true);
-ROSystem ro(pump, inlet, flush, syslog, &mqttClient);
+MqttQueue mqttQueue(mqttClient);
+SystemLog syslog(mqttClient, mqttQueue);
+HeartbeatManager heartbeatManager(syslog, &mqttClient, mqttQueue);
+Relay pump(Relay::Name::COMPONENT_PUMP, syslog, mqttQueue, D7, true);
+Relay inlet(Relay::Name::COMPONENT_INLETVALVE, syslog, mqttQueue, D6, true);
+Relay flush(Relay::Name::COMPONENT_FLUSHVALVE, syslog, mqttQueue, D5, true);
+ROSystem ro(pump, inlet, flush, syslog, &mqttClient, mqttQueue);
 
 #ifdef FEATURE_ULTRASONIC
 UltraSonic us(A3, A4, syslog);
 #endif
 #ifdef FEATURE_FLOATSWITCH
-FloatSwitch fs(D4, syslog, &mqttClient);
+FloatSwitch fs(D4, syslog, &mqttClient, mqttQueue);
 #endif
 #ifdef FEATURE_FLOATMETER
 FloatMeter fm(A5, syslog);
 #endif
+
+bool initialHeartbeatSent = false;
 
 void setup()
 {
@@ -120,6 +124,7 @@ void setup()
 #endif
 
     componentsToUpdate.push_back(&mqttClient);
+    componentsToUpdate.push_back(&mqttQueue);
     componentsToUpdate.push_back(&syslog);
     componentsToUpdate.push_back(&heartbeatManager);
     componentsToUpdate.push_back(&ro);
@@ -134,8 +139,6 @@ void setup()
     message.endObject();
 
     syslog.pushMessage("system/restart", message.buffer());
-
-    heartbeatManager.ForceHeartbeat();
 }
 
 void loop()
@@ -144,6 +147,8 @@ void loop()
     {
         sysRestart("");
     }
+
+    if (!initialHeartbeatSent) initialHeartbeatSent = heartbeatManager.ForceHeartbeat();
 
     for(IComponent* component : componentsToUpdate)
     {

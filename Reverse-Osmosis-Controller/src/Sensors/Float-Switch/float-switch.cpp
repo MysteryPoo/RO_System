@@ -3,12 +3,13 @@
 #include "float-switch.h"
 #include "system-log.h"
 #include "mqtt-client.h"
+#include "mqtt-queue.h"
 
 #define TIME_CONSIDERED_STABLE_MS 1000
 #define TIME_CONSIDERED_UNSTABLE_MS 10000
 #define COMPONENT_NAME "float-switch"
 
-FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
+FloatSwitch::FloatSwitch(int pin, SystemLog &logger, MqttQueue& mqttQueue) :
     pin(pin),
     stableTimer(millis() + 1000),
     lastStatus(false),
@@ -17,7 +18,8 @@ FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
     stable(false),
     firedWarning(false),
     isReliable(true),
-    logger(logger)
+    logger(logger),
+    mqttQueue(mqttQueue)
 {
 #ifndef TESTING
     pinMode(pin, INPUT_PULLDOWN);
@@ -25,11 +27,13 @@ FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
     this->fireConfigurationMessage();
 }
 
-FloatSwitch::FloatSwitch(int pin, SystemLog &logger, MQTTClient* mqtt) : FloatSwitch(pin, logger)
+FloatSwitch::FloatSwitch(int pin, SystemLog &logger, MQTTClient* mqtt, MqttQueue& mqttQueue)
+: FloatSwitch(pin, logger, mqttQueue)
 {
     if (nullptr != mqtt)
     {
         mqtt->RegisterCallbackListener(this);
+        this->mqttClient = mqtt;
     }
 }
 
@@ -62,7 +66,7 @@ void FloatSwitch::Callback(char* topic, uint8_t* payload, unsigned int length)
     memcpy(p, payload, length);
     p[length] = '\0';
 
-    if (strcmp(topic, "to/" + System.deviceID() + "/configuration/float-switch"))
+    if (strcmp(topic, "to/" + System.deviceID() + "/" COMPONENT_NAME "/configuration"))
     {
         return;
     }
@@ -76,7 +80,7 @@ void FloatSwitch::OnConnect(bool success, MQTTClient* mqtt)
 {
     if (nullptr != mqtt)
     {
-        mqtt->Subscribe("configuration/float-switch/#", MQTT::EMQTT_QOS::QOS1);
+        mqtt->Subscribe(COMPONENT_NAME "/configuration", MQTT::EMQTT_QOS::QOS1);
         JSONBufferWriter message = SystemLog::createBuffer(512);
         message.beginObject();
         message.name("display").value("Float Switch");
@@ -94,7 +98,8 @@ void FloatSwitch::OnConnect(bool success, MQTTClient* mqtt)
         .endObject()
         .endArray();
         message.endObject();
-        mqtt->Publish("configuration/float-switch", message.buffer());
+        //mqtt->Publish("configuration/" COMPONENT_NAME, message.buffer());
+        mqttQueue.PushPayload("configuration/" COMPONENT_NAME, message.buffer());
         delete[] message.buffer();
     }
 }
@@ -151,17 +156,18 @@ void FloatSwitch::sample()
 
 void FloatSwitch::fireConfigurationMessage() const
 {
+    if (this->mqttClient == nullptr) return;
 #ifndef TESTING
     int pinValue = this->pin;
 #else
     String pinValue("Simulated");
 #endif
-    JSONBufferWriter writer = SystemLog::createBuffer(256);
+    JSONBufferWriter writer = SystemLog::createBuffer(128);
     writer.beginObject();
-    writer.name("event").value("configuration");
     writer.name("pin").value(pinValue);
     writer.endObject();
-    this->logger.pushMessage(COMPONENT_NAME, writer.buffer());
+    this->mqttQueue.PushPayload(COMPONENT_NAME "/pin", writer.buffer());
+    delete[] writer.buffer();
 }
 
 void FloatSwitch::ReportHeartbeat(JSONBufferWriter& writer) const
@@ -170,6 +176,11 @@ void FloatSwitch::ReportHeartbeat(JSONBufferWriter& writer) const
     .name("float").value(this->isFull())
     .name("reliable").value(this->isReliable)
     .endObject();
+}
+
+String FloatSwitch::GetName() const
+{
+    return COMPONENT_NAME;
 }
 
 #ifdef TESTING
@@ -181,6 +192,6 @@ void FloatSwitch::setStatus(bool status)
     writer.beginObject();
     writer.name("status").value(status);
     writer.endObject();
-    this->logger.pushMessage("float-switch", writer.buffer());
+    this->logger.pushMessage(COMPONENT_NAME, writer.buffer());
 }
 #endif
