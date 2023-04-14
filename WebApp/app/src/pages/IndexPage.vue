@@ -1,6 +1,6 @@
 <template>
   <q-page class="full-width column items-center">
-    <device-select class="col" @device-selected="print" />
+    <device-select class="col" @device-selected="onDeviceSelected" />
     <device-status :show="true" :device-id="deviceId" :average-fill-time="0" />
     <example-component
       class="col"
@@ -47,7 +47,7 @@ const meta = ref<Meta>({
 
 const deviceId: Ref<string | undefined> = ref('');
 
-function print(value: string | undefined) : void {
+function onDeviceSelected(value: string | undefined) : void {
   console.log(value ?? 'undefined');
   deviceId.value = value;
 }

@@ -1,14 +1,44 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js';
+import { Database } from 'app/lib/database.types';
 
-export class SupabaseService {
+export const supabase = createClient<Database>(
+  process.env.SUPABASE_URL ?? '',
+  process.env.SUPABASE_ANON_KEY ?? '',
+);
 
-  private _supabaseUrl = process.env.SUPABASE_URL ?? '';
-  private _supabaseAnonKey = process.env.SUPABASE_ANON_KEY ?? '';
-  private _client: SupabaseClient | null = null;
+export type DeviceList = Database['public']['Tables']['device_list']
+export type DeviceListRow = DeviceList['Row']
+export async function getDevices() {
+  return await supabase.from<'device_list', DeviceList>('device_list').select()
+}
 
-  constructor() {
-    this._client = createClient(this._supabaseUrl, this._supabaseAnonKey);
-  }
+type DevicesResponse = Awaited<ReturnType<typeof getDevices>>
+export type DevicesResponseSuccess = DevicesResponse['data']
+export type DevicesResponseError = DevicesResponse['error']
 
-  public get Client() { return this._client; }
+type HeartbeatFloatSwitch = Database['public']['Tables']['heartbeat_floatswitch']
+type HeartbeatRoSystem = Database['public']['Tables']['heartbeat_rosystem']
+type HeartbeatWifi = Database['public']['Tables']['heartbeat_wifi']
+type HeartbeatBase = Database['public']['Tables']['heartbeat']
+export type Heartbeat = {
+  device: DeviceListRow,
+  base: HeartbeatBase['Row'],
+  floatSwitch: HeartbeatFloatSwitch['Row'] | null,
+  rosystem: HeartbeatRoSystem['Row'] | null,
+  wifi: HeartbeatWifi['Row'] | null,
+}
+export async function getHeartbeat(deviceId: string) {
+  const device = (await supabase.from<'device_list', DeviceList>('device_list').select().eq('device_id', deviceId).limit(1).single()).data;
+  const heartbeat = (await supabase.from<'heartbeat', HeartbeatBase>('heartbeat').select().eq('device_id', device?.id).order('received_at', { ascending: false }).limit(1).single()).data;
+  if (heartbeat == null) return null;
+  const heartbeatFloatSwitch = (await supabase.from<'heartbeat_floatswitch', HeartbeatFloatSwitch>('heartbeat_floatswitch').select().eq('heartbeat_id', heartbeat.id).limit(1).single()).data;
+  const heartbeatRoSystem = (await supabase.from<'heartbeat_rosystem', HeartbeatRoSystem>('heartbeat_rosystem').select().eq('heartbeat_id', heartbeat.id).limit(1).single()).data;
+  const hearbeatWifi = (await supabase.from<'heartbeat_wifi', HeartbeatWifi>('heartbeat_wifi').select().eq('heartbeat_id', heartbeat.id).limit(1).single()).data;
+  return {
+    device: device,
+    base: heartbeat,
+    floatSwitch: heartbeatFloatSwitch,
+    rosystem: heartbeatRoSystem,
+    wifi: hearbeatWifi,
+  } as Heartbeat;
 }

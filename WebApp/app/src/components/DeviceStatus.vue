@@ -2,14 +2,14 @@
     <div v-if="show">
       <q-card style="background: linear-gradient(to bottom right, rgb(27, 34, 99), rgb(17, 20, 48));">
         <q-card-section>
-          <div class="text-h1">Current State</div>
+          <div class="text-h1">Current Status</div>
         </q-card-section>
         <q-card-section>
-          {{ deviceStatus ? currentState : "Offline" }}
+          <div class="text-h3">{{ deviceStatus ? currentState : "Offline" }}</div>
           <div v-show="deviceStatus">
             <div class="text-h6">Firmware Version: <q-chip color="primary">{{ version }}</q-chip></div>
             <p>System is <span :style="enabled ? 'color: green' : 'color: red'">{{ enabled ? "Enabled" : "Disabled" }}</span></p>
-            <i v-show="wifiSignal" class="pi pi-wifi" :style=wifiColor>{{ Math.round(wifiSignal) }}%</i>
+            <i v-show="wifiSignal" :style=wifiColor><q-icon :name="matWifi" />{{ Math.round(wifiSignal) }}%</i>
           </div>
         </q-card-section>
       </q-card>
@@ -35,6 +35,8 @@
 import { ref, Ref, onBeforeUnmount, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDeviceService, UnauthorizedException } from '../services/device.service';
+import { getHeartbeat } from 'src/services/supabase.service';
+import { matWifi } from '@quasar/extras/material-icons';
 
 interface IState {
   datetime: number;
@@ -60,7 +62,7 @@ const version = ref('');
 const enabled = ref(true);
 const wifiSignal = ref(0);
 const wifiQuality = ref(0);
-const refreshInterval : Ref<number | undefined> = ref(undefined);
+const refreshInterval : Ref<number | NodeJS.Timeout | undefined> = ref(undefined);
 const wifiColor = computed( () => {
   if (wifiQuality.value > 75) {
     return 'color: green';
@@ -80,7 +82,7 @@ const initializeRefreshInterval = (deviceId : string | undefined) => {
       refreshInterval.value = undefined;
     }
     refreshInterval.value = setInterval( () => {
-      callApi(deviceId);
+      getStatus();
     }, 10000);
 };
 
@@ -107,6 +109,17 @@ const callApi = async (deviceId: string | undefined) => {
     }
 };
 
+async function getStatus() {
+  if (props.deviceId == undefined) return;
+  const heartbeat = await getHeartbeat(props.deviceId);
+  if (heartbeat == undefined) return;
+  deviceStatus.value = heartbeat.device.online;
+  version.value = heartbeat.base.version;
+  enabled.value = heartbeat.rosystem?.enabled ?? false;
+  wifiSignal.value = heartbeat.wifi?.signal ?? 0;
+  wifiQuality.value = heartbeat.wifi?.quality ?? 0;
+}
+
 onMounted( () => {
   initializeRefreshInterval(props.deviceId);
 });
@@ -120,7 +133,7 @@ onBeforeUnmount( () => {
 });
 
 watch( () => props.deviceId, (newDeviceId) => {
-  callApi(newDeviceId);
+  getStatus();
   initializeRefreshInterval(newDeviceId);
 });
 

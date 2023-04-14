@@ -10,7 +10,9 @@
     "format": "prettier --write \"**/*.{js,ts,vue,scss,html,md,json}\" --ignore-path .gitignore",
     "test": "echo \"No test specified\" && exit 0",
     "dev": "quasar dev",
-    "build": "quasar build"
+    "build": "quasar build",
+    "supabase": "supabase",
+    "supabase:generate": "supabase start && supabase gen types typescript --linked > lib/database.types.ts"
   },
   "dependencies": {
     "@quasar/extras": "^1.0.0",
@@ -30,6 +32,7 @@
     "eslint-config-prettier": "^8.1.0",
     "eslint-plugin-vue": "^9.0.0",
     "prettier": "^2.5.1",
+    "supabase": "^1.50.4",
     "typescript": "^4.5.4"
   },
   "engines": {

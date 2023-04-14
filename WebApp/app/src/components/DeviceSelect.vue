@@ -11,15 +11,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, Ref } from 'vue';
-import { useDeviceService, type DeviceService } from '../services/device.service';
+import { inject, ref, onMounted, Ref } from 'vue';
 import { useDeviceStore, type IDevice } from 'src/stores/device-store';
 import { useQuasar } from 'quasar';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { DeviceListRow, getDevices } from 'src/services/supabase.service';
 
 const emit = defineEmits<{
     (e: 'device-selected', id: string | undefined): void
 }>();
-const api : DeviceService = useDeviceService(process.env.API_URL);
+const supabase: SupabaseClient | undefined = inject('supabase');
 const store = useDeviceStore();
 const quasar = useQuasar();
 const selectedDevice : Ref<IDevice | undefined> = ref(undefined);
@@ -31,7 +32,9 @@ onMounted( async () => {
     selectedDevice.value = store.knownDevices.find( element => element.id === store.deviceId);
     try {
         // Update from server
-        store.knownDevices = await api.getDeviceList();
+        if (supabase == undefined) throw new Error('Supabase is unavailable.');
+        const deviceList = await getDevices();
+        updateDeviceStore(deviceList.data);
         selectedDevice.value = store.knownDevices.find( element => element.id === store.deviceId);
         store.deviceId = selectedDevice.value?.id;
         store.save();
@@ -54,7 +57,7 @@ onMounted( async () => {
     }
 });
 
-const onDeviceSelected = (device : IDevice) => {
+function onDeviceSelected(device : IDevice) {
     store.deviceId = device.id;
     store.save();
     quasar.notify({
@@ -64,5 +67,14 @@ const onDeviceSelected = (device : IDevice) => {
     })
     emit('device-selected', device.id);
 };
+
+function updateDeviceStore(response: Array<DeviceListRow> | null) {
+    if (response == null) return;
+    const deviceList : IDevice[] = [];
+    response.forEach(element => {
+        deviceList.push({ id: element.device_id, name: element.device_name });
+    });
+    store.knownDevices = deviceList;
+}
 
 </script>
