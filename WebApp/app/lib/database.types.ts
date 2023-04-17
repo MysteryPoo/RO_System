@@ -267,6 +267,35 @@ export interface Database {
           website?: string | null
         }
       }
+      state_request: {
+        Row: {
+          datetime: string
+          device_id: number
+          failure_reason: string | null
+          id: number
+          request_reason: string | null
+          state: string
+          success: boolean
+        }
+        Insert: {
+          datetime: string
+          device_id: number
+          failure_reason?: string | null
+          id?: number
+          request_reason?: string | null
+          state: string
+          success: boolean
+        }
+        Update: {
+          datetime?: string
+          device_id?: number
+          failure_reason?: string | null
+          id?: number
+          request_reason?: string | null
+          state?: string
+          success?: boolean
+        }
+      }
       unknown_message: {
         Row: {
           created_at: string
