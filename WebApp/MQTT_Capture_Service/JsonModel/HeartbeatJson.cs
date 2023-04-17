@@ -1,4 +1,6 @@
 
+using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 public class HeartbeatWiFiJson {
@@ -40,8 +42,9 @@ public class HeartbeatDataJson {
 }
 
 public class HeartbeatJson {
-  [JsonPropertyName("datettime")]
-  public DateTimeOffset Datetime { get; set; } = DateTime.Now;
+  [JsonPropertyName("datetime")]
+  [JsonConverter(typeof(DateTimeParticleToDateTimeOffset))]
+  public DateTimeOffset Datetime { get; set; }
   [JsonPropertyName("data")]
   public HeartbeatDataJson? Data { get; set; }
 }

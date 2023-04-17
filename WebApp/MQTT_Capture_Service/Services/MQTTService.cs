@@ -29,6 +29,7 @@ public class MQTTService {
       var optionBase = (await _supabase.Client.From<OptionDbRow>().Where(o => o.Id == option!.OptionId).Get()).Models.First();
       var component = (await _supabase.Client.From<ComponentDbRow>().Where(c => c.Id == optionBase.ComponentId).Get()).Models.First();
       var device = (await _supabase.Client.From<DeviceDbRow>().Where(d => d.Id == component.DeviceId).Get()).Models.First();
+      Console.WriteLine("Sending device config, because option_boolean_list table changed.");
       await SendDeviceConfiguration(device.DeviceId);
     });
     _supabase.Client.From<OptionNumberDbRow>().On(ChannelEventType.Update, async (sender, args) => {
@@ -36,6 +37,7 @@ public class MQTTService {
       var optionBase = (await _supabase.Client.From<OptionDbRow>().Where(o => o.Id == option!.OptionId).Get()).Models.First();
       var component = (await _supabase.Client.From<ComponentDbRow>().Where(c => c.Id == optionBase.ComponentId).Get()).Models.First();
       var device = (await _supabase.Client.From<DeviceDbRow>().Where(d => d.Id == component.DeviceId).Get()).Models.First();
+      Console.WriteLine("Sending device config, because option_number_list table changed.");
       await SendDeviceConfiguration(device.DeviceId);
     });
   }
@@ -84,6 +86,7 @@ public class MQTTService {
     });
   }
 
+  // TODO: Refactor into Processor classes. Maybe use a dictionary to register the processor based on topic[2]
   private async Task ProcessMessage(string[] topic, string? payload) {
     if (!topic[0].Equals("from")) throw new Exception("This processor is for 'from' topics only.");
     string deviceId = topic[1];
@@ -102,6 +105,10 @@ public class MQTTService {
       }
       case "romcon": {
         await ProcessLogger(topic, payload);
+        break;
+      }
+      case "ro-system": {
+        await ProcessRoSystem(topic, payload);
         break;
       }
       default:
@@ -126,6 +133,7 @@ public class MQTTService {
         break;
       }
       case "connected": {
+        Console.WriteLine("Sending configuration, because device just connected.");
         await SendDeviceConfiguration(deviceId);
         break;
       }
@@ -166,7 +174,11 @@ public class MQTTService {
   private async Task ProcessSystem(string[] topic, string? payload) {
     switch(topic[4]) {
       case "heartbeat": {
-        await ProcessHeartbeat(topic, payload);
+        try {
+          await ProcessHeartbeat(topic, payload);
+        } catch (Exception e) {
+          Console.WriteLine(e.Message);
+        }
         break;
       }
     }
@@ -176,7 +188,11 @@ public class MQTTService {
     if (payload is null) throw new Exception("No payload present for heartbeat.");
     string deviceId = topic[1];
     var heartbeat = JsonSerializer.Deserialize<HeartbeatJson>(payload);
-    await _supabase.InsertHeartbeat(deviceId, heartbeat!);
+    try {
+      await _supabase.InsertHeartbeat(deviceId, heartbeat!);
+    } catch (Exception e) {
+      Console.WriteLine(e.Message);
+    }
   }
 
   private async Task ProcessUnknownMessage(string[] topic, string? payload) {
@@ -241,6 +257,27 @@ public class MQTTService {
         .Build();
       Console.WriteLine($"Sending topic: {topic} with payload: {payload}");
       await _client.PublishAsync(message);
+    }
+  }
+
+  private async Task ProcessRoSystem(string[] topic, string? payload) {
+    try {
+      if (payload is null) return;
+      string deviceId = topic[1];
+      switch(topic[3]) {
+        case "state-request": {
+          StateRequestJson? json = JsonSerializer.Deserialize<StateRequestJson>(payload);
+          if (json is not null) {
+            await _supabase.InsertStateRequest(deviceId, json);
+          }
+          break;
+        }
+        default:
+          await ProcessUnknownMessage(topic, payload);
+          break;
+      }
+    } catch (Exception e) {
+      Console.WriteLine(e.Message);
     }
   }
 }
