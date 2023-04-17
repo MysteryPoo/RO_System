@@ -294,7 +294,7 @@ void ROSystem::requestState(ROSystem::State newState, String requestReason)
     writer.name("requestReason").value(requestReason);
     writer.name("failureReason").value(error);
     writer.endObject();
-    this->mqttClient->Publish(COMPONENT_NAME "/state-request", writer.buffer());
+    this->mqttQueue.PushPayload(COMPONENT_NAME "/state-request", writer.buffer());
     delete[] writer.buffer();
 }
 
