@@ -15,14 +15,19 @@
       </q-toolbar>
 
       <q-tabs align="left">
-        <q-route-tab to="/auth" label="Sign In" />
-        <q-route-tab to="/page2" label="Page Two" />
-        <q-route-tab to="/page3" label="Page Three" />
+        <q-route-tab to="/status" label="Status" />
+        <q-route-tab to="/configuration" label="Configuration" />
       </q-tabs>
     </q-header>
 
     <q-page-container>
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <transition
+          enter-active-class="animated backInLeft"
+        >
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </q-page-container>
 
     <q-footer class="bg-grey-8">

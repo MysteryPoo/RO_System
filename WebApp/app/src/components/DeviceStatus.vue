@@ -53,7 +53,6 @@ const wifiColor = computed( () => {
     return 'color: red';
   }
 });
-const db = supabase;
 const heartbeatChannel : Ref<RealtimeChannel | undefined> = ref(undefined);
 
 async function getStatus() {
@@ -89,9 +88,10 @@ watch( () => props.deviceId, () => {
 
 async function SubscribeToHeartbeats() {
   UnSubscribeToHeartbeats();
+  if (!props.deviceId) return;
   const device = await (await supabase.from('device_list').select().eq('device_id', props.deviceId).limit(1).single()).data;
   if (!device) return;
-  heartbeatChannel.value = db.channel('schema-db-changes').on(
+  heartbeatChannel.value = supabase.channel('schema-db-changes').on(
     'postgres_changes',
     { event: 'INSERT', schema: 'public', table: 'heartbeat', filter: `device_id=eq.${device.id}`},
     async payload => {

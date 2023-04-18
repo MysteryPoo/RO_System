@@ -1,15 +1,10 @@
 import { defineStore } from 'pinia';
-
-export interface IDevice {
-  id? : string;
-  name? : string;
-}
+import { DeviceListRow } from 'src/services/supabase.service';
 
 export const useDeviceStore = defineStore('device', {
   state: () => ({
     deviceId: undefined as string | undefined,
-    selectedDevice: undefined as IDevice | undefined,
-    knownDevices: [] as IDevice[],
+    knownDevices: [] as DeviceListRow[],
   }),
   getters: {},
   actions: {

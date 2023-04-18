@@ -65,14 +65,15 @@
 <script setup lang="ts">
 import { useAuthStore } from '../stores/auth-store';
 import { matAccountCircle, matPassword, matLogin } from '@quasar/extras/material-icons';
-import { SupabaseService } from 'src/services/supabase.service';
-import { inject, ref, Ref } from 'vue';
+import { supabase } from 'src/services/supabase.service';
+import { ref, Ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { QInput, useQuasar } from 'quasar';
 import { AuthResponse } from '@supabase/supabase-js';
 
 const $q = useQuasar();
-const supabase: SupabaseService | undefined = inject('supabase');
 const $auth = useAuthStore();
+const router = useRouter();
 
 const email = ref('');
 const emailRef : Ref<QInput | null> = ref(null);
@@ -87,19 +88,27 @@ async function login() : Promise<void> {
 
   try {
     isWaiting.value = true;
-  } catch (e) {
-    supabase?.Client?.auth.signInWithPassword({
+    const response = await supabase.auth.signInWithPassword({
       email: email.value,
       password: password.value,
-    })
+    });
+    $auth.user = response?.data.user;
+    $auth.session = response?.data.session;
+    console.log(response);
+  } catch (e) {
+    console.log(e);
   } finally {
     isWaiting.value = false;
+    if ($auth.session) {
+      router.push('/');
+    }
   }
 }
 
 async function create() : Promise<void> {
   validateForm();
-  const response: AuthResponse | undefined = await supabase?.Client?.auth.signUp({
+  isWaiting.value = true;
+  const response: AuthResponse | undefined = await supabase.auth.signUp({
     email: email.value,
     password: password.value,
   });
@@ -112,6 +121,7 @@ async function create() : Promise<void> {
   console.log(response);
   $auth.user = response?.data.user;
   $auth.session = response?.data.session;
+  isWaiting.value = false;
 }
 
 function validateForm() : boolean {
