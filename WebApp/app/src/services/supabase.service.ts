@@ -46,7 +46,7 @@ export async function getHeartbeat(deviceId: string) {
 }
 
 
-type ComponentBase = Database['public']['Tables']['component_list']
+export type ComponentBase = Database['public']['Tables']['component_list']
 export type Component = ComponentBase['Row']
 export async function getComponents(deviceId: string) {
   if (deviceId == '') return;
@@ -63,3 +63,10 @@ export async function getStateRequests(deviceId: string) {
   if (device == null) return null;
   return (await supabase.from<'state_request', StateRequestType>('state_request').select().eq('device_id', device.id).order('datetime', { ascending: false })).data;
 }
+
+export type OptionListBaseType = Database['public']['Tables']['option_list']
+export type OptionListBase = OptionListBaseType['Row']
+export type OptionNumberListType = Database['public']['Tables']['option_number_list']
+export type OptionNumber = OptionNumberListType['Row']
+export type OptionBooleanListType = Database['public']['Tables']['option_boolean_list']
+export type OptionBoolean = OptionNumberListType['Row']

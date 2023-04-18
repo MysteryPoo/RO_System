@@ -202,20 +202,20 @@ export interface Database {
         Row: {
           component_id: number
           id: number
-          name: string | null
-          type: string | null
+          name: string
+          type: string
         }
         Insert: {
           component_id: number
           id?: number
-          name?: string | null
-          type?: string | null
+          name: string
+          type: string
         }
         Update: {
           component_id?: number
           id?: number
-          name?: string | null
-          type?: string | null
+          name?: string
+          type?: string
         }
       }
       option_number_list: {
