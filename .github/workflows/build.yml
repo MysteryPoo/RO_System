@@ -42,3 +42,12 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/romcon-capture:latest,${{ secrets.DOCKERHUB_USERNAME }}/romcon-capture:${{ github.ref_name }}
+      -
+        name: Rabbit MQ Service (Build & Push)
+        uses: docker/build-push-action@v4
+        with:
+          context: ./WebApp
+          file: ./WebApp/rabbitmq/Dockerfile
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/romcon-rabbitmq:latest,${{ secrets.DOCKERHUB_USERNAME }}/romcon-rabbitmq:${{ github.ref_name }}
