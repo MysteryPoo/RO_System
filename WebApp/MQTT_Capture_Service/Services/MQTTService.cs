@@ -11,6 +11,8 @@ public class MQTTService {
   private IMqttClient _client;
   private MqttClientOptions _options;
   private SupabaseService _supabase;
+  private Supabase.Realtime.RealtimeChannel? _triggerChannel;
+  private Supabase.Realtime.RealtimeBroadcast<TriggerJson>? _broadcast;
 
   public MQTTService(string? mqttUsername, string? mqttPassword, string? endPoint, SupabaseService supabase) {
     if (mqttUsername is null || mqttPassword is null) {
@@ -40,10 +42,29 @@ public class MQTTService {
       Console.WriteLine("Sending device config, because option_number_list table changed.");
       await SendDeviceConfiguration(device.DeviceId);
     });
+    _triggerChannel = _supabase.Client.Realtime.Channel("triggers");
+    _broadcast = _triggerChannel.Register<TriggerJson>();
+    _broadcast.OnBroadcast += async (sender, _) => {
+      var data = _broadcast.Current();
+      if (data is not null &&
+          data.Payload is not null &&
+          data.Event is not null &&
+          data.Event.Equals("trigger")) {
+        string topic = $"to/{data.Payload["device_id"]}/{data.Payload["component_name"]}/configuration";
+        string payload = "{" + $"\"{data.Payload["trigger_name"]}\": true" + "}";
+        var message = new MqttApplicationMessageBuilder()
+          .WithTopic(topic)
+          .WithPayload(payload)
+          .Build();
+        Console.WriteLine($"Sending topic: {topic} with payload: {payload}");
+        await _client.PublishAsync(message);
+      }
+    };
   }
 
   public async Task StartAsync() {
     if (_client is null) return;
+    if (_triggerChannel is not null) await _triggerChannel.Subscribe();
     await Task.Factory.StartNew(async () => {
       Console.WriteLine("Starting MQTT connection.");
       _client.ApplicationMessageReceivedAsync += async delegate(MqttApplicationMessageReceivedEventArgs args) {

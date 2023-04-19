@@ -25,7 +25,7 @@
               </div>
             </template>
             <template v-if="option.type === 'trigger'">
-              <q-btn :label="capitalize(option.name)" color="primary" />
+              <q-btn :label="capitalize(option.name)" color="primary" @click="trigger(option, component)" />
             </template>
           </div>
         </template>
@@ -37,7 +37,6 @@
 <script setup lang="ts">
 import DeviceSelect from 'src/components/DeviceSelect.vue';
 import { useDeviceStore } from 'src/stores/device-store';
-import { useRouteBasedOnSession } from 'src/composables/routeBasedOnSession';
 import { supabase, OptionListBaseType, ComponentBase, OptionNumberListType, OptionBooleanListType } from 'src/services/supabase.service';
 import { Database } from 'lib/database.types';
 import { reactive, ref, Ref } from 'vue';
@@ -73,7 +72,6 @@ type Configuration = {
 }
 
 const deviceStore = useDeviceStore();
-useRouteBasedOnSession();
 
 const deviceId: Ref<string | undefined> = ref('');
 const configuration: Configuration = reactive({ components: [] });
@@ -184,6 +182,28 @@ async function resetOption(option: Option) {
       break;
     }
   }
+}
+
+function trigger(option: Option, component: Component) {
+  const channel = supabase.channel('triggers', {
+    config: {
+      broadcast: { ack: true },
+    },
+  });
+  channel.subscribe( async (status) => {
+    if (status === 'SUBSCRIBED') {
+      const begin = performance.now();
+      await channel.send({
+        type: 'broadcast',
+        event: 'trigger',
+        payload: { device_id: deviceId.value, component_name: component.name, trigger_name: option.name }
+      });
+      const end = performance.now()
+      console.log(`Latency is ${end - begin} milliseconds`);
+      channel.unsubscribe();
+    }
+  })
+  
 }
 
 function capitalize(string : string) {

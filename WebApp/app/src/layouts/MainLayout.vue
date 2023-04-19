@@ -46,7 +46,6 @@
 
 <script setup lang="ts">
 import MainLogo from 'components/MainLogo.vue';
-// TODO : Router Guard for Auth instead of doing it the way I'm doing it now
 </script>
 
 <style scoped lang="scss">

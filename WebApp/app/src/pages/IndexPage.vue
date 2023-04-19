@@ -8,10 +8,7 @@
 <script setup lang="ts">
 import DeviceSelect from 'src/components/DeviceSelect.vue';
 import DeviceStatus from 'src/components/DeviceStatus.vue';
-import { useRouteBasedOnSession } from 'src/composables/routeBasedOnSession';
 import { ref, Ref } from 'vue';
-
-useRouteBasedOnSession();
 
 const deviceId: Ref<string | undefined> = ref('');
 
