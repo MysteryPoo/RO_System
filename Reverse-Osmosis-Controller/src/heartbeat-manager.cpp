@@ -9,15 +9,17 @@
 #define THIRTY_SECONDS_MS 30000
 #define ONE_MINUTE_MS 60000
 #define COMPONENT_NAME "heartbeat"
+#ifdef TESTING
+#define DEFAULT_UPDATE_PERIOD THIRTY_SECONDS_MS
+#else
+#define DEFAULT_UPDATE_PERIOD ONE_MINUTE_MS * 10
+#endif
 
 HeartbeatManager::HeartbeatManager(SystemLog& logger, MQTTClient* mqtt, MqttQueue& mqttQueue)
 : logger(logger)
 , mqttQueue(mqttQueue)
-#ifndef TESTING
-, updatePeriod(ONE_MINUTE_MS * 10)
-#else
-, updatePeriod(THIRTY_SECONDS_MS)
-#endif
+, updatePeriod(DEFAULT_UPDATE_PERIOD)
+, lastUpdate(-DEFAULT_UPDATE_PERIOD)
 {
   if (nullptr != mqtt)
   {
@@ -33,14 +35,11 @@ void HeartbeatManager::RegisterReporter(String name, IHeartbeatReporter* reporte
 void HeartbeatManager::Update()
 {
   unsigned long curMillis = millis();
-  static unsigned long timer = curMillis;
-  if (curMillis < timer + updatePeriod)
+  if (curMillis - this->lastUpdate >= this->updatePeriod)
   {
-    return;
+    sendHeartbeat();
+    this->lastUpdate = curMillis;
   }
-  timer = curMillis;
-  
-  sendHeartbeat();
 }
 
 void HeartbeatManager::Configure(JSONValue json)
@@ -97,7 +96,7 @@ void HeartbeatManager::OnConnect(bool connectSuccess, MQTTClient* mqtt)
     .name("name").value("Rate")
     .name("type").value("number")
     .name("units").value("millisecond")
-    .name("default").value(this->updatePeriod)
+    .name("default").value(DEFAULT_UPDATE_PERIOD)
     .endObject()
     .endArray();
     message.endObject();

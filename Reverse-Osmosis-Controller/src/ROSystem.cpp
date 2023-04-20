@@ -26,11 +26,10 @@ ROSystem::ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger, M
     flushedToday(false),
     totalPumpTime(0),
     totalPumpRuns(0),
-    lastPumpTime(0),
+    lastPumpTime(-PUMP_FREQUENCY_MS),
     flushStartedTime(0),
     flushDuration(FLUSH_TIMER_MS),
     pumpRunTime(0),
-    firstPump(true),
     enabled(true),
     fillStartDistance(FILL_START_DISTANCE_CM),
     fillStopDistance(FILL_STOP_DISTANCE_CM),
@@ -56,7 +55,7 @@ void ROSystem::AddSensor(ISensor* sensor)
 
 void ROSystem::Update()
 {
-    bool tankIsFull = false;
+    bool tankIsFull = sensors.size() == 0;
     for (ISensor* sensor : sensors)
     {
         tankIsFull |= sensor->isFull();
@@ -145,7 +144,6 @@ void ROSystem::OnConnect(bool connectSuccess, MQTTClient* mqtt)
         .endObject()
         .endArray();
         message.endObject();
-        //mqtt->Publish("configuration/ro-system", message.buffer());
         mqttQueue.PushPayload("configuration/" COMPONENT_NAME, message.buffer());
         delete[] message.buffer();
     }
@@ -154,7 +152,6 @@ void ROSystem::OnConnect(bool connectSuccess, MQTTClient* mqtt)
 void ROSystem::update(bool tankFull)
 {
     unsigned long curMillis = millis();
-    static unsigned long lastAttempt = curMillis;
 
     switch(this->state)
     {
@@ -162,7 +159,7 @@ void ROSystem::update(bool tankFull)
             requestState(ROSystem::State::IDLE, "Initial boot.");
             break;
         case ROSystem::IDLE:
-            if(curMillis < lastAttempt + WARNING_DELAY)
+            if(!this->isPumpReady())
             {
                 return; // Bail out early if we're checking inside Idle too often.
             }
@@ -178,12 +175,11 @@ void ROSystem::update(bool tankFull)
                 {
                     this->requestState(ROSystem::State::FLUSH, "Conditions met.");
                 }
-                lastAttempt = curMillis;
             }
             break;
         case ROSystem::FLUSH:
             // End flushing routine after designated time
-            if(!this->enabled || tankFull || curMillis > this->flushStartedTime + this->flushDuration)
+            if(!this->enabled || tankFull || curMillis - this->flushStartedTime >= this->flushDuration)
             {
                 this->flushedToday = true;
                 if (!tankFull)
@@ -194,7 +190,6 @@ void ROSystem::update(bool tankFull)
                 {
                     this->requestState(ROSystem::State::IDLE, this->enabled ? "Flush complete." : "System has been disabled.");
                 }
-                lastAttempt = curMillis;
             }
             break;
         case ROSystem::FILL:
@@ -202,7 +197,6 @@ void ROSystem::update(bool tankFull)
             if(!this->enabled || tankFull)
             {
                 this->requestState(ROSystem::State::IDLE, this->enabled ? "Tank is full." : "System has been disabled.");
-                lastAttempt = curMillis;
             }
             break;
         default:
@@ -246,7 +240,7 @@ void ROSystem::requestState(ROSystem::State newState, String requestReason)
             {
                 if(activatePump())
                 {
-                    flush.set(Relay::State::ON);
+                    this->flush.set(Relay::State::ON);
                     this->flushStartedTime = millis();
                     this->state = ROSystem::State::FLUSH;
                 }
@@ -267,6 +261,7 @@ void ROSystem::requestState(ROSystem::State newState, String requestReason)
             {
                 if(activatePump())
                 {
+                    this->flush.set(Relay::State::OFF);
                     this->state = ROSystem::State::FILL;
                 }
                 else
@@ -303,8 +298,16 @@ bool ROSystem::activatePump()
     unsigned long curMillis = millis();
     static unsigned long lastWarning = curMillis;
     
-    if(this->pump.get() == Relay::State::OFF || this->firstPump || this->lastPumpTime + this->pumpCooldown < curMillis)
+    if(this->pump.get() == Relay::State::OFF)
     {
+        if (!this->isPumpReady()) {
+            if (curMillis - lastWarning >= WARNING_DELAY)
+            {
+                this->logger.warning("Attempted to activate the pump during cooldown period.");
+                lastWarning = curMillis;
+            }
+            return false;
+        }
         SINGLE_THREADED_BLOCK()
         {
             this->inlet.set(Relay::State::ON);
@@ -316,20 +319,16 @@ bool ROSystem::activatePump()
             this->pump.set(Relay::State::ON);
         }
         ++this->totalPumpRuns;
-        this->firstPump = false;
         return true;
     }
-    else if(Relay::State::ON == this->pump.get() && Relay::State::ON == this->inlet.get())
+    else if(/*Relay::State::ON == this->pump.get() && */Relay::State::ON == this->inlet.get())
     {
         return true;
     }
     else
     {
-        if(curMillis > lastWarning + WARNING_DELAY)
-        {
-            this->logger.warning("Attempted to activate the pump too frequently.");
-            lastWarning = curMillis;
-        }
+        this->deactivatePump();
+        this->logger.error("Pump was on, but inlet was closed. Shutting down pump.");
         return false;
     }
 }
@@ -351,6 +350,11 @@ bool ROSystem::deactivatePump()
         }
     }
     return true;
+}
+
+bool ROSystem::isPumpReady() const
+{
+    return millis() - this->lastPumpTime >= this->pumpCooldown;
 }
 
 void ROSystem::shutdown()
@@ -378,26 +382,6 @@ String ROSystem::getStateString()
     return stateString;
 }
 
-#ifdef TESTING
-int ROSystem::configureState(String newState)
-{
-    const String reasonCloud = "DEBUG Cloud Requested.";
-    if(newState.toLowerCase() == "fill")
-    {
-        this->requestState(ROSystem::State::FILL, reasonCloud);
-    }
-    if(newState.toLowerCase() == "flush")
-    {
-        this->requestState(ROSystem::State::FLUSH, reasonCloud);
-    }if(newState.toLowerCase() == "idle")
-    {
-        this->requestState(ROSystem::State::IDLE, reasonCloud);
-    }
-
-    return 0;
-}
-#endif
-
 int ROSystem::setFillDistances(String csvFill)
 {
     int indexOfComma = csvFill.indexOf(',');
@@ -421,6 +405,26 @@ int ROSystem::setFillDistances(String csvFill)
 
     return -1;
 }
+
+#ifdef TESTING
+int ROSystem::configureState(String newState)
+{
+    const String reasonCloud = "DEBUG Cloud Requested.";
+    if(newState.toLowerCase() == "fill")
+    {
+        this->requestState(ROSystem::State::FILL, reasonCloud);
+    }
+    if(newState.toLowerCase() == "flush")
+    {
+        this->requestState(ROSystem::State::FLUSH, reasonCloud);
+    }if(newState.toLowerCase() == "idle")
+    {
+        this->requestState(ROSystem::State::IDLE, reasonCloud);
+    }
+
+    return 0;
+}
+#endif
 
 int ROSystem::configureFillDistances(spark::JSONValue& distances)
 {

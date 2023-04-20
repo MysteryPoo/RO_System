@@ -138,7 +138,8 @@ void setup()
     message.name("data").value(resetData);
     message.endObject();
 
-    syslog.pushMessage("system/restart", message.buffer());
+    mqttQueue.PushPayload("system/restart", message.buffer());
+    delete[] message.buffer();
 }
 
 void loop()
@@ -166,7 +167,7 @@ int sysRestart(String data)
 
 void sysRestart_Helper()
 {
-    if(syslog.isEmpty() && ROSystem::State::IDLE == ro.getState())
+    if(ROSystem::State::IDLE == ro.getState() && (syslog.isEmpty() || !mqttClient.isConnected()))
     {
         System.reset(UserReason::DAILY);
     }

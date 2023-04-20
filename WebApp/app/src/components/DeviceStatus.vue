@@ -10,7 +10,8 @@
             <RemainingTime v-if="currentState === 'FLUSH' || currentState === 'FILL'" :startTime="stateStartTime" :estimatedElapsedSeconds="currentState === 'FLUSH' ? 300 : props.averageFillTime" />
             <div class="text-h6">Firmware Version: <q-chip color="primary">{{ version }}</q-chip></div>
             <div class="text-h6">System is <span :style="enabled ? 'color: green' : 'color: red'">{{ enabled ? "Enabled" : "Disabled" }}</span></div>
-            <i v-show="wifiSignal" :style=wifiColor><q-icon :name="matWifi" />{{ Math.round(wifiSignal) }}%</i>
+            <div class="text-h6" v-if="float !== undefined">Float is <span :style="float ? 'color: red' : 'color: green'">{{ float ? "Full" : "Not Full" }}</span></div>
+            <i class="text-h6" v-show="wifiSignal" :style=wifiColor><q-icon :name="matWifi" />{{ Math.round(wifiSignal) }}%</i>
             <FeatureList :deviceId="props.deviceId" />
           </div>
         </q-card-section>
@@ -42,6 +43,7 @@ const currentState = ref('Unknown');
 const stateStartTime : Ref<Date | undefined> = ref(undefined);
 const version = ref('');
 const enabled = ref(true);
+const float : Ref<boolean | undefined> = ref(undefined);
 const wifiSignal = ref(0);
 const wifiQuality = ref(0);
 const wifiColor = computed( () => {
@@ -69,6 +71,7 @@ function updateHeartbeatInfo(heartbeat: Heartbeat) {
   deviceStatus.value = heartbeat.device.online;
   version.value = heartbeat.base.version;
   enabled.value = heartbeat.rosystem?.enabled ?? false;
+  float.value = heartbeat.floatSwitch?.float;
   wifiSignal.value = heartbeat.wifi?.signal ?? 0;
   wifiQuality.value = heartbeat.wifi?.quality ?? 0;
 }
@@ -100,9 +103,7 @@ async function SubscribeToHeartbeats() {
       // TODO : Utilize the payload
       if (props.deviceId) {
         isLoadingFirstTime.value = true;
-        const heartbeat = await getHeartbeat(props.deviceId);
-        if (heartbeat) updateHeartbeatInfo(heartbeat);
-        isLoadingFirstTime.value = false;
+        getStatus();
       }
     })
     .subscribe();

@@ -28,6 +28,7 @@ private:
   UDP udp;
   bool connected;
   bool discovery;
+  unsigned long lastUpdate;
 
   void discoverMQTT();
   void parseIpFromString(const char* cstring);

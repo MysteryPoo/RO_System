@@ -80,7 +80,6 @@ private:
     unsigned long flushStartedTime;
     unsigned int flushDuration;
     unsigned long pumpRunTime;
-    bool firstPump;
     std::vector<ISensor*> sensors;
 
     // Configuration
@@ -95,6 +94,7 @@ private:
     bool activatePump();
     bool deactivatePump();
     int setFillDistances(String csvFill);
+    bool isPumpReady() const;
 
 #ifdef TESTING
     int configureState(String newState);

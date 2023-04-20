@@ -44,7 +44,7 @@ void SystemLog::Update()
 void SystemLog::publishLog()
 {
     unsigned long curMillis = millis();
-    if(mqttClient.isConnected() && curMillis > lastBurst + BURST_DELAY && !this->isEmpty())
+    if(mqttClient.isConnected() && curMillis - lastBurst >= BURST_DELAY && !this->isEmpty())
     {
         if(this->isFull())
         {

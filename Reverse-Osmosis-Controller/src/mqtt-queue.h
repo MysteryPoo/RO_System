@@ -22,6 +22,8 @@ private:
   std::queue<MqttPayload*> queue;
   void PublishQueue();
   void FlushQueue();
+
+  unsigned long lastUpdate;
 };
 
 #endif

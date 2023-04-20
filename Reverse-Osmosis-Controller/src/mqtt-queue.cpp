@@ -8,6 +8,7 @@
 
 MqttQueue::MqttQueue(MQTTClient& mqttClient)
 : mqttClient(mqttClient)
+, lastUpdate(-UPDATE_PERIOD)
 {
 
 }
@@ -26,12 +27,11 @@ void MqttQueue::PushPayload(String topic, String payload)
 void MqttQueue::Update()
 {
   unsigned long curMillis = millis();
-  static unsigned long timer = curMillis;
-  if (curMillis < timer + UPDATE_PERIOD || !WiFi.ready() || !this->mqttClient.isConnected())
+  if (!(curMillis - this->lastUpdate >= UPDATE_PERIOD) || !WiFi.ready() || !this->mqttClient.isConnected())
   {
     return;
   }
-  timer = curMillis;
+  this->lastUpdate = curMillis;
 
   this->PublishQueue();
 }

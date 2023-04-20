@@ -35,6 +35,7 @@ private:
   SystemLog& logger;
   MqttQueue& mqttQueue;
   unsigned long updatePeriod;
+  unsigned long lastUpdate;
 
   std::vector<IHeartbeatReporter*> reporters;
 

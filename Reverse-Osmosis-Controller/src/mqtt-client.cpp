@@ -12,6 +12,7 @@
 MQTTClient::MQTTClient()
 : connected(false)
 , discovery(false)
+, lastUpdate(-MQTTClient_DEFAULT_PERIOD)
 {
   this->client.Initialize(NULL, this->ipAddress, MQTT_PORT, MQTT_DEFAULT_KEEPALIVE, MQTT_PACKET_SIZE, NULL, true);
   this->client.RegisterCallbackListener(this);
@@ -40,17 +41,19 @@ void MQTTClient::Subscribe(const char* topic, MQTT::EMQTT_QOS qos)
 void MQTTClient::Update()
 {
   unsigned long curMillis = millis();
-  static unsigned long timer = curMillis;
-  if (curMillis < timer + MQTTClient_DEFAULT_PERIOD || !WiFi.ready())
+  if (!WiFi.ready())
   {
     return;
   }
-  timer = curMillis;
 
   if (this->connected && this->client.isConnected())
   {
     this->client.loop();
-    this->connected = this->client.publish("from/" + System.deviceID() + "/status", "online");
+    if (curMillis - this->lastUpdate >= MQTTClient_DEFAULT_PERIOD)
+    {
+      this->connected = this->client.publish("from/" + System.deviceID() + "/status", "online");
+      this->lastUpdate = curMillis;
+    }
   }
   else
   {
@@ -171,18 +174,6 @@ void MQTTClient::announceFeatures()
     {
       message.value(listener->GetName());
     }
-    /*
-    .value("ro-system")
-#ifdef FEATURE_FLOATSWITCH
-    .value("float-switch")
-#endif
-#ifdef FEATURE_ULTRASONIC
-    .value("ultra-sonic")
-#endif
-#ifdef FEATURE_FLOATMETER
-    .value("float-meter")
-#endif
-    */
     message.endArray();
 
     this->Publish("feature-list", message.buffer());
