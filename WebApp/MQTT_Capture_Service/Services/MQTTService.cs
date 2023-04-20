@@ -24,7 +24,7 @@ public class MQTTService {
     _supabase = supabase;
     _factory = new MqttFactory();
     _client = _factory.CreateMqttClient();
-    _options = new MqttClientOptionsBuilder().WithTcpServer("localhost").WithCredentials(mqttUsername, mqttPassword).WithClientId("Capture_Service").Build();
+    _options = new MqttClientOptionsBuilder().WithTcpServer(endPoint).WithCredentials(mqttUsername, mqttPassword).WithClientId("Capture_Service").Build();
     // This stuff needs a refactor but it works for now
     _supabase.Client.From<OptionBooleanDbRow>().On(ChannelEventType.Update, async (sender, args) => {
       var option = args.Response!.Model<OptionBooleanDbRow>();
