@@ -1,44 +1,51 @@
-
-#include "mqtt-client.h"
+#include "global-defines.h"
+#include "IComponent.h"
+#include "Configuration/IConfiguration.h"
+#include "IOnConnect.h"
+#include "Utility/JsonBuffer.h"
+#include "mqtt-manager.h"
+#include "mqtt-payload.h"
+#include "MqttSubscriber.h"
+#include "mqtt-queue.h"
+#include "SimpleBroker.h"
 #include "system-log.h"
 
-#define MQTTClient_DEFAULT_PERIOD 10000
+#define STATUS_REPORT_PERIOD 10000
+#define DISCOVERY_PERIOD 5000
 #define MQTT_PACKET_SIZE 2048
 #define MQTT_PORT 1883
 #define MQTT_UDP_DISCOVER_PORT 1882
 #define MQTT_UDP_LISTEN_PORT 11882
-#define COMPONENT_NAME "mqtt-client"
 
-MQTTClient::MQTTClient()
-: connected(false)
-, discovery(false)
-, lastUpdate(-MQTTClient_DEFAULT_PERIOD)
+MqttManager::MqttManager(SimpleBroker& broker, MqttQueue& queue)
+: broker(broker)
+, queue(queue)
+, connected(false)
+, discovery(true)
+, lastUpdate(-STATUS_REPORT_PERIOD)
+, lastDiscovery(-DISCOVERY_PERIOD)
 {
   this->client.Initialize(NULL, this->ipAddress, MQTT_PORT, MQTT_DEFAULT_KEEPALIVE, MQTT_PACKET_SIZE, NULL, true);
-  this->client.RegisterCallbackListener(this);
+  this->client.AttachMqttManager(this);
 }
 
-bool MQTTClient::Publish(const char* topic, const String payload)
-{
-  bool success = this->client.publish("from/" + System.deviceID() + "/" + topic, payload);
-  if (!success) {
-    this->connected = false;
-  }
-  return success;
-}
-
-void MQTTClient::RegisterCallbackListener(ISubCallback* listener)
-{
-  this->client.RegisterCallbackListener(listener);
-  this->listeners.push_back(listener);
-}
-
-void MQTTClient::Subscribe(const char* topic, MQTT::EMQTT_QOS qos)
+void MqttManager::Subscribe(MqttSubscriber* subscriber, const char* topic, MQTT::EMQTT_QOS qos)
 {
   this->client.subscribe("to/" + System.deviceID() + "/" + topic, qos);
+  this->broker.Subscribe(subscriber, topic);
 }
 
-void MQTTClient::Update()
+void MqttManager::AttachConfiguration(IConfiguration* configuration)
+{
+  this->configurations.push_back(configuration);
+}
+
+void MqttManager::AttachOnConnect(IOnConnect* listener)
+{
+  this->onConnectListeners.push_back(listener);
+}
+
+void MqttManager::Update()
 {
   unsigned long curMillis = millis();
   if (!WiFi.ready())
@@ -49,7 +56,13 @@ void MQTTClient::Update()
   if (this->connected && this->client.isConnected())
   {
     this->client.loop();
-    if (curMillis - this->lastUpdate >= MQTTClient_DEFAULT_PERIOD)
+    MqttPayload* front = this->queue.FrontPayload();
+    if (nullptr != front)
+    {
+      this->publish(front->topic, front->payload);
+      this->queue.PopPayload();
+    }
+    if (curMillis - this->lastUpdate >= STATUS_REPORT_PERIOD)
     {
       this->connected = this->client.publish("from/" + System.deviceID() + "/status", "online");
       this->lastUpdate = curMillis;
@@ -57,7 +70,7 @@ void MQTTClient::Update()
   }
   else
   {
-    if (this->discovery)
+    if (this->discovery && curMillis - this->lastDiscovery >= DISCOVERY_PERIOD)
     {
       discoverMQTT();
       char message[1028];
@@ -103,15 +116,16 @@ void MQTTClient::Update()
         bool connectionSuccess = this->client.connect("sparkclient_" + String(Time.now()), username, password);
         if (this->client.isConnected())
         {
-          this->announceFeatures();
-          for(ISubCallback* listener : this->listeners)
+          this->queue.PushPayload("status", "connnected");
+          this->queue.PushPayload("version", VERSION_STRING);
+          this->announceConfigurations();
+          for(IOnConnect* listener : this->onConnectListeners)
           {
-            listener->OnConnect(connectionSuccess, this);
+            listener->OnConnect(connectionSuccess);
           }
           this->connected = true;
           this->discovery = false;
           udp.stop();
-          this->client.publish("from/" + System.deviceID() + "/status", "connected");
         }
         else
         {
@@ -126,14 +140,31 @@ void MQTTClient::Update()
   }
 }
 
-void MQTTClient::Callback(char* topic, uint8_t* buffer, unsigned int bufferLength)
+void MqttManager::OnMqttMessage(char* topic, uint8_t* buffer, unsigned int bufferLength)
 {
-  char p[bufferLength + 1];
-  memcpy(p, buffer, bufferLength);
-  p[bufferLength] = '\0';
+  this->broker.RouteMessage(topic, buffer, bufferLength);
 }
 
-void MQTTClient::discoverMQTT()
+void MqttManager::PushPayload(String topic, String payload)
+{
+  this->queue.PushPayload(topic, payload);
+}
+
+void MqttManager::announceConfigurations()
+{
+    JSONBufferWriter message = JsonBuffer::createBuffer(512);
+    message.beginArray();
+    for(IConfiguration* configuration : this->configurations)
+    {
+      message.value(configuration->GetName());
+    }
+    message.endArray();
+
+    this->publish("feature-list", message.buffer());
+    delete[] message.buffer();
+}
+
+void MqttManager::discoverMQTT()
 {
   udp.begin(MQTT_UDP_LISTEN_PORT);
   this->discovery = true;
@@ -142,10 +173,11 @@ void MQTTClient::discoverMQTT()
   udp.beginPacket(broadcast, MQTT_UDP_DISCOVER_PORT);
   udp.write("Looking for MQTT server");
   udp.endPacket();
+  this->lastDiscovery = millis();
 }
 
 // Code from https://forum.arduino.cc/t/get-ip-address-from-string/478308/20
-void MQTTClient::parseIpFromString(const char* cstringToParse)
+void MqttManager::parseIpFromString(const char* cstringToParse)
 {
   uint8_t idx = 0;
   byte part = 0;
@@ -166,21 +198,7 @@ void MQTTClient::parseIpFromString(const char* cstringToParse)
   }
 }
 
-void MQTTClient::announceFeatures()
+void MqttManager::publish(const char* topic, const String payload)
 {
-    JSONBufferWriter message = SystemLog::createBuffer(512);
-    message.beginArray();
-    for(ISubCallback* listener : this->listeners)
-    {
-      message.value(listener->GetName());
-    }
-    message.endArray();
-
-    this->Publish("feature-list", message.buffer());
-    delete[] message.buffer();
-}
-
-String MQTTClient::GetName() const
-{
-  return COMPONENT_NAME;
+  this->connected = this->client.publish("from/" + System.deviceID() + "/" + topic, payload);
 }

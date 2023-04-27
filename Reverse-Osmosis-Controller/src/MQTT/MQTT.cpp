@@ -1,5 +1,5 @@
 #include "MQTT.h"
-#include "ISubCallback.h"
+#include "mqtt-manager.h"
 
 #define LOGGING
 
@@ -73,6 +73,8 @@ void MQTT::initialize(const char* domain, const uint8_t *ip, uint16_t port, int 
         this->domain = domain;
     this->port = port;
     this->keepalive = keepalive;
+
+    this->mqttManager = nullptr;
 
     // if maxpacketsize is over MQTT_MAX_PACKET_SIZE.
     this->maxpacketsize = (maxpacketsize <= MQTT_MAX_PACKET_SIZE ? MQTT_MAX_PACKET_SIZE : maxpacketsize);
@@ -553,9 +555,9 @@ void MQTT::clear() {
   lastInActivity = lastOutActivity = millis();
 }
 
-void MQTT::RegisterCallbackListener(ISubCallback *listener)
+void MQTT::AttachMqttManager(MqttManager* manager)
 {
-    this->callbackListeners.push_back(listener);
+    this->mqttManager = manager;
 }
 
 void MQTT::doCallbacks(char* topic, uint8_t* buffer, unsigned int bufferLength)
@@ -564,8 +566,8 @@ void MQTT::doCallbacks(char* topic, uint8_t* buffer, unsigned int bufferLength)
     {
         callback(topic, buffer, bufferLength);
     }
-    for (ISubCallback *listener : callbackListeners)
+    if (nullptr != this->mqttManager)
     {
-        listener->Callback(topic, buffer, bufferLength);
+        this->mqttManager->OnMqttMessage(topic, buffer, bufferLength);
     }
 }

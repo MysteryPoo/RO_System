@@ -34,12 +34,28 @@
 SYSTEM_THREAD(ENABLED)
 
 #include "global-defines.h"
+#include "IUpdateOnLoop.h"
 #include "system-log.h"
-#include "heartbeat-manager.h"
-#include "relay.h"
-#include "ROSystem.h"
-#include "mqtt-client.h"
-#include "mqtt-queue.h"
+// Wifi
+#include "Wifi/WifiModule.h"
+#include "Wifi/WifiReporter.h"
+// Relay
+#include "Relay/RelayEnums.h"
+#include "Relay/relay.h"
+#include "Relay/RelayConfiguration.h"
+#include "Relay/RelayReporter.h"
+// RoSystem
+#include "ROSystem/RoSystemEnum.h"
+#include "ROSystem/ROSystem.h"
+#include "ROSystem/RoSystemConfiguration.h"
+#include "ROSystem/RoSystemReporter.h"
+// Mqtt
+#include "MQTT/mqtt-manager.h"
+#include "MQTT/mqtt-queue.h"
+#include "MQTT/SimpleBroker.h"
+// Utility
+#include "Utility/JsonBuffer.h"
+// std
 #include <vector>
 #include <map>
 #ifdef FEATURE_ULTRASONIC
@@ -47,6 +63,8 @@ SYSTEM_THREAD(ENABLED)
 #endif
 #ifdef FEATURE_FLOATSWITCH
 #include "Sensors/Float-Switch/float-switch.h"
+#include "Sensors/Float-Switch/FloatSwitchConfiguration.h"
+#include "Sensors/Float-Switch/FloatSwitchReporter.h"
 #endif
 #ifdef FEATURE_FLOATMETER
 #include "Sensors/Float-Meter/float-meter.h"
@@ -68,54 +86,64 @@ ApplicationWatchdog *watchDog;
 unsigned long timeToRestart;
 Timer restartSystem(RESTART_DELAY, sysRestart_Helper, true);
 
-std::vector<IComponent*> componentsToUpdate;
-MQTTClient mqttClient;
-MqttQueue mqttQueue(mqttClient);
-SystemLog syslog(mqttClient, mqttQueue);
-HeartbeatManager heartbeatManager(syslog, &mqttClient, mqttQueue);
-Relay pump(Relay::Name::COMPONENT_PUMP, syslog, mqttQueue, D7, true);
-Relay inlet(Relay::Name::COMPONENT_INLETVALVE, syslog, mqttQueue, D6, true);
-Relay flush(Relay::Name::COMPONENT_FLUSHVALVE, syslog, mqttQueue, D5, true);
-ROSystem ro(pump, inlet, flush, syslog, &mqttClient, mqttQueue);
+std::vector<IUpdateOnLoop*> thingsToUpdate;
+SimpleBroker broker;
+MqttQueue mqttQueue;
+MqttManager mqttManager(broker, mqttQueue);
+WifiModule wifi;
+WifiReporter wifiReporter(&wifi, mqttManager);
+SystemLog syslog(mqttManager);
+Relay pump(RelayEnums::Name::COMPONENT_PUMP, syslog, mqttManager, D7, true);
+Relay inlet(RelayEnums::Name::COMPONENT_INLETVALVE, syslog, mqttManager, D6, true);
+Relay flush(RelayEnums::Name::COMPONENT_FLUSHVALVE, syslog, mqttManager, D5, true);
+ROSystem ro(pump, inlet, flush, syslog, mqttManager);
+
+RelayConfiguration pumpConfig(pump, mqttManager);
+RelayReporter pumpReporter(&pump, mqttManager);
+RelayConfiguration inletConfig(inlet, mqttManager);
+RelayReporter inletReporter(&inlet, mqttManager);
+RelayConfiguration flushConfig(flush, mqttManager);
+RelayReporter flushReporter(&flush, mqttManager);
+RoSystemConfiguration roConfig(ro, mqttManager);
+RoSystemReporter roReporter(&ro, mqttManager);
 
 #ifdef FEATURE_ULTRASONIC
 UltraSonic us(A3, A4, syslog);
 #endif
 #ifdef FEATURE_FLOATSWITCH
-FloatSwitch fs(D4, syslog, &mqttClient, mqttQueue);
+FloatSwitch fs(D4, syslog);
+FloatSwitchConfiguration fsConfig(fs, mqttManager);
+FloatSwitchReporter fsReporter(&fs, mqttManager);
 #endif
 #ifdef FEATURE_FLOATMETER
 FloatMeter fm(A5, syslog);
 #endif
-
-bool initialHeartbeatSent = false;
 
 void setup()
 {
     System.enableFeature(FEATURE_RESET_INFO);
     System.on(reset_pending, onResetPending);
     System.disableReset();
+    //WiFi.selectAntenna(ANT_AUTO);
     watchDog = new ApplicationWatchdog(60000, watchDogHandler, 1536);
     timeToRestart = millis() + (SECONDS_PER_DAY * 1000ul);
     
     Particle.function("reset", sysRestart);
-    heartbeatManager.RegisterReporter("ro-system", &ro);
 
 #ifdef FEATURE_FLOATSWITCH
     ro.AddSensor(&fs);
-    componentsToUpdate.push_back(&fs);
-    heartbeatManager.RegisterReporter("float-switch", &fs);
+    thingsToUpdate.push_back(&fs);
 #endif
 
 #ifdef FEATURE_ULTRASONIC
     us.cloudSetup();
-    componentsToUpdate.push_back(&us);
+    thingsToUpdate.push_back(&us);
     heartbeatManager.RegisterReporter("ultra-sonic", &us);
 #endif
 
 #ifdef FEATURE_FLOATMETER
     ro.AddSensor(&fm);
-    componentsToUpdate.push_back(&fm);
+    thingsToUpdate.push_back(&fm);
     heartbeatManager.RegisterReporter("float-meter", &fm);
 #endif
 
@@ -123,23 +151,11 @@ void setup()
     syslog.information("TEST MODE ENABLED");
 #endif
 
-    componentsToUpdate.push_back(&mqttClient);
-    componentsToUpdate.push_back(&mqttQueue);
-    componentsToUpdate.push_back(&syslog);
-    componentsToUpdate.push_back(&heartbeatManager);
-    componentsToUpdate.push_back(&ro);
+    thingsToUpdate.push_back(&wifi);
+    thingsToUpdate.push_back(&mqttManager);
+    thingsToUpdate.push_back(&ro);
 
-    uint32_t resetData = System.resetReasonData();
-
-    JSONBufferWriter message = SystemLog::createBuffer(2048);
-    message.beginObject();
-    message.name("event").value("restart");
-    message.name("reason").value(getResetReason(resetData));
-    message.name("data").value(resetData);
-    message.endObject();
-
-    mqttQueue.PushPayload("system/restart", message.buffer());
-    delete[] message.buffer();
+    reportRestartReason();
 }
 
 void loop()
@@ -149,17 +165,14 @@ void loop()
         sysRestart("");
     }
 
-    if (!initialHeartbeatSent) initialHeartbeatSent = heartbeatManager.ForceHeartbeat();
-
-    for(IComponent* component : componentsToUpdate)
+    for(IUpdateOnLoop* thing : thingsToUpdate)
     {
-        component->Update();
+        thing->Update();
     }
 }
 
 int sysRestart(String data)
 {
-    syslog.enabled = false;
     restartSystem.start();
     timeToRestart = Time.now() + SECONDS_PER_DAY;
     return 0;
@@ -167,7 +180,7 @@ int sysRestart(String data)
 
 void sysRestart_Helper()
 {
-    if(ROSystem::State::IDLE == ro.getState() && (syslog.isEmpty() || !mqttClient.isConnected()))
+    if(RoSystemEnum::State::IDLE == ro.GetState() && !mqttManager.isConnected())
     {
         System.reset(UserReason::DAILY);
     }
@@ -233,7 +246,21 @@ String getUserReason(int code)
 
 void onResetPending()
 {
-    ro.shutdown();
-    mqttClient.Publish("status", "offline");
+    ro.Shutdown();
+    mqttManager.PushPayload("status", "offline");
     System.enableReset();
+}
+
+void reportRestartReason()
+{
+    uint32_t resetData = System.resetReasonData();
+    JSONBufferWriter message = JsonBuffer::createBuffer(2048);
+    message.beginObject();
+    message.name("event").value("restart");
+    message.name("reason").value(getResetReason(resetData));
+    message.name("data").value(resetData);
+    message.endObject();
+
+    mqttQueue.PushPayload("system/restart", message.buffer());
+    delete[] message.buffer();
 }

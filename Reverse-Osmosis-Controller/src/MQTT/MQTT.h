@@ -103,7 +103,7 @@ bug fixed and features pull requests
 #endif /* DEBUG_MQTT_SERIAL_OUTPUT */
 
 // Forward declaration
-class ISubCallback;
+class MqttManager;
 
 
 class MQTT {
@@ -157,7 +157,7 @@ private:
     bool publishComplete(uint16_t messageid);
 
     void doCallbacks(char*, uint8_t*, unsigned int);
-    std::vector<ISubCallback*> callbackListeners;
+    MqttManager* mqttManager;
 
     class MutexLocker {
         MQTT * mqtt;
@@ -202,7 +202,7 @@ public:
     void Initialize(const char* domain, const uint8_t *ip, uint16_t port, int keepalive, int maxpacketsize, 
         void (*callback)(char*,uint8_t*,unsigned int), bool thread = false);
 
-    void RegisterCallbackListener(ISubCallback *listener);
+    void AttachMqttManager(MqttManager* manager);
 
     void setBroker(const char* domain, uint16_t port);
     void setBroker(const uint8_t *ip, uint16_t port);

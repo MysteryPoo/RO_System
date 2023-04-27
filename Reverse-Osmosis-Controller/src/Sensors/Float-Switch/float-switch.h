@@ -10,35 +10,25 @@
 #ifndef _FLOAT_SWITCH_
 #define _FLOAT_SWITCH_
 
-#include "application.h"
-#include "ICloud.h"
-#include "IComponent.h"
-#include "IConfigurable.h"
-#include "Sensors/ISensor.h"
-#include "IHeartbeatReporter.h"
-#include "MQTT/ISubCallback.h"
+#include "Sensors/AbstractSensor.h"
 
+class FloatSwitchConfiguration;
+class String;
 class SystemLog;
-class MQTTClient;
-class MqttQueue;
 
-class FloatSwitch : public IComponent, public ISensor, public IHeartbeatReporter, public IConfigurable, public ISubCallback {
+class FloatSwitch : public AbstractSensor {
+    friend FloatSwitchConfiguration;
 public:
-    FloatSwitch(int pin, SystemLog &logger, MqttQueue& mqttQueue);
-    FloatSwitch(int pin, SystemLog &logger, MQTTClient* mqtt, MqttQueue& mqttQueue);
+    FloatSwitch(int pin, SystemLog &logger);
+    virtual ~FloatSwitch() override {};
 
-    // IComponent
-    virtual void Update() override;
-    // ISensor
+    const bool GetStatus() const { return this->status; }
+    const bool GetReliable() const { return this->isReliable; }
+
+    // AbstractSensor
     virtual bool isFull() const override;
-    // IHeartbeatReporter
-    virtual void ReportHeartbeat(JSONBufferWriter&) const override;
-    // IConfigurable
-    virtual void Configure(JSONValue json) override;
-    // ISubCallback
-    virtual void Callback(char* topic, uint8_t* payload, unsigned int length) override;
-    virtual void OnConnect(bool connectSuccess, MQTTClient* mqtt) override;
-    virtual String GetName() const override;
+    virtual void Update() override;
+    virtual const String GetName() const override;
 
 private:
     int pin;
@@ -51,16 +41,9 @@ private:
     bool isReliable;
 
     virtual void sample();
-#ifdef TESTING
-    void setStatus(bool status);
-#endif
-    // IConfigurable
-    virtual void fireConfigurationMessage() const override;
 
 protected:
     SystemLog &logger;
-    MQTTClient* mqttClient = nullptr;
-    MqttQueue& mqttQueue;
 };
 
 #endif

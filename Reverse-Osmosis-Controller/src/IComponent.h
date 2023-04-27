@@ -5,10 +5,16 @@
 #ifndef _ICOMPONENT_
 #define _ICOMPONENT_
 
-class IComponent
+#include "IUpdateOnLoop.h"
+
+class String;
+
+class IComponent : public IUpdateOnLoop
 {
 public:
-    virtual void Update() = 0; // TODO: Investigate if can make const
+    virtual const String GetName() const = 0;
+    // IUpdateOnLoop
+    virtual void Update() override = 0;
 };
 
 #endif

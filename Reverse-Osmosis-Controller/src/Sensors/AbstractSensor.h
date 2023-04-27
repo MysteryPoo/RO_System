@@ -7,10 +7,16 @@
 #ifndef _ISENSOR_
 #define _ISENSOR_
 
-class ISensor
+#include "ObserverPattern/Subject.h"
+#include "IComponent.h"
+
+class AbstractSensor : public Subject, public IComponent
 {
 public:
   virtual bool isFull() const = 0;
+  // IComponent
+  virtual void Update() override = 0;
+  virtual const String GetName() const override = 0;
 };
 
 #endif

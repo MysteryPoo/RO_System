@@ -2,28 +2,23 @@
 #define _MQTT_QUEUE_
 
 #include "global-defines.h"
-#include "IComponent.h"
 #include <queue>
 
-class MQTTClient;
 class MqttPayload;
+class String;
 
-class MqttQueue : public IComponent
+class MqttQueue
 {
 public:
-  MqttQueue(MQTTClient& mqttClient);
+  MqttQueue();
   void PushPayload(MqttPayload* payload);
   void PushPayload(String topic, String payload);
-  // IComponent
-  virtual void Update() override;
+  MqttPayload* FrontPayload() const;
+  void PopPayload();
 
 private:
-  MQTTClient& mqttClient;
   std::queue<MqttPayload*> queue;
-  void PublishQueue();
   void FlushQueue();
-
-  unsigned long lastUpdate;
 };
 
 #endif
