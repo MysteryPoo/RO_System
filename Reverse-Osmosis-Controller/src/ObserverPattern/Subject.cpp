@@ -1,4 +1,5 @@
 #include "IObserver.h"
+#include "MessageType.h"
 #include "Subject.h"
 
 void Subject::Attach(IObserver* observer)
@@ -16,5 +17,13 @@ void Subject::Notify()
   for (IObserver* it : _observers)
   {
     it->Update(this);
+  }
+}
+
+void Subject::Notify(MessageType type, void* msg)
+{
+  for (IObserver* it : _observers)
+  {
+    it->Update(this, type, msg);
   }
 }

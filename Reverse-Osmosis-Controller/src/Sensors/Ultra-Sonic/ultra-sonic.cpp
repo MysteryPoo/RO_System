@@ -1,4 +1,4 @@
-/*
+#ifdef FEATURE_ULTRASONIC
 #include "global-defines.h"
 #include "ultra-sonic.h"
 #include "application.h"
@@ -139,4 +139,5 @@ void UltraSonic::setDistance(int distance)
     this->logger.pushMessage("ultra-sonic", writer.buffer());
 }
 #endif
-*/
+
+#endif

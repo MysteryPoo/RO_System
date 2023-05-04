@@ -4,10 +4,15 @@
 #include "spark_wiring_string.h"
 #include "spark_wiring_ticks.h"
 #include "system-log.h"
+#include "Messages/FloatSwitchReliableMessage.h"
+#include "Messages/FloatSwitchStatusMessage.h"
+#include "ObserverPattern/MessageType.h"
 
 #define TIME_CONSIDERED_STABLE_MS 1000
 #define TIME_CONSIDERED_UNSTABLE_MS 10000
 #define COMPONENT_NAME "float-switch"
+
+using namespace FloatSwitchMessage;
 
 FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
     pin(pin),
@@ -27,6 +32,8 @@ FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
 
 void FloatSwitch::Update()
 {
+    bool prevStatus = this->status;
+    bool prevReliable = this->isReliable;
     this->sample();
     // Notify if the float switch was triggered.
     if(this->isFull() && !this->firedWarning)
@@ -38,6 +45,16 @@ void FloatSwitch::Update()
     if (this->stable && !this->status)
     {
         this->firedWarning = false;
+    }
+    if (prevStatus != this->status)
+    {
+        Status msg(this->status);
+        this->Notify(MessageType::FLOAT_SWITCH_STATUS_MSG, &msg);
+    }
+    if (prevReliable != this->isReliable)
+    {
+        Reliable msg(this->isReliable);
+        this->Notify(MessageType::FLOAT_SWITCH_RELIABLE_MSG, &msg);
     }
 }
 
@@ -73,7 +90,6 @@ void FloatSwitch::sample()
 #else
     this->stable = true;
 #endif
-    this->Notify();
 }
 
 const String FloatSwitch::GetName() const

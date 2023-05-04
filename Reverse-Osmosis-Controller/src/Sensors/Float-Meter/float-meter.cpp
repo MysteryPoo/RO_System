@@ -1,5 +1,5 @@
-
-/*#include "float-meter.h"
+#ifdef FEATURE_FLOATMETER
+#include "float-meter.h"
 #include "system-log.h"
 
 #define FLOAT_METER_RESOLUTION 4096.f
@@ -78,4 +78,5 @@ void FloatMeter::setValue(int newValue)
   this->simulatedValue = newValue;
 }
 #endif
-*/
+
+#endif

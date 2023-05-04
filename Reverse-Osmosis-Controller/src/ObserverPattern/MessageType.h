@@ -1,0 +1,5 @@
+enum MessageType : int
+{
+  FLOAT_SWITCH_STATUS_MSG
+  , FLOAT_SWITCH_RELIABLE_MSG
+};
