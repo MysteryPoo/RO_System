@@ -55,6 +55,7 @@ SYSTEM_THREAD(ENABLED)
 #include "MQTT/SimpleBroker.h"
 // Utility
 #include "Utility/JsonBuffer.h"
+#include "Utility/TimeHelper.h"
 // std
 #include <vector>
 #include <map>
@@ -255,12 +256,11 @@ void reportRestartReason()
 {
     uint32_t resetData = System.resetReasonData();
     JSONBufferWriter message = JsonBuffer::createBuffer(2048);
-    message.beginObject();
-    message.name("event").value("restart");
-    message.name("reason").value(getResetReason(resetData));
-    message.name("data").value(resetData);
-    message.endObject();
+    message.beginObject()
+    .name("datetime").value(TimeHelper::GetTimeIfAble())
+    .name("reason").value(getResetReason(resetData))
+    .endObject();
 
-    mqttQueue.PushPayload("system/restart", message.buffer());
+    mqttQueue.PushPayload("restart", message.buffer());
     delete[] message.buffer();
 }

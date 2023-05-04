@@ -82,7 +82,7 @@ void FloatSwitchConfiguration::reportPins() const
 #ifndef TESTING
   int pinValue = this->floatSwitch.pin;
 #else
-  String pinValue("Simulated");
+  int pinValue(-1);
 #endif
   JSONBufferWriter writer = JsonBuffer::createBuffer(64);
   writer.beginObject();

@@ -105,8 +105,8 @@ int UltraSonic::getDistance()
 void UltraSonic::fireConfigurationMessage() const
 {
 #ifdef TESTING
-    String triggerValue("Simulated");
-    String echoValue("Simulated");
+    int triggerValue(-1);
+    int echoValue(-1);
 #else
     int triggerValue = this->triggerPin;
     int echoValue = this->echoPin;

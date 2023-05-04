@@ -52,7 +52,7 @@ void FloatMeter::fireConfigurationMessage() const
 #ifndef TESTING
   int pinValue = this->pin;
 #else
-  String pinValue("Simulated");
+  int pinValue(-1);
 #endif
   JSONBufferWriter writer = SystemLog::createBuffer(256);
   writer.beginObject();

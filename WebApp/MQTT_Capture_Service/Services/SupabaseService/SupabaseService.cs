@@ -43,12 +43,6 @@ public partial class SupabaseService {
     }
   }
 
-  public async Task WipeComponentsForDevice(string deviceId) {
-    var device = (await _client.From<DeviceDbRow>().Select(d => new object[] { d.Id }).Where(d => d.DeviceId == deviceId).Get()).Models.FirstOrDefault();
-    if (device is null) throw new Exception("Cannot wipe components for unknown device.");
-    await _client.From<ComponentDbRow>().Where(c => c.DeviceId == device.Id).Delete();
-  }
-
   public async Task PruneFeaturesForDevice(string deviceId, string[] featureList) {
     var device = (await _client.From<DeviceDbRow>().Where(d => d.DeviceId == deviceId).Get()).Models.FirstOrDefault();
     if (device is null) throw new Exception("Cannot prune features for non-existant device.");

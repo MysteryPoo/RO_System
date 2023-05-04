@@ -16,7 +16,7 @@ void RelayReporter::Update(Subject* subject)
   RelayEnums::State state = relay->GetState();
   if (state != _lastState)
   {
-    this->report(RelayEnums::ToString(relay->GetName()) + "/state", RelayEnums::ToString(state).c_str());
+    this->report("relay/" + RelayEnums::ToString(relay->GetName()) + "/state", RelayEnums::ToString(state).c_str());
     _lastState = state;
   }
 }

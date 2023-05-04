@@ -116,7 +116,7 @@ void MqttManager::Update()
         bool connectionSuccess = this->client.connect("sparkclient_" + String(Time.now()), username, password);
         if (this->client.isConnected())
         {
-          this->queue.PushPayload("status", "connnected");
+          this->queue.PushPayload("status", "connected");
           this->queue.PushPayload("version", VERSION_STRING);
           this->announceConfigurations();
           for(IOnConnect* listener : this->onConnectListeners)

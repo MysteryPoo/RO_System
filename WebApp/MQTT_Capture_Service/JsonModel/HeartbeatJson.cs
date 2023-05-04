@@ -3,6 +3,8 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+// DEPRECATED
+
 public class HeartbeatWiFiJson {
   [JsonPropertyName("signal")]
   public short Signal { get; set; }

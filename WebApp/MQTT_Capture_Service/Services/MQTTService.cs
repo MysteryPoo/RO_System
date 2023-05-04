@@ -13,6 +13,7 @@ public class MQTTService {
   private SupabaseService _supabase;
   private Supabase.Realtime.RealtimeChannel? _triggerChannel;
   private Supabase.Realtime.RealtimeBroadcast<TriggerJson>? _broadcast;
+  private Dictionary<string, AbstractMqttProcessor> _mqttProcessors;
 
   public MQTTService(string? mqttUsername, string? mqttPassword, string? endPoint, SupabaseService supabase) {
     if (mqttUsername is null || mqttPassword is null) {
@@ -59,6 +60,17 @@ public class MQTTService {
         Console.WriteLine($"Sending topic: {topic} with payload: {payload}");
         await _client.PublishAsync(message);
       }
+    };
+    _mqttProcessors = new() {
+      {"version", new VersionProcessor(_supabase, this)},
+      {"wifi", new WifiProcessor(_supabase, this)},
+      {"feature-list", new FeatureListProcessor(_supabase, this)},
+      {"status", new StatusProcessor(_supabase, this)},
+      {"relay", new RelayProcessor(_supabase, this)},
+      {"ro-system", new RoSystemProcessor(_supabase, this)},
+      {"restart", new RestartProcessor(_supabase, this)},
+      {"float-switch", new FloatSwitchProcessor(_supabase, this)},
+      {"log", new LogProcessor(_supabase, this)}
     };
   }
 
@@ -107,123 +119,26 @@ public class MQTTService {
     });
   }
 
-  // TODO: Refactor into Processor classes. Maybe use a dictionary to register the processor based on topic[2]
   private async Task ProcessMessage(string[] topic, string? payload) {
     if (!topic[0].Equals("from")) throw new Exception("This processor is for 'from' topics only.");
-    string deviceId = topic[1];
-    switch(topic[2]) {
-      case "feature-list": {
-        await ProcessFeatureList(topic, payload);
-        break;
-      }
-      case "status": {
-        await ProcessStatus(topic, payload);
-        break;
-      }
-      case "configuration": {
-        await ProcessConfiguration(topic, payload);
-        break;
-      }
-      case "romcon": {
-        await ProcessLogger(topic, payload);
-        break;
-      }
-      case "ro-system": {
-        await ProcessRoSystem(topic, payload);
-        break;
-      }
-      default:
-        await ProcessUnknownMessage(topic, payload);
-        break;
+    if (payload is null) throw new Exception("Payload cannot be null.");
+    AbstractMqttProcessor? processor = null;
+    if (_mqttProcessors.TryGetValue(topic[2], out processor))
+    {
+      await processor.Process(topic, payload);
+      return;
     }
+    await ProcessUnknownMessage(topic, payload);
   }
 
-  private async Task ProcessFeatureList(string[] topic, string? payload) {
-    await _supabase.PruneFeaturesForDevice(topic[1], JsonSerializer.Deserialize<string[]>(payload!)!);
-  }
-
-  private async Task ProcessStatus(string[] topic, string? payload) {
-    string deviceId = topic[1];
-    switch(payload) {
-      case "online": {
-        await _supabase.UpdateOnlineStatusForDevice(deviceId, true);
-        break;
-      }
-      case "offline": {
-        await _supabase.UpdateOnlineStatusForDevice(deviceId, false);
-        break;
-      }
-      case "connected": {
-        Console.WriteLine("Sending configuration, because device just connected.");
-        await SendDeviceConfiguration(deviceId);
-        break;
-      }
-      case "feature-refresh": {
-        // This message is deprecated
-        break;
-      }
-      default:
-        await ProcessUnknownMessage(topic, payload);
-        break;
-    }
-    
-  }
-
-  private async Task ProcessConfiguration(string[] topic, string? payload) {
-    if (payload is null) throw new Exception("Invalid configuration.");
-    string deviceId = topic[1];
-    try {
-      var options = new JsonSerializerOptions();
-      options.Converters.Add(new OptionConverterWithTypeDiscriminator());
-      var configuration = JsonSerializer.Deserialize<ConfigurationJson>(payload, options);
-      if (configuration is null) throw new Exception("Unable to deserialize configuration.");
-      await _supabase.CreateOrUpdateComponentForDevice(deviceId, topic[3], configuration);
-    } catch (Exception e) {
-      Console.WriteLine(e.Message);
-    }
-  }
-
-  private async Task ProcessLogger(string[] topic, string? payload) {
-    switch(topic[3]) {
-      case "system": {
-        await ProcessSystem(topic, payload);
-        break;
-      }
-    }
-  }
-
-  private async Task ProcessSystem(string[] topic, string? payload) {
-    switch(topic[4]) {
-      case "heartbeat": {
-        try {
-          await ProcessHeartbeat(topic, payload);
-        } catch (Exception e) {
-          Console.WriteLine(e.Message);
-        }
-        break;
-      }
-    }
-  }
-
-  private async Task ProcessHeartbeat(string[] topic, string? payload) {
-    if (payload is null) throw new Exception("No payload present for heartbeat.");
-    string deviceId = topic[1];
-    var heartbeat = JsonSerializer.Deserialize<HeartbeatJson>(payload);
-    try {
-      await _supabase.InsertHeartbeat(deviceId, heartbeat!);
-    } catch (Exception e) {
-      Console.WriteLine(e.Message);
-    }
-  }
-
-  private async Task ProcessUnknownMessage(string[] topic, string? payload) {
+  public async Task ProcessUnknownMessage(string[] topic, string? payload) {
     if (payload is null) throw new Exception("No payload for unknown message.");
     string deviceId = topic[1];
     string topicFull = String.Join('/', topic);
     await _supabase.InsertUnknownMessage(deviceId, topicFull, payload);
   }
 
-  private async Task SendDeviceConfiguration(string deviceId) {
+  public async Task SendDeviceConfiguration(string deviceId) {
     // Get device
     var device = await _supabase.GetDevice(deviceId);
     if (device is null) throw new Exception("Send Device Configuration Error: Device does not exist.");
@@ -278,27 +193,6 @@ public class MQTTService {
         .Build();
       Console.WriteLine($"Sending topic: {topic} with payload: {payload}");
       await _client.PublishAsync(message);
-    }
-  }
-
-  private async Task ProcessRoSystem(string[] topic, string? payload) {
-    try {
-      if (payload is null) return;
-      string deviceId = topic[1];
-      switch(topic[3]) {
-        case "state-request": {
-          StateRequestJson? json = JsonSerializer.Deserialize<StateRequestJson>(payload);
-          if (json is not null) {
-            await _supabase.InsertStateRequest(deviceId, json);
-          }
-          break;
-        }
-        default:
-          await ProcessUnknownMessage(topic, payload);
-          break;
-      }
-    } catch (Exception e) {
-      Console.WriteLine(e.Message);
     }
   }
 }
