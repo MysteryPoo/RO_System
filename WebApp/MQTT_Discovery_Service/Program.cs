@@ -1,6 +1,10 @@
 ﻿
 using System.Text.Json;
 
+var root = Directory.GetCurrentDirectory();
+var dotenv = Path.Combine(root, ".env");
+DotEnv.Load(dotenv);
+
 ManualResetEvent _quitEvent = new ManualResetEvent(false);
 
 Console.CancelKeyPress += (sender, eArgs) => {
@@ -11,7 +15,7 @@ Console.CancelKeyPress += (sender, eArgs) => {
 var connectionInfo = new MqttConnectionInfo {
   Username = Environment.GetEnvironmentVariable("MQTT_USERNAME") ?? "test_username",
   Password = Environment.GetEnvironmentVariable("MQTT_PASSWORD") ?? "test_password",
-  Override = Environment.GetEnvironmentVariable("MQTT_OVERRIDE") ?? "<Blank>"
+  Override = Environment.GetEnvironmentVariable("MQTT_OVERRIDE")
 };
 
 var server = new UdpServer();

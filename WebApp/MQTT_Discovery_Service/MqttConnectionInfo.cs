@@ -7,5 +7,6 @@ public class MqttConnectionInfo {
   [JsonPropertyName("password")]
   public string Password { get; set; } = String.Empty;
   [JsonPropertyName("override")]
-  public string Override { get; set; } = "<Blank>";
+  [JsonIgnore]
+  public string? Override { get; set; }
 }
