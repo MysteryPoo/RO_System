@@ -35,7 +35,7 @@ public class RoSystemProcessor : AbstractMqttProcessor
       options.Converters.Add(new OptionConverterWithTypeDiscriminator());
       var configuration = JsonSerializer.Deserialize<ConfigurationJson>(payload, options);
       if (configuration is null) throw new Exception("Unable to deserialize configuration.");
-      await _supabase.CreateOrUpdateComponentForDevice(deviceId, topic[3], configuration);
+      await _supabase.CreateOrUpdateComponentForDevice(deviceId, topic[2], configuration);
     } catch (Exception e) {
       Console.WriteLine(e.Message);
     }
