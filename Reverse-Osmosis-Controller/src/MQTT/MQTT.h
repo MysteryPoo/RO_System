@@ -157,7 +157,7 @@ private:
     bool publishComplete(uint16_t messageid);
 
     void doCallbacks(char*, uint8_t*, unsigned int);
-    MqttManager* mqttManager;
+    MqttManager* mqttManager = nullptr;
 
     class MutexLocker {
         MQTT * mqtt;

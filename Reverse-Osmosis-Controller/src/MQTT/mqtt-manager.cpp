@@ -31,8 +31,10 @@ MqttManager::MqttManager(SimpleBroker& broker, MqttQueue& queue)
 
 void MqttManager::Subscribe(MqttSubscriber* subscriber, const char* topic, MQTT::EMQTT_QOS qos)
 {
-  this->client.subscribe("to/" + System.deviceID() + "/" + topic, qos);
-  this->broker.Subscribe(subscriber, topic);
+  // TODO : We dropped the qos... refactor to include it somehow
+  String fullyQualifiedTopic("to/" + System.deviceID() + "/" + topic);
+  this->topicList.push_back(fullyQualifiedTopic);
+  this->broker.Subscribe(subscriber, fullyQualifiedTopic);
 }
 
 void MqttManager::AttachConfiguration(IConfiguration* configuration)
@@ -50,92 +52,74 @@ void MqttManager::Update()
   unsigned long curMillis = millis();
   if (!WiFi.ready())
   {
+    this->connected = false;
+    this->discovery = true;
     return;
   }
 
   if (this->connected && this->client.isConnected())
   {
     this->client.loop();
-    MqttPayload* front = this->queue.FrontPayload();
-    if (nullptr != front)
-    {
-      this->publish(front->topic, front->payload);
-      this->queue.PopPayload();
-    }
+    this->processQueue();
     if (curMillis - this->lastUpdate >= STATUS_REPORT_PERIOD)
     {
       this->connected = this->client.publish("from/" + System.deviceID() + "/status", "online");
       this->lastUpdate = curMillis;
     }
   }
-  else
+  else if (curMillis - this->lastDiscovery >= DISCOVERY_PERIOD)
   {
-    if (this->discovery && curMillis - this->lastDiscovery >= DISCOVERY_PERIOD)
+    this->discoverMQTT();
+  }
+  else if (this->discovery)
+  {
+    char message[1028];
+    memset(message, 0, 1028);
+    int length = udp.receivePacket((byte*)message, 1028, 500);
+    if (length > 0)
     {
-      discoverMQTT();
-      char message[1028];
-      int length = udp.receivePacket((byte*)message, 1028, 500);
-      if (length > 0)
+      JSONValue json = JSONValue::parseCopy(message);
+      if (!json.isValid())
       {
-        JSONValue json = JSONValue::parseCopy(message);
-        if (!json.isValid())
+        return;
+      }
+      String username;
+      String password;
+      String override;
+      JSONObjectIterator it(json);
+      while(it.next())
+      {
+        if (it.name() == "username")
         {
-          return;
+          username = it.value().toString().data();
         }
-        String username;
-        String password;
-        String override;
-        JSONObjectIterator it(json);
-        while(it.next())
+        if (it.name() == "password")
         {
-          if (it.name() == "username")
-          {
-            username = it.value().toString().data();
-          }
-          if (it.name() == "password")
-          {
-            password = it.value().toString().data();
-          }
-          if (it.name() == "override")
-          {
-            override = it.value().toString().data();
-            this->parseIpFromString(override.c_str());
-          }
+          password = it.value().toString().data();
         }
-
-        if (override == "")
+        if (it.name() == "override")
         {
-          IPAddress remoteIp = udp.remoteIP();
-          for (int i = 0; i < 4; ++i)
-          {
-            this->ipAddress[i] = remoteIp[i];
-          }
-        }
-
-        this->client.setBroker(this->ipAddress, MQTT_PORT);
-        bool connectionSuccess = this->client.connect("sparkclient_" + String(Time.now()), username, password);
-        if (this->client.isConnected())
-        {
-          this->queue.PushPayload("status", "connected");
-          this->queue.PushPayload("version", VERSION_STRING);
-          this->announceConfigurations();
-          for(IOnConnect* listener : this->onConnectListeners)
-          {
-            listener->OnConnect(connectionSuccess);
-          }
-          this->connected = true;
-          this->discovery = false;
-          udp.stop();
-        }
-        else
-        {
-          discoverMQTT();
+          override = it.value().toString().data();
+          this->parseIpFromString(override.c_str());
         }
       }
-    }
-    else
-    {
-      discoverMQTT();
+
+      if (override == "")
+      {
+        IPAddress remoteIp = udp.remoteIP();
+        for (int i = 0; i < 4; ++i)
+        {
+          this->ipAddress[i] = remoteIp[i];
+        }
+      }
+
+      this->client.setBroker(this->ipAddress, MQTT_PORT);
+      this->client.connect("sparkclient_" + String(Time.now()), username, password);
+      if (this->client.isConnected())
+      {
+        this->onConnect();
+        udp.stop();
+      }
     }
   }
 }
@@ -148,6 +132,11 @@ void MqttManager::OnMqttMessage(char* topic, uint8_t* buffer, unsigned int buffe
 void MqttManager::PushPayload(String topic, String payload)
 {
   this->queue.PushPayload(topic, payload);
+}
+
+void MqttManager::Unsubscribe(MqttSubscriber* subscriber, const char* topic)
+{
+  // Not implemented
 }
 
 void MqttManager::announceConfigurations()
@@ -166,14 +155,31 @@ void MqttManager::announceConfigurations()
 
 void MqttManager::discoverMQTT()
 {
-  udp.begin(MQTT_UDP_LISTEN_PORT);
   this->discovery = true;
+  udp.begin(MQTT_UDP_LISTEN_PORT);
   //IPAddress broadcast(224, 0, 0, 116);
   IPAddress broadcast(255,255,255,255);
   udp.beginPacket(broadcast, MQTT_UDP_DISCOVER_PORT);
   udp.write("Looking for MQTT server");
   udp.endPacket();
   this->lastDiscovery = millis();
+}
+
+void MqttManager::onConnect()
+{
+  this->queue.PushPayload("status", "connected");
+  this->queue.PushPayload("version", VERSION_STRING);
+  this->announceConfigurations();
+  for(IOnConnect* listener : this->onConnectListeners)
+  {
+    listener->OnConnect(true);
+  }
+  for (auto topic : this->topicList)
+  {
+    this->client.subscribe(topic.c_str(), MQTT::EMQTT_QOS::QOS1);
+  }
+  this->connected = true;
+  this->discovery = false;
 }
 
 // Code from https://forum.arduino.cc/t/get-ip-address-from-string/478308/20
@@ -195,6 +201,16 @@ void MqttManager::parseIpFromString(const char* cstringToParse)
         break ;
       idx++ ;  // step to next char
     }
+  }
+}
+
+void MqttManager::processQueue()
+{
+  MqttPayload* front = this->queue.FrontPayload();
+  if (nullptr != front)
+  {
+    this->publish(front->topic, front->payload);
+    this->queue.PopPayload();
   }
 }
 

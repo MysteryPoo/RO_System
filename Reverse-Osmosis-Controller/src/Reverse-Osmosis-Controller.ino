@@ -83,6 +83,7 @@ enum UserReason
 };
 
 ApplicationWatchdog *watchDog;
+//SerialLogHandler logHandler;
 
 unsigned long timeToRestart;
 Timer restartSystem(RESTART_DELAY, sysRestart_Helper, true);

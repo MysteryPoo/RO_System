@@ -4,6 +4,11 @@
 #include "global-defines.h"
 #include "Utility/JsonBuffer.h"
 #include "MQTT/mqtt-manager.h"
+#include "ObserverPattern/MessageType.h"
+#include "Messages/FloatSwitchReliableMessage.h"
+#include "Messages/FloatSwitchStatusMessage.h"
+
+using namespace FloatSwitchMessage;
 
 FloatSwitchConfiguration::FloatSwitchConfiguration(FloatSwitch& fs, MqttManager& manager /*, logger */)
   : floatSwitch(fs)
@@ -30,14 +35,15 @@ void FloatSwitchConfiguration::configure(JSONValue json)
     if (it.name() == "float")
     {
         this->floatSwitch.status = it.value().toBool();
-        this->floatSwitch.Notify();
+        Status msg(this->floatSwitch.status);
+        this->floatSwitch.Notify(MessageType::FLOAT_SWITCH_STATUS_MSG, &msg);
     }
 #endif
     if (it.name() == "Reset Reliable")
     {
         this->floatSwitch.isReliable = it.value().toBool();
-        this->floatSwitch.Notify();
-        //logger.trace("Float Switch Reliable flag reset!");
+        Reliable msg(this->floatSwitch.isReliable);
+        this->floatSwitch.Notify(MessageType::FLOAT_SWITCH_RELIABLE_MSG, &msg);
     }
   }
 }

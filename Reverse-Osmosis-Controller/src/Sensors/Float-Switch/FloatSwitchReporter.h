@@ -1,3 +1,6 @@
+#ifndef _FLOATSWITCHREPORTER_
+#define _FLOATSWITCHREPORTER_
+
 #include "Reporters/AbstractReporter.h"
 
 class FloatSwitch;
@@ -17,3 +20,5 @@ private:
   bool _lastStatus;
   bool _lastReliable;
 };
+
+#endif

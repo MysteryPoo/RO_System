@@ -19,7 +19,8 @@ class SimpleBroker
 public:
   SimpleBroker();
   void Subscribe(MqttSubscriber* subscriber, String topic);
-  void RouteMessage(char*, uint8_t*, unsigned int);
+  void RouteMessage(const char*, uint8_t*, unsigned int);
+  void Unsubscribe(MqttSubscriber* subscriber, String topic);
 private:
   SubscriberTopicMap _subscribers;
 };

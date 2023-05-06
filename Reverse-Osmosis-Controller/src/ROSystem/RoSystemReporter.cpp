@@ -2,6 +2,7 @@
 #include "RoSystemReporter.h"
 #include "ROSystem.h"
 #include "ObserverPattern/Subject.h"
+#include "ObserverPattern/MessageType.h"
 
 #include "RoSystemEnum.h"
 
@@ -29,5 +30,19 @@ void RoSystemReporter::Update(Subject* subject)
   {
     this->report(system->GetName() + "/enabled", enabled);
     this->_lastEnabled = enabled;
+  }
+}
+
+void RoSystemReporter::Update(Subject* subject, MessageType type, void* msg)
+{
+  ROSystem* system = static_cast<ROSystem*>(subject);
+  switch(type)
+  {
+    case MessageType::ROSYSTEM_ENABLED_MSG: {
+      break;
+    }
+    case MessageType::ROSYSTEM_FLUSHED_MSG: {
+      break;
+    }
   }
 }

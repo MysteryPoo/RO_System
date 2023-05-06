@@ -16,7 +16,7 @@ void SimpleBroker::Subscribe(MqttSubscriber* subscriber, String topic)
   _subscribers[topic]->push_back(subscriber);
 }
 
-void SimpleBroker::RouteMessage(char* topic, uint8_t* payloadAsByteArray, unsigned int length)
+void SimpleBroker::RouteMessage(const char* topic, uint8_t* payloadAsByteArray, unsigned int length)
 {
   char p[length + 1];
   memcpy(p, payloadAsByteArray, length);
@@ -32,4 +32,9 @@ void SimpleBroker::RouteMessage(char* topic, uint8_t* payloadAsByteArray, unsign
       subscriber->Update(payload.c_str());
     }
   }
+}
+
+void SimpleBroker::Unsubscribe(MqttSubscriber* subscriber, String topic)
+{
+  // Not implemented
 }
