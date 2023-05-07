@@ -1,3 +1,6 @@
+#ifndef _STRINGUTIL_
+#define _STRINGUTIL_
+
 #include <vector>
 
 namespace StringUtil
@@ -15,3 +18,5 @@ namespace StringUtil
     return tokens;
   }
 }
+
+#endif

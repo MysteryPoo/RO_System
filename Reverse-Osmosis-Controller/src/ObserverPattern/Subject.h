@@ -16,8 +16,7 @@ public:
   virtual ~Subject() {};
   virtual void Attach(IObserver* observer);
   virtual void Detach(IObserver* observer);
-  virtual void Notify();
-  virtual void Notify(MessageType type, void* msg);
+  virtual void Notify(const MessageType type, void* msg);
 private:
   std::list<IObserver*> _observers;
 };

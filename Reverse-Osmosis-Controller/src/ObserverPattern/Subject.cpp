@@ -12,15 +12,7 @@ void Subject::Detach(IObserver* observer)
   _observers.remove(observer);
 }
 
-void Subject::Notify()
-{
-  for (IObserver* it : _observers)
-  {
-    it->Update(this);
-  }
-}
-
-void Subject::Notify(MessageType type, void* msg)
+void Subject::Notify(const MessageType type, void* msg)
 {
   for (IObserver* it : _observers)
   {

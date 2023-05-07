@@ -1,48 +1,58 @@
 #include "MQTT/mqtt-manager.h"
 #include "RoSystemReporter.h"
 #include "ROSystem.h"
+#include "spark_wiring_json.h"
+#include "Messages/EnabledMsg.h"
+#include "Messages/FlushedMsg.h"
+#include "Messages/StateChangeMessage.h"
 #include "ObserverPattern/Subject.h"
 #include "ObserverPattern/MessageType.h"
+#include "Utility/JsonBuffer.h"
+#include "Utility/TimeHelper.h"
 
 #include "RoSystemEnum.h"
 
+using namespace RoSystemMessage;
+
 RoSystemReporter::RoSystemReporter(ROSystem* system, MqttManager& manager)
   : AbstractReporter(manager)
-  , _lastState(RoSystemEnum::State::BOOT)
-  , _lastFlushed(false)
-  , _lastEnabled(true)
 {
   if (nullptr != system) system->Attach(this);
 }
 
-void RoSystemReporter::Update(Subject* subject)
+void RoSystemReporter::Update(const Subject* subject, const MessageType type, void* msg) const
 {
-  ROSystem* system = static_cast<ROSystem*>(subject);
-  //RoSystemEnum::State state = system->GetState();
-  const bool flushed = system->GetFlushed();
-  const bool enabled = system->GetEnabled();
-  if (flushed != this->_lastFlushed)
-  {
-    this->report(system->GetName() + "/flushed", flushed);
-    this->_lastFlushed = flushed;
-  }
-  if (enabled != this->_lastEnabled)
-  {
-    this->report(system->GetName() + "/enabled", enabled);
-    this->_lastEnabled = enabled;
-  }
-}
-
-void RoSystemReporter::Update(Subject* subject, MessageType type, void* msg)
-{
-  ROSystem* system = static_cast<ROSystem*>(subject);
+  const ROSystem* system = static_cast<const ROSystem*>(subject);
   switch(type)
   {
     case MessageType::ROSYSTEM_ENABLED_MSG: {
+      const Enabled* message = static_cast<Enabled*>(msg);
+      this->report(system->GetName() + "/enabled", message->enabled);
       break;
     }
     case MessageType::ROSYSTEM_FLUSHED_MSG: {
+      const Flushed* message = static_cast<Flushed*>(msg);
+      this->report(system->GetName() + "/flushed", message->flushed);
+      break;
+    }
+    case MessageType::ROSYSTEM_STATE_MSG: {
+      const RoSystemMessage::StateChange* message = static_cast<RoSystemMessage::StateChange*>(msg);
+      this->report(system->GetName() + "/state-request", message);
       break;
     }
   }
+}
+
+void RoSystemReporter::report(const char* topic, const RoSystemMessage::StateChange* message) const
+{
+  JSONBufferWriter writer = JsonBuffer::createBuffer(2048);
+  writer.beginObject()
+  .name("datetime").value(TimeHelper::GetTimeIfAble())
+  .name("state").value(RoSystemEnum::ToString(message->state))
+  .name("success").value(message->success)
+  .name("requestReason").value(message->requestReason)
+  .name("failureReason").value(message->failureReason)
+  .endObject();
+  this->mqtt.PushPayload(topic, writer.buffer());
+  delete[] writer.buffer();
 }

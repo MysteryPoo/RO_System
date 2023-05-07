@@ -1,4 +1,5 @@
-
+#ifndef _FLOATSWITCHSTATUSMESSAGE_
+#define _FLOATSWITCHSTATUSMESSAGE_
 namespace FloatSwitchMessage
 {
   struct Status
@@ -10,3 +11,5 @@ namespace FloatSwitchMessage
     bool status;
   };
 }
+
+#endif

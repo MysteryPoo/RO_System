@@ -17,6 +17,8 @@
 #include "relay.h"
 #include "RelayEnums.h"
 #include "system-log.h"
+#include "Messages/StateChangeMessage.h"
+#include "ObserverPattern/MessageType.h"
 
 Relay::Relay(RelayEnums::Name name, SystemLog& logger, MqttManager& manager, int pin, bool activeLow) : 
     name(name),
@@ -36,6 +38,7 @@ void Relay::set(const RelayEnums::State newState)
         this->logger.error("Attempting to set an unconfigured relay.[" + RelayEnums::ToString(this->name) + "]");
         return;
     }
+    const RelayEnums::State prevState = this->state;
     if(newState == RelayEnums::State::ON)
     {
         digitalWrite(this->pin, this->activeLow ? LOW : HIGH);
@@ -45,5 +48,9 @@ void Relay::set(const RelayEnums::State newState)
         digitalWrite(this->pin, this->activeLow ? HIGH : LOW);
     }
     this->state = newState;
-    this->Notify();
+    if (prevState != this->state)
+    {
+        RelayMessage::StateChange msg(this->state);
+        this->Notify(MessageType::RELAY_STATE_MSG, &msg);
+    }
 }

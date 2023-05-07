@@ -1,9 +1,12 @@
-// TODO : Move this to Reporters, not specific to Observers
 
 enum MessageType : int
 {
   FLOAT_SWITCH_STATUS_MSG
   , FLOAT_SWITCH_RELIABLE_MSG
+  , RELAY_STATE_MSG
   , ROSYSTEM_ENABLED_MSG
   , ROSYSTEM_FLUSHED_MSG
+  , ROSYSTEM_STATE_MSG
+  , WIFI_SIGNAL_MSG
+  , WIFI_QUALITY_MSG
 };

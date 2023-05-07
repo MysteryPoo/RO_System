@@ -20,18 +20,21 @@ namespace RoSystemEnum
   enum State : uint8_t;
 }
 
+namespace RoSystemMessage
+{
+  struct StateChange;
+}
+
 class RoSystemReporter : AbstractReporter
 {
 public:
   RoSystemReporter(ROSystem* system, MqttManager& manager);
   // AbstractReporter
   virtual ~RoSystemReporter() override {};
-  virtual void Update(Subject* subject) override;
-  virtual void Update(Subject* subject, MessageType type, void* msg) override;
+  virtual void Update(const Subject* subject, const MessageType type, void* msg) const override;
 private:
-  RoSystemEnum::State _lastState;
-  bool _lastFlushed;
-  bool _lastEnabled;
+  using AbstractReporter::report;
+  virtual void report(const char* topic, const RoSystemMessage::StateChange* value) const;
 };
 
 #endif

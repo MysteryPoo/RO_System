@@ -13,6 +13,7 @@
 class MqttManager;
 class Relay;
 class Subject;
+enum MessageType : int;
 
 namespace RelayEnums
 {
@@ -26,9 +27,7 @@ public:
   RelayReporter(Relay* relay, MqttManager& manager);
   // AbstractReporter
   virtual ~RelayReporter() override {};
-  virtual void Update(Subject* subject) override;
-private:
-  RelayEnums::State _lastState;
+  virtual void Update(const Subject* subject, const MessageType type, void* messagePtr) const override;
 };
 
 #endif

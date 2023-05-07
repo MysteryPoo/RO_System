@@ -1,3 +1,5 @@
+#ifndef _FLOATSWITCHRELIABLEMESSAGE_
+#define _FLOATSWITCHRELIABLEMESSAGE_
 
 namespace FloatSwitchMessage
 {
@@ -10,3 +12,5 @@ namespace FloatSwitchMessage
     bool reliable;
   };
 }
+
+#endif

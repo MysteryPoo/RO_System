@@ -12,8 +12,7 @@ class IObserver
 public:
   IObserver() {};
   virtual ~IObserver() {};
-  virtual void Update(Subject* subject) = 0;
-  virtual void Update(Subject* subject, MessageType type, void* msg) {};
+  virtual void Update(const Subject* subject, const MessageType type, void* msg) const = 0;
 };
 
 #endif

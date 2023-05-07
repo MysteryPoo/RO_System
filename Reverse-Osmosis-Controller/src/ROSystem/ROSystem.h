@@ -33,7 +33,7 @@ namespace RoSystemEnum
 class ROSystem : public Subject, public IComponent {
     friend RoSystemConfiguration;
 public:
-    ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger, MqttManager& mqttManager);
+    ROSystem(Relay &pump, Relay &inlet, Relay &flush, SystemLog &logger);
 
     void AddSensor(AbstractSensor* sensor);
     void Shutdown();
@@ -51,7 +51,6 @@ private:
     Relay &inlet;
     Relay &flush;
     SystemLog &logger;
-    MqttManager& mqtt;
     bool flushedToday;
     unsigned long totalPumpTime;
     unsigned long totalPumpRuns;

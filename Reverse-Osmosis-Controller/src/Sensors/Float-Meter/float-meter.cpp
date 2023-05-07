@@ -1,3 +1,5 @@
+#include "global-defines.h"
+
 #ifdef FEATURE_FLOATMETER
 #include "float-meter.h"
 #include "system-log.h"

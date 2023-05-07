@@ -12,15 +12,13 @@
 class MqttManager;
 class Subject;
 class WifiModule;
+enum MessageType : int;
 
 class WifiReporter : public AbstractReporter
 {
 public:
   WifiReporter(WifiModule* wifi, MqttManager& manager);
-  virtual void Update(Subject* subject) override;
-private:
-  float _lastSignal;
-  float _lastQuality;
+  virtual void Update(const Subject* subject, const MessageType type, void* msg) const override;
 };
 
 #endif

@@ -1,24 +1,24 @@
-#include "spark_wiring_json.h"
 #include "spark_wiring_string.h"
+#include "spark_wiring_ticks.h"
+#include "spark_wiring_thread.h"
 #include "ROSystem.h"
 #include "Relay/relay.h"
 #include "system-log.h"
-#include "MQTT/mqtt-manager.h"
 #include "Sensors/AbstractSensor.h"
-#include "Utility/JsonBuffer.h"
-#include "Utility/TimeHelper.h"
+#include "ObserverPattern/MessageType.h"
+#include "Messages/FlushedMsg.h"
+#include "Messages/StateChangeMessage.h"
 
 #include "RoSystemEnum.h"
 #include "Relay/RelayEnums.h"
 #include "RoSystemConstants.h"
 
-ROSystem::ROSystem(Relay& pump, Relay& inlet, Relay& flush, SystemLog& logger, MqttManager& manager) :
+ROSystem::ROSystem(Relay& pump, Relay& inlet, Relay& flush, SystemLog& logger) :
     state(RoSystemEnum::State::BOOT),
     pump(pump),
     inlet(inlet),
     flush(flush),
     logger(logger),
-    mqtt(manager),
     flushedToday(false),
     totalPumpTime(0),
     totalPumpRuns(0),
@@ -106,7 +106,6 @@ void ROSystem::update(bool tankFull)
         default:
             logger.error("ROSystem is in an invalid state!");
     }
-    this->Notify();
 }
 
 void ROSystem::requestState(RoSystemEnum::State newState, const char* requestReason)
@@ -121,9 +120,6 @@ void ROSystem::requestState(RoSystemEnum::State newState, String requestReason)
 
     bool isAlreadyInState = newState == this->state;
 
-    JSONBufferWriter writer = JsonBuffer::createBuffer(2048);
-    writer.beginObject()
-    .name("datetime").value(TimeHelper::GetTimeIfAble());
     switch(newState)
     {
         case RoSystemEnum::State::IDLE:
@@ -137,7 +133,6 @@ void ROSystem::requestState(RoSystemEnum::State newState, String requestReason)
             {
                 error = "Failed to deactivate the pump.";
             }
-            writer.name("state").value("IDLE");
             break;
         case RoSystemEnum::State::FLUSH:
             error = "";
@@ -148,6 +143,8 @@ void ROSystem::requestState(RoSystemEnum::State newState, String requestReason)
                     this->flush.set(RelayEnums::State::ON);
                     this->flushStartedTime = millis();
                     this->state = RoSystemEnum::State::FLUSH;
+                    RoSystemMessage::Flushed message(true);
+                    this->Notify(MessageType::ROSYSTEM_FLUSHED_MSG, &message);
                 }
                 else
                 {
@@ -158,7 +155,6 @@ void ROSystem::requestState(RoSystemEnum::State newState, String requestReason)
             {
                 error = "System is currently disabled.";
             }
-            writer.name("state").value("FLUSH");
             break;
         case RoSystemEnum::State::FILL:
             error = "";
@@ -178,24 +174,17 @@ void ROSystem::requestState(RoSystemEnum::State newState, String requestReason)
             {
                 error = "System is currently disabled.";
             }
-            writer.name("state").value("FILL");
             break;
         default:
-            logger.error("ROSystem was requested to enter an invalid state!");
-            writer.name("state").value(RoSystemEnum::ToString(this->state));
-            writer.name("success").value(false);
+            error = "ROSystem was requested to enter an invalid state!";
     }
 
     if (isAlreadyInState)
     {
         error = "System attempted to change into state it was already in.";
     }
-    writer.name("success").value(!isAlreadyInState && this->state == newState);
-    writer.name("requestReason").value(requestReason);
-    writer.name("failureReason").value(error);
-    writer.endObject();
-    this->mqtt.PushPayload(COMPONENT_NAME "/state-request", writer.buffer());
-    delete[] writer.buffer();
+    RoSystemMessage::StateChange message(newState, !isAlreadyInState && this->state == newState, requestReason.c_str(), error.c_str());
+    this->Notify(MessageType::ROSYSTEM_STATE_MSG, &message);
 }
 
 bool ROSystem::activatePump()

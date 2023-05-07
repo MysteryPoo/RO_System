@@ -32,8 +32,8 @@ FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
 
 void FloatSwitch::Update()
 {
-    bool prevStatus = this->status;
-    bool prevReliable = this->isReliable;
+    const bool prevStatus = this->status;
+    const bool prevReliable = this->isReliable;
     this->sample();
     // Notify if the float switch was triggered.
     if(this->isFull() && !this->firedWarning)

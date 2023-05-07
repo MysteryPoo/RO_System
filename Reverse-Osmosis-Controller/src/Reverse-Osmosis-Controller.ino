@@ -98,7 +98,7 @@ SystemLog syslog(mqttManager);
 Relay pump(RelayEnums::Name::COMPONENT_PUMP, syslog, mqttManager, D7, true);
 Relay inlet(RelayEnums::Name::COMPONENT_INLETVALVE, syslog, mqttManager, D6, true);
 Relay flush(RelayEnums::Name::COMPONENT_FLUSHVALVE, syslog, mqttManager, D5, true);
-ROSystem ro(pump, inlet, flush, syslog, mqttManager);
+ROSystem ro(pump, inlet, flush, syslog);
 
 RelayConfiguration pumpConfig(pump, mqttManager);
 RelayReporter pumpReporter(&pump, mqttManager);
