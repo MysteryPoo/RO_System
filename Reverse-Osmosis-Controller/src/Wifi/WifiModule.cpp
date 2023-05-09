@@ -32,8 +32,8 @@ void WifiModule::Update()
     return;
   }
   this->_lastCheck = millis();
-  float prevSignal = this->_signal;
-  float prevQuality = this->_quality;
+  const float prevSignal = this->_signal;
+  const float prevQuality = this->_quality;
   WiFiSignal wifi = WiFi.RSSI();
 #ifndef TESTING
   this->_signal = wifi.getSignal();

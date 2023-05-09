@@ -4,6 +4,10 @@
 #include "ROSystem.h"
 #include "RoSystemConstants.h"
 #include "MQTT/mqtt-manager.h"
+#include "Messages/EnabledMsg.h"
+#include "Messages/PumpCooldownMsg.h"
+#include "Messages/FlushDurationMsg.h"
+#include "ObserverPattern/MessageType.h"
 
 RoSystemConfiguration::RoSystemConfiguration(ROSystem& system, MqttManager& manager)
   : system(system)
@@ -39,15 +43,21 @@ void RoSystemConfiguration::configure(JSONValue json)
   {
     if (it.name() == "enabled")
     {
-        this->system.enabled = it.value().toBool();
+      this->system.enabled = it.value().toBool();
+      RoSystemMessage::Enabled msg(this->system.enabled);
+      this->system.Notify(MessageType::ROSYSTEM_ENABLED_MSG, &msg);
     }
     if (it.name() == "Pump Cooldown")
     {
-        this->system.pumpCooldown = (unsigned int)it.value().toInt();
+      this->system.pumpCooldown = (unsigned int)it.value().toInt();
+      RoSystemMessage::PumpCooldown msg(this->system.pumpCooldown);
+      this->system.Notify(MessageType::ROSYSTEM_PUMP_COOLDOWN_MSG, &msg);
     }
     if (it.name() == "Flush Duration")
     {
       this->system.flushDuration = (unsigned int)it.value().toInt();
+      RoSystemMessage::FlushDuration msg(this->system.flushDuration);
+      this->system.Notify(MessageType::ROSYSTEM_FLUSH_DURATION_MSG, &msg);
     }
   }
 }

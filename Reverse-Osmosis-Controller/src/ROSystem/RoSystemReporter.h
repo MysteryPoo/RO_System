@@ -34,7 +34,7 @@ public:
   virtual void Update(const Subject* subject, const MessageType type, void* msg) const override;
 private:
   using AbstractReporter::report;
-  virtual void report(const char* topic, const RoSystemMessage::StateChange* value) const;
+  void report(const char* topic, const RoSystemMessage::StateChange* value) const;
 };
 
 #endif

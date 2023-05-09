@@ -4,6 +4,8 @@
 #include "spark_wiring_json.h"
 #include "Messages/EnabledMsg.h"
 #include "Messages/FlushedMsg.h"
+#include "Messages/PumpCooldownMsg.h"
+#include "Messages/FlushDurationMsg.h"
 #include "Messages/StateChangeMessage.h"
 #include "ObserverPattern/Subject.h"
 #include "ObserverPattern/MessageType.h"
@@ -38,6 +40,16 @@ void RoSystemReporter::Update(const Subject* subject, const MessageType type, vo
     case MessageType::ROSYSTEM_STATE_MSG: {
       const RoSystemMessage::StateChange* message = static_cast<RoSystemMessage::StateChange*>(msg);
       this->report(system->GetName() + "/state-request", message);
+      break;
+    }
+    case MessageType::ROSYSTEM_PUMP_COOLDOWN_MSG: {
+      const RoSystemMessage::PumpCooldown* message = static_cast<RoSystemMessage::PumpCooldown*>(msg);
+      this->report(system->GetName() + "/pump-cooldown", message->cooldown);
+      break;
+    }
+    case MessageType::ROSYSTEM_FLUSH_DURATION_MSG: {
+      const RoSystemMessage::FlushDuration* message = static_cast<RoSystemMessage::FlushDuration*>(msg);
+      this->report(system->GetName() + "/flush-duration", message->duration);
       break;
     }
   }

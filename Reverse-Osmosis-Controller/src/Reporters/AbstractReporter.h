@@ -21,6 +21,7 @@ protected:
   void report(const char* topic, const bool value) const;
   void report(const char* topic, const char* value) const;
   void report(const char* topic, const float value) const;
+  void report(const char* topic, const int value) const;
 };
 
 #endif
