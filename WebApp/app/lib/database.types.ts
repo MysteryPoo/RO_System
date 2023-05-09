@@ -67,6 +67,7 @@ export interface Database {
           last_heard: string
           last_ip_address: string
           online: boolean
+          version: string | null
         }
         Insert: {
           connected: boolean
@@ -77,6 +78,7 @@ export interface Database {
           last_heard?: string
           last_ip_address: string
           online: boolean
+          version?: string | null
         }
         Update: {
           connected?: boolean
@@ -87,95 +89,96 @@ export interface Database {
           last_heard?: string
           last_ip_address?: string
           online?: boolean
+          version?: string | null
         }
       }
-      heartbeat: {
+      floatswitch_pin: {
         Row: {
           device_id: number
-          heartbeat_rate: number
           id: number
-          inserted_at: string
-          message_queue_size: number
-          received_at: string
-          version: string
+          pin: number
         }
         Insert: {
           device_id: number
-          heartbeat_rate: number
           id?: number
-          inserted_at?: string
-          message_queue_size: number
-          received_at: string
-          version: string
+          pin: number
         }
         Update: {
           device_id?: number
-          heartbeat_rate?: number
           id?: number
-          inserted_at?: string
-          message_queue_size?: number
-          received_at?: string
-          version?: string
+          pin?: number
         }
       }
-      heartbeat_floatswitch: {
+      floatswitch_reliable_reports: {
         Row: {
-          float: boolean
-          heartbeat_id: number
+          datetime: string | null
+          device_id: number
           id: number
+          inserted_at: string
           reliable: boolean
         }
         Insert: {
-          float: boolean
-          heartbeat_id: number
+          datetime?: string | null
+          device_id: number
           id?: number
+          inserted_at?: string
           reliable: boolean
         }
         Update: {
-          float?: boolean
-          heartbeat_id?: number
+          datetime?: string | null
+          device_id?: number
           id?: number
+          inserted_at?: string
           reliable?: boolean
         }
       }
-      heartbeat_rosystem: {
+      floatswitch_status_reports: {
         Row: {
-          enabled: boolean
-          heartbeat_id: number
+          datetime: string | null
+          device_id: number
           id: number
-          total_pump_time: number
+          inserted_at: string
+          status: boolean
         }
         Insert: {
-          enabled: boolean
-          heartbeat_id: number
+          datetime?: string | null
+          device_id: number
           id?: number
-          total_pump_time: number
+          inserted_at?: string
+          status: boolean
         }
         Update: {
-          enabled?: boolean
-          heartbeat_id?: number
+          datetime?: string | null
+          device_id?: number
           id?: number
-          total_pump_time?: number
+          inserted_at?: string
+          status?: boolean
         }
       }
-      heartbeat_wifi: {
+      log: {
         Row: {
-          heartbeat_id: number
+          datetime: string | null
+          device_id: number
           id: number
-          quality: number
-          signal: number
+          inserted_at: string
+          message: string
+          severity: string
         }
         Insert: {
-          heartbeat_id: number
+          datetime?: string | null
+          device_id: number
           id?: number
-          quality: number
-          signal: number
+          inserted_at?: string
+          message: string
+          severity: string
         }
         Update: {
-          heartbeat_id?: number
+          datetime?: string | null
+          device_id?: number
           id?: number
-          quality?: number
-          signal?: number
+          inserted_at?: string
+          message?: string
+          severity?: string
         }
       }
       option_boolean_list: {
@@ -267,6 +270,75 @@ export interface Database {
           website?: string | null
         }
       }
+      restart: {
+        Row: {
+          datetime: string | null
+          device_id: number
+          id: number
+          inserted_at: string
+          reason: string
+        }
+        Insert: {
+          datetime?: string | null
+          device_id: number
+          id?: number
+          inserted_at?: string
+          reason: string
+        }
+        Update: {
+          datetime?: string | null
+          device_id?: number
+          id?: number
+          inserted_at?: string
+          reason?: string
+        }
+      }
+      rosystem_enabled_reports: {
+        Row: {
+          datetime: string | null
+          device_id: number
+          enabled: boolean
+          id: number
+          inserted_at: string
+        }
+        Insert: {
+          datetime?: string | null
+          device_id: number
+          enabled: boolean
+          id?: number
+          inserted_at?: string
+        }
+        Update: {
+          datetime?: string | null
+          device_id?: number
+          enabled?: boolean
+          id?: number
+          inserted_at?: string
+        }
+      }
+      rosystem_flushed_reports: {
+        Row: {
+          datetime: string | null
+          device_id: number
+          flushed: boolean
+          id: number
+          inserted_at: string
+        }
+        Insert: {
+          datetime?: string | null
+          device_id: number
+          flushed: boolean
+          id?: number
+          inserted_at?: string
+        }
+        Update: {
+          datetime?: string | null
+          device_id?: number
+          flushed?: boolean
+          id?: number
+          inserted_at?: string
+        }
+      }
       state_request: {
         Row: {
           datetime: string
@@ -317,6 +389,72 @@ export interface Database {
           id?: number
           payload?: string
           topic?: string
+        }
+      }
+      versions: {
+        Row: {
+          device_id: number | null
+          id: number
+          inserted_at: string
+          version: string
+        }
+        Insert: {
+          device_id?: number | null
+          id?: number
+          inserted_at?: string
+          version: string
+        }
+        Update: {
+          device_id?: number | null
+          id?: number
+          inserted_at?: string
+          version?: string
+        }
+      }
+      wifi_quality_reports: {
+        Row: {
+          datetime: string | null
+          device_id: number | null
+          id: number
+          inserted_at: string
+          quality: number
+        }
+        Insert: {
+          datetime?: string | null
+          device_id?: number | null
+          id?: number
+          inserted_at?: string
+          quality: number
+        }
+        Update: {
+          datetime?: string | null
+          device_id?: number | null
+          id?: number
+          inserted_at?: string
+          quality?: number
+        }
+      }
+      wifi_signal_reports: {
+        Row: {
+          datetime: string | null
+          device_id: number
+          id: number
+          inserted_at: string
+          signal: number
+        }
+        Insert: {
+          datetime?: string | null
+          device_id: number
+          id?: number
+          inserted_at?: string
+          signal: number
+        }
+        Update: {
+          datetime?: string | null
+          device_id?: number
+          id?: number
+          inserted_at?: string
+          signal?: number
         }
       }
     }

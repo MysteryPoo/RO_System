@@ -20,6 +20,28 @@ public class RoSystemProcessor : AbstractMqttProcessor
         await ProcessStateRequest(topic, payload);
         break;
       }
+      case "enabled": {
+        var json = JsonSerializer.Deserialize<ReporterValue<bool>>(payload);
+        if (json is not null)
+        {
+          await _supabase.InsertRoSystemEnabled(deviceId, json);
+        }
+        break;
+      }
+      case "flushed": {
+        var json = JsonSerializer.Deserialize<ReporterValue<bool>>(payload);
+        if (json is not null)
+        {
+          await _supabase.InsertRoSystemFlushed(deviceId, json);
+        }
+        break;
+      }
+      case "pump-cooldown": {
+        break;
+      }
+      case "flush-duration": {
+        break;
+      }
       default:
         await _mqtt.ProcessUnknownMessage(topic, payload);
         break;

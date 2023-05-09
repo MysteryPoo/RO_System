@@ -53,7 +53,7 @@ const endProgress = () => {
   }
 }
 
-const calculateTimeProgress = () => {
+const calculateTimeProgress = () : ITimeProgress => {
   if (undefined === props.startTime || undefined === props.estimatedElapsedSeconds) {
     return {
       asPercent: 0,
@@ -69,7 +69,7 @@ const calculateTimeProgress = () => {
   const minutesRemaining = Math.round(remainingTime / 1000 / 60);
   const secondsRemaining = Math.round(remainingTime / 1000);
   return {
-    asPercent: Math.min(currentElapsedTime / totalTime * 100, 100),
+    asPercent: Math.min(currentElapsedTime / totalTime, 1),
     asTime: minutesRemaining > 0 ? `${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''}` : `${Math.max(0, secondsRemaining)} second${secondsRemaining !== 1 ? 's' : ''}`,
   };
 };

@@ -11,10 +11,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, Ref } from 'vue';
+import { ref, onMounted, Ref, onBeforeUnmount } from 'vue';
 import { useDeviceStore } from 'src/stores/device-store';
 import { useQuasar } from 'quasar';
-import { DeviceListRow, getDevices, supabase } from 'src/services/supabase.service';
+import { DeviceList, DeviceListRow, supabase } from 'src/services/supabase.service';
 import { RealtimeChannel } from '@supabase/realtime-js';
 
 const emit = defineEmits<{
@@ -28,12 +28,12 @@ const deviceListChannel : Ref<RealtimeChannel | undefined> = ref(undefined);
 
 onMounted( async () => {
     store.load();
-    SubscribeToDeviceList();
+    await SubscribeToDeviceList();
     // Set values based on local cache for responsiveness
     selectedDevice.value = store.knownDevices.find( element => element.device_id === store.deviceId);
     try {
         // Update from server
-        const deviceList = await getDevices();
+        const deviceList = await supabase.from<'device_list', DeviceList>('device_list').select();
         updateDeviceStore(deviceList.data);
         selectedDevice.value = store.knownDevices.find( element => element.device_id === store.deviceId);
         store.deviceId = selectedDevice.value?.device_id;
@@ -57,13 +57,14 @@ onMounted( async () => {
     }
 });
 
-function SubscribeToDeviceList() {
-    UnSubscribeToDeviceList();
-    deviceListChannel.value = supabase.channel('schema-db-changes').on(
+onBeforeUnmount(async () : Promise<void> => await UnSubscribeToDeviceList());
+
+async function SubscribeToDeviceList(): Promise<void> {
+    await UnSubscribeToDeviceList();
+    deviceListChannel.value = supabase.channel('device_list_all').on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'device_list'},
         payload => {
-            console.log(payload);
             switch(payload.eventType) {
                 case 'UPDATE': {
                     const update : DeviceListRow = payload.new as DeviceListRow;
@@ -73,6 +74,7 @@ function SubscribeToDeviceList() {
                         device.device_id = update.device_id;
                         device.device_name = update.device_name;
                         device.online = update.online;
+                        device.last_heard = update.last_heard;
                     }
                     break;
                 }
@@ -89,11 +91,23 @@ function SubscribeToDeviceList() {
             store.save();
         }
     )
-    .subscribe();
+    .subscribe((status, err) => {
+        if (err) {
+            console.log(`Error: ${err}`);
+        }
+        switch(status) {
+            case 'CLOSED':
+            case 'CHANNEL_ERROR':
+            case 'TIMED_OUT': {
+                //SubscribeToDeviceList();
+                break;
+            }
+        }
+    });
 }
 
-function UnSubscribeToDeviceList() {
-    if (deviceListChannel.value) supabase.removeChannel(deviceListChannel.value);
+async function UnSubscribeToDeviceList(): Promise<void> {
+    if (deviceListChannel.value) await supabase.removeChannel(deviceListChannel.value);
 }
 
 function onDeviceSelected(device : DeviceListRow) {

@@ -18,13 +18,13 @@
 
 <script setup lang="ts">
 import { ref, Ref, watch, onMounted } from 'vue';
-import { getComponents as getComponentsFromDb, type Component } from 'src/services/supabase.service';
+import { getComponents as getComponentsFromDb, type ComponentListSelect } from 'src/services/supabase.service';
 
 const props = defineProps({
     deviceId: String,
 });
 
-const featureList: Ref<Component[]> = ref([]);
+const featureList: Ref<ComponentListSelect[]> = ref([]);
 
 onMounted( async () => {
   await getComponents();
