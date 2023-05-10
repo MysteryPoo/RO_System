@@ -1,0 +1,7 @@
+.env
+MQTT_Capture_Service/bin/
+MQTT_Capture_Service/obj/
+MQTT_Capture_Service/.env
+MQTT_Discovery_Service/bin/
+MQTT_Discovery_Service/obj/
+MQTT_Discovery_Service/.env
