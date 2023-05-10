@@ -1,10 +1,10 @@
 
-using System.Text.Json;
 using Capture.DbRow;
 using MQTTnet;
 using MQTTnet.Client;
-//using Newtonsoft.Json;
+using Supabase.Realtime.PostgresChanges;
 using static Supabase.Client;
+using static Supabase.Realtime.Constants;
 
 public class MQTTService {
   private MqttFactory _factory;
@@ -12,6 +12,8 @@ public class MQTTService {
   private MqttClientOptions _options;
   private SupabaseService _supabase;
   private Supabase.Realtime.RealtimeChannel? _triggerChannel;
+  private Supabase.Realtime.RealtimeChannel? _booleanOptions;
+  private Supabase.Realtime.RealtimeChannel? _numberOptions;
   private Supabase.Realtime.RealtimeBroadcast<TriggerJson>? _broadcast;
   private Dictionary<string, AbstractMqttProcessor> _mqttProcessors;
 
@@ -26,41 +28,8 @@ public class MQTTService {
     _factory = new MqttFactory();
     _client = _factory.CreateMqttClient();
     _options = new MqttClientOptionsBuilder().WithTcpServer(endPoint).WithCredentials(mqttUsername, mqttPassword).WithClientId("Capture_Service").Build();
-    // This stuff needs a refactor but it works for now
-    _supabase.Client.From<OptionBooleanDbRow>().On(ChannelEventType.Update, async (sender, args) => {
-      var option = args.Response!.Model<OptionBooleanDbRow>();
-      var optionBase = (await _supabase.Client.From<OptionDbRow>().Where(o => o.Id == option!.OptionId).Get()).Models.First();
-      var component = (await _supabase.Client.From<ComponentDbRow>().Where(c => c.Id == optionBase.ComponentId).Get()).Models.First();
-      var device = (await _supabase.Client.From<DeviceDbRow>().Where(d => d.Id == component.DeviceId).Get()).Models.First();
-      Console.WriteLine("Sending device config, because option_boolean_list table changed.");
-      await SendDeviceConfiguration(device.DeviceId);
-    });
-    _supabase.Client.From<OptionNumberDbRow>().On(ChannelEventType.Update, async (sender, args) => {
-      var option = args.Response!.Model<OptionNumberDbRow>();
-      var optionBase = (await _supabase.Client.From<OptionDbRow>().Where(o => o.Id == option!.OptionId).Get()).Models.First();
-      var component = (await _supabase.Client.From<ComponentDbRow>().Where(c => c.Id == optionBase.ComponentId).Get()).Models.First();
-      var device = (await _supabase.Client.From<DeviceDbRow>().Where(d => d.Id == component.DeviceId).Get()).Models.First();
-      Console.WriteLine("Sending device config, because option_number_list table changed.");
-      await SendDeviceConfiguration(device.DeviceId);
-    });
-    _triggerChannel = _supabase.Client.Realtime.Channel("triggers");
-    _broadcast = _triggerChannel.Register<TriggerJson>();
-    _broadcast.OnBroadcast += async (sender, _) => {
-      var data = _broadcast.Current();
-      if (data is not null &&
-          data.Payload is not null &&
-          data.Event is not null &&
-          data.Event.Equals("trigger")) {
-        string topic = $"to/{data.Payload["device_id"]}/{data.Payload["component_name"]}/configuration";
-        string payload = "{" + $"\"{data.Payload["trigger_name"]}\": true" + "}";
-        var message = new MqttApplicationMessageBuilder()
-          .WithTopic(topic)
-          .WithPayload(payload)
-          .Build();
-        Console.WriteLine($"Sending topic: {topic} with payload: {payload}");
-        await _client.PublishAsync(message);
-      }
-    };
+    SetupTriggerChannelSubscription();
+    SetupOptionsChangeSubscriptions();
     _mqttProcessors = new() {
       {"version", new VersionProcessor(_supabase, this)},
       {"wifi", new WifiProcessor(_supabase, this)},
@@ -77,6 +46,19 @@ public class MQTTService {
   public async Task StartAsync() {
     if (_client is null) return;
     if (_triggerChannel is not null) await _triggerChannel.Subscribe();
+    if (_booleanOptions is not null) {
+      await _booleanOptions.Subscribe();
+      _booleanOptions.OnClose += async (sender, args) => {
+      await _booleanOptions.Subscribe();
+    };
+    }
+    if (_numberOptions is not null) {
+      await _numberOptions.Subscribe();
+      _numberOptions.OnClose += async (sender, args) => {
+        await _numberOptions.Subscribe();
+      };
+    }
+    
     await Task.Factory.StartNew(async () => {
       Console.WriteLine("Starting MQTT connection.");
       _client.ApplicationMessageReceivedAsync += async delegate(MqttApplicationMessageReceivedEventArgs args) {
@@ -194,5 +176,75 @@ public class MQTTService {
       Console.WriteLine($"Sending topic: {topic} with payload: {payload}");
       await _client.PublishAsync(message);
     }
+  }
+
+  private void SetupOptionsChangeSubscriptions()
+  {
+    SetupBooleanOptionChange();
+    SetupNumberOptionChange();
+  }
+
+  private void SetupBooleanOptionChange()
+  {
+    _booleanOptions = _supabase.Client.Realtime.Channel("capture-option-boolean");
+    _booleanOptions.Register(new PostgresChangesOptions("public", "option_boolean_list"));
+    _booleanOptions.OnPostgresChange += async (sender, args) => 
+    {
+      switch(args.Response!.Payload!.Data!.Type)
+      {
+        case EventType.Update: {
+          var option = args.Response!.Model<OptionBooleanDbRow>();
+          var optionBase = (await _supabase.Client.From<OptionDbRow>().Where(o => o.Id == option!.OptionId).Get()).Models.First();
+          var component = (await _supabase.Client.From<ComponentDbRow>().Where(c => c.Id == optionBase.ComponentId).Get()).Models.First();
+          var device = (await _supabase.Client.From<DeviceDbRow>().Where(d => d.Id == component.DeviceId).Get()).Models.First();
+          Console.WriteLine("Sending device config, because option_boolean_list table changed.");
+          await SendDeviceConfiguration(device.DeviceId);
+          break;
+        }
+      }
+    };
+  }
+
+  private void SetupNumberOptionChange()
+  {
+    _numberOptions = _supabase.Client.Realtime.Channel("capture-option-number");
+    _numberOptions.Register(new PostgresChangesOptions("public", "option_number_list"));
+    _numberOptions.OnPostgresChange += async (sender, args) =>
+    {
+      switch(args.Response!.Payload!.Data!.Type)
+      {
+        case EventType.Update: {
+          var option = args.Response!.Model<OptionNumberDbRow>();
+          var optionBase = (await _supabase.Client.From<OptionDbRow>().Where(o => o.Id == option!.OptionId).Get()).Models.First();
+          var component = (await _supabase.Client.From<ComponentDbRow>().Where(c => c.Id == optionBase.ComponentId).Get()).Models.First();
+          var device = (await _supabase.Client.From<DeviceDbRow>().Where(d => d.Id == component.DeviceId).Get()).Models.First();
+          Console.WriteLine("Sending device config, because option_number_list table changed.");
+          await SendDeviceConfiguration(device.DeviceId);
+          break;
+        }
+      }
+    };
+  }
+
+  private void SetupTriggerChannelSubscription()
+  {
+    _triggerChannel = _supabase.Client.Realtime.Channel("triggers");
+    _broadcast = _triggerChannel.Register<TriggerJson>();
+    _broadcast.OnBroadcast += async (sender, _) => {
+      var data = _broadcast.Current();
+      if (data is not null &&
+          data.Payload is not null &&
+          data.Event is not null &&
+          data.Event.Equals("trigger")) {
+        string topic = $"to/{data.Payload["device_id"]}/{data.Payload["component_name"]}/configuration";
+        string payload = "{" + $"\"{data.Payload["trigger_name"]}\": true" + "}";
+        var message = new MqttApplicationMessageBuilder()
+          .WithTopic(topic)
+          .WithPayload(payload)
+          .Build();
+        Console.WriteLine($"Sending topic: {topic} with payload: {payload}");
+        await _client.PublishAsync(message);
+      }
+    };
   }
 }
