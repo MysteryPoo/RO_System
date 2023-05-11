@@ -107,7 +107,7 @@ function SubscribeToLogs() : void {
 }
 
 async function UnsubscribeFromLogs() : Promise<void> {
-  if (logSubscription.channel) await logSubscription.Unsubscribe();
+  await logSubscription.Unsubscribe();
 }
 
 function GetChipColor(severity: string): string {
