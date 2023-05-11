@@ -14,27 +14,30 @@
         Last Changed: {{ lastChecked }}
       </q-tooltip>
     </i>
+    <q-inner-loading :showing="isLoading">
+      <q-spinner-gears size="50px" color="primary" />
+    </q-inner-loading>
   </div>
 </template>
 
 <script setup lang="ts">
-import { RealtimeChannel } from '@supabase/realtime-js';
 import { useDeviceStore } from 'src/stores/device-store';
 import { supabase, WifiSignalTypes, WifiSignalSelect, WifiSignalInsert, WifiQualityTypes, WifiQualitySelect, WifiQualityInsert } from 'src/services/supabase.service';
 import { ref, Ref, onBeforeUnmount, onMounted, watch, computed } from 'vue';
 import { matWifi } from '@quasar/extras/material-icons';
 import { DateTime } from 'luxon';
-import { RealtimePostgresInsertPayload } from '@supabase/supabase-js';
+import { useSubscribe } from 'src/composables/subscribe';
 
 const props = defineProps<{
   deviceId: string | undefined
 }>();
 
 const deviceStore = useDeviceStore();
-const signalChannel : Ref<RealtimeChannel | undefined> = ref(undefined);
-const qualityChannel : Ref<RealtimeChannel | undefined> = ref(undefined);
+const signalSubscription = useSubscribe();
+const qualitySubscription = useSubscribe();
 const wifiSignal : Ref<WifiSignalSelect | WifiSignalInsert | null> = ref(null);
 const wifiQuality : Ref<WifiQualitySelect | WifiQualityInsert | null> = ref(null);
+const isLoading = ref(true);
 const wifiColor = computed( () => {
   if (wifiQuality.value?.quality ?? 0 > 75) {
     return 'color: green';
@@ -58,6 +61,7 @@ onBeforeUnmount(async () : Promise<void> => await UnsubscribeFromWifi());
 watch(() => props.deviceId, async () => await Refresh());
 
 async function Refresh(): Promise<void> {
+  isLoading.value = true;
   const device = deviceStore.knownDevices.find(d => d.device_id === props.deviceId);
   if (!device) return;
   wifiSignal.value = (await supabase.from<'wifi_signal_reports', WifiSignalTypes>('wifi_signal_reports')
@@ -73,53 +77,34 @@ async function Refresh(): Promise<void> {
     .limit(1)
     .single()).data as WifiQualitySelect | null;
   await SubscribeToWifi();
+  isLoading.value = false;
 }
 
-async function SubscribeToWifiSignal(): Promise<void> {
-  await Subscribe('wifi_signal', 'wifi_signal_reports', payload => {
+function SubscribeToWifiSignal(): void {
+  if (!props.deviceId) return;
+  UnsubscribeFromWifiSignal();
+  signalSubscription.Subscribe(props.deviceId, 'wifi_signal', 'wifi_signal_reports', payload => {
     wifiSignal.value = payload.new as WifiSignalInsert;
   });
 }
 
 async function UnsubscribeFromWifiSignal(): Promise<void> {
-  if (signalChannel.value) await supabase.removeChannel(signalChannel.value);
+  await signalSubscription.Unsubscribe();
 }
 
 async function SubscribeToWifiQuality(): Promise<void> {
-  await Subscribe('wifi_quality', 'wifi_quality_reports', payload => {
+  if (!props.deviceId) return;
+  UnsubscribeFromWifiQuality();
+  qualitySubscription.Subscribe(props.deviceId, 'wifi_quality', 'wifi_quality_reports', payload => {
     wifiQuality.value = payload.new as WifiQualityInsert;
   });
 }
 
 async function UnsubscribeFromWifiQuality(): Promise<void> {
-  if (qualityChannel.value) await supabase.removeChannel(qualityChannel.value);
-}
-
-async function Subscribe(channel: string, table: string, callback: (payload: RealtimePostgresInsertPayload<{[key: string]: unknown}>) => void): Promise<void> {
-  const device = deviceStore.knownDevices.find(d => d.device_id === props.deviceId);
-  if (device == null) return;
-  signalChannel.value = supabase.channel(channel).on(
-    'postgres_changes',
-    { event: 'INSERT', schema: 'public', table: table, filter: `device_id=eq.${device.id}`},
-    callback
-  )
-  .subscribe( (status, err) => {
-    if (err) {
-      console.log(`Error: ${err}`);
-    }
-    switch(status) {
-      case 'CLOSED':
-      case 'CHANNEL_ERROR':
-      case 'TIMED_OUT': {
-          //SubscribeToWifiSignal();
-          break;
-      }
-    }
-  });
+  await qualitySubscription.Unsubscribe();
 }
 
 async function SubscribeToWifi(): Promise<void> {
-  await UnsubscribeFromWifi();
   await SubscribeToWifiSignal();
   await SubscribeToWifiQuality();
 }

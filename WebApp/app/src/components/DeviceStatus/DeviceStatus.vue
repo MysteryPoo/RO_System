@@ -17,9 +17,6 @@
             <FeatureList :deviceId="props.deviceId" />
           </div>
         </q-card-section>
-        <q-inner-loading :showing="isLoadingFirstTime">
-          <q-spinner-gears size="50px" color="primary" />
-        </q-inner-loading>
       </q-card>
     </div>
 </template>
@@ -38,7 +35,6 @@ const props = defineProps<{
   deviceId: string | undefined,
 }>();
 
-const isLoadingFirstTime = ref(true);
 const device: Ref<DeviceListRow | undefined> = ref(undefined);
 const isDeviceOnline = computed( () : boolean => {
   return device.value?.online ?? false;
@@ -55,7 +51,6 @@ onMounted( () => {
   deviceStore.$subscribe((_mutation, state) => {
     device.value = state.knownDevices.find(d => d.device_id === props.deviceId);
   });
-  isLoadingFirstTime.value = false;
 });
 
 </script>

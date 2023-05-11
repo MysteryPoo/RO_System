@@ -57,10 +57,10 @@ onMounted( async () => {
     }
 });
 
-onBeforeUnmount(async () : Promise<void> => await UnSubscribeToDeviceList());
+onBeforeUnmount(async () : Promise<void> => await UnSubscribeFromDeviceList());
 
 async function SubscribeToDeviceList(): Promise<void> {
-    await UnSubscribeToDeviceList();
+    await UnSubscribeFromDeviceList();
     deviceListChannel.value = supabase.channel('device_list_all').on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'device_list'},
@@ -106,7 +106,7 @@ async function SubscribeToDeviceList(): Promise<void> {
     });
 }
 
-async function UnSubscribeToDeviceList(): Promise<void> {
+async function UnSubscribeFromDeviceList(): Promise<void> {
     if (deviceListChannel.value) await supabase.removeChannel(deviceListChannel.value);
 }
 
