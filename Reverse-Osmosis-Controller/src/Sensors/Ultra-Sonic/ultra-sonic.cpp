@@ -1,4 +1,4 @@
-
+#ifdef FEATURE_ULTRASONIC
 #include "global-defines.h"
 #include "ultra-sonic.h"
 #include "application.h"
@@ -105,8 +105,8 @@ int UltraSonic::getDistance()
 void UltraSonic::fireConfigurationMessage() const
 {
 #ifdef TESTING
-    String triggerValue("Simulated");
-    String echoValue("Simulated");
+    int triggerValue(-1);
+    int echoValue(-1);
 #else
     int triggerValue = this->triggerPin;
     int echoValue = this->echoPin;
@@ -138,4 +138,6 @@ void UltraSonic::setDistance(int distance)
     writer.endObject();
     this->logger.pushMessage("ultra-sonic", writer.buffer());
 }
+#endif
+
 #endif

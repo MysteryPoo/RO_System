@@ -5,6 +5,8 @@ export const useDeviceStore = defineStore('device', {
   state: () => ({
     deviceId: undefined as string | undefined,
     knownDevices: [] as DeviceListRow[],
+    state: undefined as string | undefined, // TODO: May not be necessary
+    version: undefined as string | undefined, // TODO: May not be necessary
   }),
   getters: {},
   actions: {

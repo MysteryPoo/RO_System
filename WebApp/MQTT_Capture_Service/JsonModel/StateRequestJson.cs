@@ -1,10 +1,8 @@
 
 using System.Text.Json.Serialization;
 
-public class StateRequestJson {
-  [JsonPropertyName("datetime")]
-  [JsonConverter(typeof(DateTimeParticleToDateTimeOffset))]
-  public DateTimeOffset DateTime { get; set; }
+public class StateRequestJson : AbstractHasDatetimeJson
+{
   [JsonPropertyName("state")]
   public string State { get; set; } = string.Empty;
   [JsonPropertyName("success")]

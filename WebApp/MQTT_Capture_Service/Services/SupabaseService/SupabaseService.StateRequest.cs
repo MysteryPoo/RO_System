@@ -6,7 +6,7 @@ public partial class SupabaseService {
     if (device is null) throw new Exception("Insert State Request Error: Device does not exist.");
     var stateRequest = new StateRequestDbRow() {
       DeviceId = device.Id,
-      DateTime = json.DateTime,
+      DateTime = json.Datetime,
       State = json.State,
       Success = json.Success,
       RequestReason = json.RequestReason,

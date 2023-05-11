@@ -1,4 +1,6 @@
+#include "global-defines.h"
 
+#ifdef FEATURE_FLOATMETER
 #include "float-meter.h"
 #include "system-log.h"
 
@@ -52,7 +54,7 @@ void FloatMeter::fireConfigurationMessage() const
 #ifndef TESTING
   int pinValue = this->pin;
 #else
-  String pinValue("Simulated");
+  int pinValue(-1);
 #endif
   JSONBufferWriter writer = SystemLog::createBuffer(256);
   writer.beginObject();
@@ -77,4 +79,6 @@ void FloatMeter::setValue(int newValue)
 {
   this->simulatedValue = newValue;
 }
+#endif
+
 #endif

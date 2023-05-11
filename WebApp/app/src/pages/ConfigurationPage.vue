@@ -1,6 +1,6 @@
 <template>
   <q-page class="full-width column items-center">
-    <device-select class="col" @device-selected="onDeviceSelected" />
+    <device-list class="col" @device-selected="onDeviceSelected" />
     <q-card v-for="component in configuration.components" :key="component.name" style="margin: 50px;">
       <q-card-section>
         <div class="text-h1">{{ component.display }}</div>
@@ -35,9 +35,9 @@
 </template>
 
 <script setup lang="ts">
-import DeviceSelect from 'src/components/DeviceSelect.vue';
+import DeviceList from 'src/components/DeviceList.vue';
 import { useDeviceStore } from 'src/stores/device-store';
-import { supabase, OptionListBaseType, ComponentBase, OptionNumberListType, OptionBooleanListType } from 'src/services/supabase.service';
+import { supabase, OptionListRowType, ComponentListRowType, OptionNumberListType, OptionBooleanListType } from 'src/services/supabase.service';
 import { Database } from 'lib/database.types';
 import { reactive, ref, Ref } from 'vue';
 
@@ -84,10 +84,10 @@ async function onDeviceSelected(value: string | undefined) : Promise<void> {
 async function getConfiguration() {
   const device = deviceStore.knownDevices.find(d => d.device_id === deviceId.value);
   if (!device) return;
-  const components = (await supabase.from<'component_list', ComponentBase>('component_list').select().eq('device_id', device.id)).data;
+  const components = (await supabase.from<'component_list', ComponentListRowType>('component_list').select().eq('device_id', device.id)).data;
   if (!components) return;
   components.forEach(async componentDb => {
-    const options = (await supabase.from<'option_list', OptionListBaseType>('option_list').select().eq('component_id', componentDb.id)).data;
+    const options = (await supabase.from<'option_list', OptionListRowType>('option_list').select().eq('component_id', componentDb.id)).data;
     if (!options) return;
     const optionList : Option[] = reactive([]);
     options.forEach(async optionBase => {

@@ -12,41 +12,22 @@
 #ifndef _SYSTEM_LOG_
 #define _SYSTEM_LOG_
 
-#include "application.h"
-#include "message.h"
-#include "IComponent.h"
-#include <queue>
-
-#define SYSTEMLOG_MESSAGEBUFFERSIZE 32
-
-class MQTTClient;
+class MqttManager;
 class MqttQueue;
+class String;
 
-class SystemLog : public IComponent
+class SystemLog
 {
 public:
-    SystemLog(MQTTClient& mqttClient, MqttQueue& mqttQueue);
+    SystemLog(MqttManager& manager);
     void trace(String message);
     void information(String message);
     void warning(String message);
     void error(String message);
-    void pushMessage(String component, String data);
-    void pushMessage(String component, char* data);
-    boolean isEmpty() { return messageQueueSize() == 0; }
-    int messageQueueSize() { return messageQueue.size(); }
-    static JSONBufferWriter createBuffer(int size);
-    virtual void Update() override;
-
-    boolean enabled;
     
 private:
-    MQTTClient& mqttClient;
-    MqttQueue& mqttQueue;
-    std::queue<Message*> messageQueue;
-    unsigned long lastBurst;
+    MqttManager& mqtt;
     
-    void publishLog();
-    boolean isFull() { return messageQueueSize() == SYSTEMLOG_MESSAGEBUFFERSIZE; }
     void simpleMessage(String label, String message);
 
 };
