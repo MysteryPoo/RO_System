@@ -16,6 +16,7 @@
 
       <q-tabs align="left">
         <q-route-tab to="/status" label="Status" />
+        <q-route-tab to="/logs" label="Logs" />
         <q-route-tab to="/configuration" label="Configuration" />
       </q-tabs>
     </q-header>

@@ -14,6 +14,9 @@
         Last Changed: {{ lastChecked }}
       </q-tooltip>
     </i>
+    <q-inner-loading :showing="isLoading">
+      <q-spinner-gears size="50px" color="primary" />
+    </q-inner-loading>
   </div>
 </template>
 
@@ -35,6 +38,7 @@ const signalChannel : Ref<RealtimeChannel | undefined> = ref(undefined);
 const qualityChannel : Ref<RealtimeChannel | undefined> = ref(undefined);
 const wifiSignal : Ref<WifiSignalSelect | WifiSignalInsert | null> = ref(null);
 const wifiQuality : Ref<WifiQualitySelect | WifiQualityInsert | null> = ref(null);
+const isLoading = ref(true);
 const wifiColor = computed( () => {
   if (wifiQuality.value?.quality ?? 0 > 75) {
     return 'color: green';
@@ -58,6 +62,7 @@ onBeforeUnmount(async () : Promise<void> => await UnsubscribeFromWifi());
 watch(() => props.deviceId, async () => await Refresh());
 
 async function Refresh(): Promise<void> {
+  isLoading.value = true;
   const device = deviceStore.knownDevices.find(d => d.device_id === props.deviceId);
   if (!device) return;
   wifiSignal.value = (await supabase.from<'wifi_signal_reports', WifiSignalTypes>('wifi_signal_reports')
@@ -73,6 +78,7 @@ async function Refresh(): Promise<void> {
     .limit(1)
     .single()).data as WifiQualitySelect | null;
   await SubscribeToWifi();
+  isLoading.value = false;
 }
 
 async function SubscribeToWifiSignal(): Promise<void> {

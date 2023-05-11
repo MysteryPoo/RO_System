@@ -15,6 +15,9 @@
       </q-tooltip>
     </div>
     <device-state :device-id="props.deviceId" />
+    <q-inner-loading :showing="isLoading">
+      <q-spinner-gears size="50px" color="primary" />
+    </q-inner-loading>
   </div>
 </template>
 
@@ -33,6 +36,7 @@ const props = defineProps<{
 const deviceStore = useDeviceStore();
 const rosystemEnabledChannel : Ref<RealtimeChannel | undefined> = ref(undefined);
 const enabled : Ref<RoSystemEnabledSelect | RoSystemEnabledInsert | null> = ref(null);
+const isLoading = ref(true);
 const isDeviceEnabled = computed(() => {
   return enabled.value?.enabled ?? false;
 });
@@ -57,6 +61,7 @@ onBeforeUnmount(async () : Promise<void> => await UnsubscribeFromRoSystemEnabled
 watch(() => props.deviceId, async () => await Refresh());
 
 async function Refresh(): Promise<void> {
+  isLoading.value = true;
   const device = deviceStore.knownDevices.find(d => d.device_id === props.deviceId);
   if (!device) return;
   enabled.value = (await supabase.from<'rosystem_enabled_reports', RoSystemEnabledTypes>('rosystem_enabled_reports')
@@ -66,6 +71,7 @@ async function Refresh(): Promise<void> {
     .limit(1)
     .single()).data as RoSystemEnabledSelect | null;
   await SubscribeToRoSystemEnabled();
+  isLoading.value = false;
 }
 
 async function SubscribeToRoSystemEnabled(): Promise<void> {

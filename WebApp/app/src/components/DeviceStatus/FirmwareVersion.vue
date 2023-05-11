@@ -22,7 +22,7 @@ onMounted(async () => {
   await Refresh();
 });
 
-onBeforeUnmount(async () : Promise<void> => await UnsubscribeToVersions());
+onBeforeUnmount(async () : Promise<void> => await UnsubscribeFromVersions());
 
 watch(() => props.deviceId, async () => await Refresh());
 
@@ -34,7 +34,7 @@ async function Refresh(): Promise<void> {
 }
 
 async function SubscribeToVersions(): Promise<void> {
-  await UnsubscribeToVersions();
+  await UnsubscribeFromVersions();
   const device = deviceStore.knownDevices.find(d => d.device_id === props.deviceId);
   if (device == null) return;
   versionChannel.value = supabase.channel('versions_insert').on(
@@ -59,7 +59,7 @@ async function SubscribeToVersions(): Promise<void> {
   });
 }
 
-async function UnsubscribeToVersions(): Promise<void> {
+async function UnsubscribeFromVersions(): Promise<void> {
   if (versionChannel.value) await supabase.removeChannel(versionChannel.value);
 }
 
