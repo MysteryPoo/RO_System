@@ -48,7 +48,12 @@ services:
       - MQTT_PASSWORD
       - MQTT_OVERRIDE
 
+  app:
+    container_name: romcon_app
+    build: ./app
+    image: ${DOCKER_USERNAME}/romcon-app
+    restart: always
+
 volumes:
-  romcon_mongo_volume:
   romcon_rabbitmq_volume_data:
   romcon_rabbitmq_volume_logs:
