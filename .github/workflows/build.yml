@@ -51,3 +51,12 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/romcon-rabbitmq:latest,${{ secrets.DOCKERHUB_USERNAME }}/romcon-rabbitmq:${{ github.ref_name }}
+      -
+        name: App (Build & Push)
+        uses: docker/build-push-action@v4
+        with:
+          context: ./WebApp
+          file: ./WebApp/app/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/romcon-app:latest,${{ secrets.DOCKERHUB_USERNAME }}/romcon-app:${{ github.ref_name }}
