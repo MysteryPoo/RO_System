@@ -1,26 +1,22 @@
-/*
-  FloatSwitchConfiguration
-
-  Responsible for managing the configuration settings for the Float Switch
-*/
-#ifndef _FLOATSWITCHCONFIGURATION_
-#define _FLOATSWITCHCONFIGURATION_
+#ifndef _BAROMETERCONFIGURATION_
+#define _BAROMETERCONFIGURATION_
 
 #include "Configuration/IConfiguration.h"
 #include "MQTT/MqttSubscriber.h"
 #include "MQTT/IOnConnect.h"
 
-class FloatSwitch;
+class Barometer;
 class MqttManager;
+
 namespace spark
 {
   class JSONValue;
 }
 
-class FloatSwitchConfiguration : public MqttSubscriber, public IConfiguration, public IOnConnect
+class BarometerConfiguration : public MqttSubscriber, public IConfiguration, public IOnConnect
 {
 public:
-  FloatSwitchConfiguration(FloatSwitch& fs, MqttManager& manager);
+  BarometerConfiguration(Barometer& sensor, MqttManager& manager);
 
   // MqttSubscriber
   virtual void Update(const char* payload) override;
@@ -29,11 +25,10 @@ public:
   // IOnConnect
   virtual void OnConnect(const bool success) const override;
 private:
-  FloatSwitch& floatSwitch;
+  Barometer& barometer;
   MqttManager& mqttManager;
-  void configure(JSONValue json);
+  void configure(spark::JSONValue json);
   void reportOptions() const;
-  void reportPins() const;
 };
 
 #endif

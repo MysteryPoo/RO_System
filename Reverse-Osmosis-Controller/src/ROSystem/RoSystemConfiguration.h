@@ -28,7 +28,7 @@ public:
   // IConfiguration
   virtual const char* GetName() const override;
   // IOnConnect
-  virtual void OnConnect(bool success) override;
+  virtual void OnConnect(const bool success) const override;
 private:
   ROSystem& system;
   MqttManager& mqtt;

@@ -51,3 +51,14 @@ void AbstractReporter::report(const char* topic, const int value) const
   this->mqtt.PushPayload(topic, writer.buffer());
   delete[] writer.buffer();
 }
+
+void AbstractReporter::report(const char* topic, const int32_t value) const
+{
+  JSONBufferWriter writer = JsonBuffer::createBuffer(128);
+  writer.beginObject()
+  .name("datetime").value(TimeHelper::GetTimeIfAble())
+  .name("value").value(value)
+  .endObject();
+  this->mqtt.PushPayload(topic, writer.buffer());
+  delete[] writer.buffer();
+}

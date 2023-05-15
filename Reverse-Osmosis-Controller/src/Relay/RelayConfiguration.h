@@ -17,7 +17,7 @@ class RelayConfiguration: public IOnConnect
 public:
   RelayConfiguration(Relay& relay, MqttManager& manager);
   // IOnConnect
-  virtual void OnConnect(bool success) override;
+  virtual void OnConnect(const bool success) const override;
 private:
   Relay& relay;
   MqttManager& mqtt;

@@ -11,7 +11,7 @@ RelayConfiguration::RelayConfiguration(Relay& relay, MqttManager& manager)
   manager.AttachOnConnect(this);
 }
 
-void RelayConfiguration::OnConnect(bool success)
+void RelayConfiguration::OnConnect(const bool success) const
 {
   if (!success) return;
   this->reportPins();

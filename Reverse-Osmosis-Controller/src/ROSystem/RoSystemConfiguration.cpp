@@ -29,7 +29,7 @@ const char* RoSystemConfiguration::GetName() const
   return this->system.GetName().c_str();
 }
 
-void RoSystemConfiguration::OnConnect(bool success)
+void RoSystemConfiguration::OnConnect(const bool success) const
 {
   if (!success) return;
   reportOptions();
