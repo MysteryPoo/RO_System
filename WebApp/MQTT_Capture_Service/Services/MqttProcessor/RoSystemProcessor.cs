@@ -48,19 +48,10 @@ public class RoSystemProcessor : AbstractMqttProcessor
     }
   }
 
-  // TODO : Consolidate configuration
   private async Task ProcessConfiguration(string[] topic, string payload)
   {
     string deviceId = AbstractMqttProcessor.GetDeviceFromTopic(topic);
-    try {
-      var options = new JsonSerializerOptions();
-      options.Converters.Add(new OptionConverterWithTypeDiscriminator());
-      var configuration = JsonSerializer.Deserialize<ConfigurationJson>(payload, options);
-      if (configuration is null) throw new Exception("Unable to deserialize configuration.");
-      await _supabase.CreateOrUpdateComponentForDevice(deviceId, topic[2], configuration);
-    } catch (Exception e) {
-      Console.WriteLine(e.Message);
-    }
+    await _supabase.ProcessConfiguration(deviceId, topic[2], payload);
   }
 
   private async Task ProcessStateRequest(string[] topic, string payload)
