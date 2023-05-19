@@ -14,6 +14,7 @@
             <wi-fi :device-id="props.deviceId" />
             <ro-system :device-id="props.deviceId" />
             <div class="text-h6" v-if="float !== undefined">Float is <span :style="float ? 'color: red' : 'color: green'">{{ float ? "Full" : "Not Full" }}</span></div>
+            <BarometerData :device-id="props.deviceId" />
             <FeatureList :deviceId="props.deviceId" />
           </div>
         </q-card-section>
@@ -30,6 +31,7 @@ import FeatureList from 'src/components/FeatureList.vue';
 import FirmwareVersion from './FirmwareVersion.vue';
 import RoSystem from './RoSystem/RoSystem.vue';
 import WiFi from './Wi-fi.vue';
+import BarometerData from './Barometer/BarometerData.vue';
 
 const props = defineProps<{
   deviceId: string | undefined,
