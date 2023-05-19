@@ -53,7 +53,7 @@ const char* FloatSwitchConfiguration::GetName() const
   return this->floatSwitch.GetName().c_str();
 }
 
-void FloatSwitchConfiguration::OnConnect(bool success)
+void FloatSwitchConfiguration::OnConnect(const bool success) const
 {
   if (!success) return;
   reportOptions();

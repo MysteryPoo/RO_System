@@ -22,11 +22,8 @@ public:
     FloatSwitch(int pin, SystemLog &logger);
     virtual ~FloatSwitch() override {};
 
-    const bool GetStatus() const { return this->status; }
-    const bool GetReliable() const { return this->isReliable; }
-
     // AbstractSensor
-    virtual bool isFull() const override;
+    virtual const bool isFull() const override;
     virtual void Update() override;
     virtual const String GetName() const override;
 
@@ -41,9 +38,6 @@ private:
     bool isReliable;
 
     virtual void sample();
-
-protected:
-    SystemLog &logger;
 };
 
 #endif

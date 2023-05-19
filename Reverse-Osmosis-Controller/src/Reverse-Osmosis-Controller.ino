@@ -70,6 +70,11 @@ SYSTEM_THREAD(ENABLED)
 #ifdef FEATURE_FLOATMETER
 #include "Sensors/Float-Meter/float-meter.h"
 #endif
+#ifdef FEATURE_BAROMETER
+#include "Sensors/Barometer/barometer.h"
+#include "Sensors/Barometer/BarometerConfiguration.h"
+#include "Sensors/Barometer/BarometerReporter.h"
+#endif
 
 #define SECONDS_PER_DAY 86400
 #define TEN_MINUTES_MS 600000
@@ -109,6 +114,7 @@ RelayReporter flushReporter(&flush, mqttManager);
 RoSystemConfiguration roConfig(ro, mqttManager);
 RoSystemReporter roReporter(&ro, mqttManager);
 
+
 #ifdef FEATURE_ULTRASONIC
 UltraSonic us(A3, A4, syslog);
 #endif
@@ -119,6 +125,11 @@ FloatSwitchReporter fsReporter(&fs, mqttManager);
 #endif
 #ifdef FEATURE_FLOATMETER
 FloatMeter fm(A5, syslog);
+#endif
+#ifdef FEATURE_BAROMETER
+Barometer barometer(syslog);
+BarometerConfiguration barometerConfig(barometer, mqttManager);
+BarometerReporter barometerReporter(&barometer, mqttManager);
 #endif
 
 void setup()
@@ -147,6 +158,12 @@ void setup()
     ro.AddSensor(&fm);
     thingsToUpdate.push_back(&fm);
     heartbeatManager.RegisterReporter("float-meter", &fm);
+#endif
+
+#ifdef FEATURE_BAROMETER
+    barometer.Setup();
+    ro.AddSensor(&barometer);
+    thingsToUpdate.push_back(&barometer);
 #endif
 
 #ifdef TESTING

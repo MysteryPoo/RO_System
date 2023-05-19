@@ -14,7 +14,6 @@ public:
   FloatSwitchReporter(FloatSwitch* sensor, MqttManager& manager);
   // AbstractReporter
   virtual ~FloatSwitchReporter() override {};
-  // IObserver
   virtual void Update(const Subject* subject, const MessageType type, void* msg) const override;
 };
 

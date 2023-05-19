@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Capture.DbRow;
 using Supabase;
 
@@ -32,6 +33,19 @@ public partial class SupabaseService {
       } else {
         await _client.From<DeviceDbRow>().Insert(device.AsSupabaseModel());
       }
+    }
+  }
+
+  public async Task ProcessConfiguration(string deviceId, string componentName, string configJsonString)
+  {
+    try {
+      var options = new JsonSerializerOptions();
+      options.Converters.Add(new OptionConverterWithTypeDiscriminator());
+      var configuration = JsonSerializer.Deserialize<ConfigurationJson>(configJsonString, options);
+      if (configuration is null) throw new Exception("Unable to deserialize configuration.");
+      await CreateOrUpdateComponentForDevice(deviceId, componentName, configuration);
+    } catch (Exception e) {
+      Console.WriteLine(e.Message);
     }
   }
 

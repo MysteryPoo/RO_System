@@ -8,7 +8,7 @@
 class IOnConnect
 {
 public:
-  virtual void OnConnect(bool) = 0;
+  virtual void OnConnect(const bool) const = 0;
 };
 
 #endif

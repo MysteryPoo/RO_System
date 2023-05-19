@@ -94,13 +94,13 @@ async function Refresh() {
   const device = deviceStore.knownDevices.find(d => d.device_id === props.deviceId);
   if (!device) return;
   logs.value = (await supabase.from<'log', LogTypes>('log').select().eq('device_id', device.id).order('datetime', { ascending: false }).limit(50)).data;
-  SubscribeToLogs();
+  await SubscribeToLogs();
   isLoading.value = false;
 }
 
-function SubscribeToLogs() : void {
+async function SubscribeToLogs() : Promise<void> {
   if (!props.deviceId) return;
-  UnsubscribeFromLogs();
+  await UnsubscribeFromLogs();
   logSubscription.Subscribe(props.deviceId, 'log-display', 'log', payload => {
     logs.value?.unshift(payload.new as LogSelect);
   })

@@ -10,13 +10,18 @@
 #include "ObserverPattern/Subject.h"
 #include "IComponent.h"
 
+class SystemLog;
+
 class AbstractSensor : public Subject, public IComponent
 {
 public:
-  virtual bool isFull() const = 0;
+  AbstractSensor(SystemLog& logger) : logger(logger) {}
+  virtual const bool isFull() const = 0;
   // IComponent
   virtual void Update() override = 0;
   virtual const String GetName() const override = 0;
+protected:
+  SystemLog& logger;
 };
 
 #endif

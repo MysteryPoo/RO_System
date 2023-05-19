@@ -34,6 +34,29 @@ export interface Database {
   }
   public: {
     Tables: {
+      barometer_pressure_reports: {
+        Row: {
+          datetime: string | null
+          device_id: number
+          id: number
+          inserted_at: string
+          pressure: number
+        }
+        Insert: {
+          datetime?: string | null
+          device_id: number
+          id?: number
+          inserted_at?: string
+          pressure: number
+        }
+        Update: {
+          datetime?: string | null
+          device_id?: number
+          id?: number
+          inserted_at?: string
+          pressure?: number
+        }
+      }
       component_list: {
         Row: {
           component_name: string

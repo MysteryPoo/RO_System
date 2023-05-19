@@ -1,5 +1,5 @@
-
 #include "global-defines.h"
+#ifdef FEATURE_FLOATSWITCH
 #include "float-switch.h"
 #include "spark_wiring_string.h"
 #include "spark_wiring_ticks.h"
@@ -15,6 +15,7 @@
 using namespace FloatSwitchMessage;
 
 FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
+    AbstractSensor(logger),
     pin(pin),
     stableTimer(millis() + 1000),
     lastStatus(false),
@@ -22,8 +23,7 @@ FloatSwitch::FloatSwitch(int pin, SystemLog &logger) :
     lastStable(millis()),
     stable(false),
     firedWarning(false),
-    isReliable(true),
-    logger(logger)
+    isReliable(true)
 {
 #ifndef TESTING
     pinMode(pin, INPUT_PULLDOWN);
@@ -58,7 +58,7 @@ void FloatSwitch::Update()
     }
 }
 
-bool FloatSwitch::isFull() const
+const bool FloatSwitch::isFull() const
 {
     return (this->stable && this->status) || !isReliable;
 }
@@ -96,3 +96,5 @@ const String FloatSwitch::GetName() const
 {
     return COMPONENT_NAME;
 }
+
+#endif
