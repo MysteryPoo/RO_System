@@ -1,6 +1,6 @@
 <template>
     <div>
-      <q-card style="background: linear-gradient(to bottom right, rgb(27, 34, 99), rgb(17, 20, 48));">
+      <q-card>
         <q-card-section>
           <div class="text-h1">Status</div>
         </q-card-section>
