@@ -6,7 +6,7 @@
 import { useSubscribe } from 'src/composables/subscribe';
 import { useDeviceStore } from 'src/stores/device-store';
 import { Database } from 'app/lib/database.types';
-import { Ref, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { Ref, computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { supabase } from 'src/services/supabase.service';
 import BarometerView from './BarometerView.vue';
 
@@ -21,6 +21,11 @@ const props = defineProps<{
 const deviceStore = useDeviceStore();
 const barometerPressureSubscription = useSubscribe();
 const pressure : Ref<BarometerPressureSelect | BarometerPressureInsert | null> = ref(null);
+const pressureMinimum = ref(0);
+const pressureMaximum = ref(100);
+const waterLevel = computed( () => {
+  return pressureMinimum.value / pressureMaximum.value;
+});
 
 onMounted( async () : Promise<void> => await Refresh());
 
