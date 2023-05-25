@@ -13,7 +13,7 @@
             <firmware-version :device-id="props.deviceId" />
             <wi-fi :device-id="props.deviceId" />
             <ro-system :device-id="props.deviceId" />
-            <div class="text-h6" v-if="float !== undefined">Float is <span :style="float ? 'color: red' : 'color: green'">{{ float ? "Full" : "Not Full" }}</span></div>
+            <FloatSwitch :device-id="props.deviceId" />
             <BarometerData :device-id="props.deviceId" />
             <FeatureList :deviceId="props.deviceId" />
           </div>
@@ -32,6 +32,7 @@ import FirmwareVersion from './FirmwareVersion.vue';
 import RoSystem from './RoSystem/RoSystem.vue';
 import WiFi from './Wi-fi.vue';
 import BarometerData from './Barometer/BarometerData.vue';
+import FloatSwitch from './FloatSwitch.vue';
 
 const props = defineProps<{
   deviceId: string | undefined,
@@ -44,7 +45,6 @@ const isDeviceOnline = computed( () : boolean => {
 const lastOnline = computed( () : string => {
   return DateTime.fromISO(device.value?.last_heard ?? '').toLocaleString(DateTime.DATETIME_SHORT);
 });
-const float : Ref<boolean | undefined> = ref(undefined);
 
 const deviceStore = useDeviceStore();
 
