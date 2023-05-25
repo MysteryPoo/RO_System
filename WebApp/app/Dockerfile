@@ -28,7 +28,7 @@ RUN npm run build
 
 ENV NODE_ENV production
 
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 USER node
 
@@ -43,4 +43,4 @@ WORKDIR /usr/src/app
 COPY --chown=node:node --from=build /usr/src/app/package.json .
 COPY --chown=node:node --from=build /usr/src/app/node_modules ./node_modules
 COPY --chown=node:node --from=build /usr/src/app/dist ./dist
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY ./nginx.conf /etc/nginx/nginx.conf
